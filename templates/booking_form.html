@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="fw-bold mb-4 text-center">Confirmar Reserva</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-5 order-md-2">
+                    <div class="card-premium p-4 h-100 bg-light border">
+                        <h5 class="fw-bold mb-3">Detalles</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Servicio</span>
+                            <span class="fw-bold">{{ service.name }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Duración</span>
+                            <span>{{ service.duration_minutes }} min</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Lugar</span>
+                            <span class="text-end small">{{ salon.name }}<br>{{ salon.address }}</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fs-5 fw-bold">Total</span>
+                            <span class="fs-4 fw-bold text-success">${{ service.price }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7 order-md-1">
+                    <div class="card-premium p-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <h5 class="fw-bold mb-3">Tus Datos</h5>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Nombre Completo</label>
+                                {{ form.customer_name }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Celular</label>
+                                {{ form.customer_phone }}
+                            </div>
+
+                            <h5 class="fw-bold mb-3 mt-4">La Cita</h5>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">¿Con quién?</label>
+                                {{ form.employee }}
+                                <div class="form-text small">Puedes dejarlo en "Cualquiera" y te asignaremos uno disponible.</div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small">¿Cuándo?</label>
+                                {{ form.start_time }}
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-custom w-100 py-3 fs-5">
+                                Confirmar Reserva
+                            </button>
+                        </form>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'salon_detail' salon.slug %}" class="text-decoration-none text-muted">Cancelar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
