@@ -1,32 +1,27 @@
 from django.contrib import admin
 from django.urls import path, include
-from config import views
+from django.conf import settings
+from django.conf.urls.static import static
+
+# Importamos las vistas
+from apps.users.views import register
+from apps.businesses.views import dashboard_view, create_salon_view, home, salon_detail
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),
     
-    # --- RUTAS PÚBLICAS FIJAS ---
-    path('', views.home, name='home'),
-    path('registro/', views.register, name='register'),
+    # --- PÁGINA DE INICIO ---
+    path('', home, name='home'),
     
-    # --- RUTAS DEL DUEÑO (Debe ir antes del slug) ---
-    path('mi-negocio/', views.dashboard, name='dashboard'),
-    
-    # --- RUTAS DE RESERVA (Debe ir antes del slug si alguna coincide) ---
-    path('reserva-exitosa/', views.booking_success, name='booking_success'), # Esta chocaba también
-    path('reservar/<int:service_id>/', views.booking_create, name='booking_create'),
-    
-    # --- RUTAS DEL EMPLEADO (Debe ir antes del slug) ---
-    path('soy-pro/', views.employee_dashboard, name='employee_dashboard'), # Esta chocaba también
-    path('unete/<uuid:token>/', views.employee_join, name='employee_join'),
+    # --- PERFIL PÚBLICO DEL SALÓN ---
+    path('salon/<slug:slug>/', salon_detail, name='salon_detail'),
 
-    # --- API & WEBHOOKS ---
-    path('api/availability/', views.api_get_availability, name='api_availability'),
-    path('api/webhooks/bold/', views.bold_webhook, name='bold_webhook'),
+    # --- AUTENTICACIÓN ---
+    path('accounts/login/', include('django.contrib.auth.urls')), 
+    path('register/', register, name='register'),
 
-    # --- RUTAS DINÁMICAS (AL FINAL) ---
-    # Esta línea captura cualquier texto (como 'mi-negocio' o 'soy-pro') si no se ha encontrado arriba.
-    # Por eso SIEMPRE debe ir al final.
-    path('<slug:slug>/', views.salon_detail, name='salon_detail'),
-]
+    # --- PANEL DE CONTROL ---
+    path('dashboard/', dashboard_view, name='dashboard'),
+    path('dashboard/create-salon/', create_salon_view, name='create_salon'),
+
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

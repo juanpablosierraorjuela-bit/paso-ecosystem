@@ -1,11 +1,16 @@
 ﻿from django import forms
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
-class SalonForm(forms.ModelForm):
+class SalonCreateForm(forms.ModelForm):
+    """
+    Formulario para crear y editar la información de la Peluquería/Negocio.
+    Se usa en el registro inicial del dueño y en la configuración del salón.
+    """
     class Meta:
         model = Salon
         fields = [
-            'name', 'description', 'city', 'address', 'phone', 
+            'name', 'slug', 'description', 'city', 'address', 'phone', 
+            'logo', 'banner', # Agregados por si quieres subir imágenes
             'latitude', 'longitude', 
             'instagram', 'facebook', 'tiktok',
             'bold_api_key', 'bold_signing_key', 
@@ -14,6 +19,7 @@ class SalonForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Peluquería Estilo'}),
+            'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'identificador-unico-sin-espacios'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Tunja'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Cra 10 # 20-30'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '310 123 4567'}),
@@ -30,15 +36,16 @@ class SalonForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['latitude'].required = False
-        self.fields['longitude'].required = False
-        self.fields['instagram'].required = False
-        self.fields['facebook'].required = False
-        self.fields['tiktok'].required = False
-        self.fields['bold_api_key'].required = False
-        self.fields['bold_signing_key'].required = False
-        self.fields['telegram_bot_token'].required = False
-        self.fields['telegram_chat_id'].required = False
+        # Hacemos opcionales los campos que no son vitales para empezar
+        optional_fields = [
+            'slug', 'logo', 'banner', 'latitude', 'longitude', 
+            'instagram', 'facebook', 'tiktok', 
+            'bold_api_key', 'bold_signing_key', 
+            'telegram_bot_token', 'telegram_chat_id'
+        ]
+        for field in optional_fields:
+            if field in self.fields:
+                self.fields[field].required = False
 
 class ServiceForm(forms.ModelForm):
     class Meta:
@@ -83,6 +90,7 @@ class BookingForm(forms.ModelForm):
         service = kwargs.pop('service', None)
         super().__init__(*args, **kwargs)
         if service:
+            # Filtramos empleados que pertenezcan al mismo salón del servicio
             self.fields['employee'].queryset = service.salon.employees.all()
 
 class EmployeeSettingsForm(forms.ModelForm):
