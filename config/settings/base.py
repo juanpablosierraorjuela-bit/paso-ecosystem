@@ -12,7 +12,7 @@ import sys
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ==========================================
-# 2. SEGURIDAD Y ENTORNO (CRÍTICO)
+# 2. SEGURIDAD Y ENTORNO
 # ==========================================
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -23,9 +23,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarr
 DEBUG = 'RENDER' not in os.environ
 
 # ALLOWED_HOSTS
-# En Render, permitimos el host externo y también localhost para pruebas.
-# Usamos '*' temporalmente para asegurar que no bloquee por nombre de dominio, 
-# pero idealmente debería ser la lista de dominios permitidos.
 ALLOWED_HOSTS = ['*']
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -33,29 +30,22 @@ if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
-# --- CORRECCIÓN DEFINITIVA ERROR 403 CSRF EN RENDER ---
+# --- CORRECCIONES CRÍTICAS PARA RENDER ---
 
 # 1. Confiar en los orígenes de Render (Wildcard para cualquier subdominio)
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
 ]
 
-# 2. Si tienes un dominio personalizado, agrégalo aquí también:
-# CSRF_TRUSTED_ORIGINS.append('https://mi-dominio.com')
-
-# 3. Decirle a Django que confíe en el encabezado HTTPS del proxy de Render
-# Sin esto, Django cree que la petición es insegura y bloquea el CSRF.
+# 2. Decirle a Django que confíe en el encabezado HTTPS del proxy de Render
+# VITAL: Sin esto, Django cree que la conexión es insegura y bloquea formularios (Error 403).
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# 4. Configuraciones adicionales de cookies en Producción
+# 3. Configuraciones de cookies en Producción
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
-    # HSTS (Opcional, descomentar si ya tienes HTTPS estable)
-    # SECURE_HSTS_SECONDS = 31536000
-    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    # SECURE_HSTS_PRELOAD = True
 
 # ==========================================
 # 3. APLICACIONES INSTALADAS
@@ -69,10 +59,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Librerías de terceros
-    # 'corsheaders', # Descomentar si usas React/Vue externo en el futuro
-
-    # Mis Aplicaciones (Apps Locales)
+    # Mis Aplicaciones
     'apps.users',
     'apps.businesses',
 ]
@@ -83,7 +70,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- VITAL: Justo después de SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- VITAL: Manejo de estáticos
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -120,12 +107,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # 6. BASE DE DATOS
 # ==========================================
 
-# Configuración robusta: Intenta usar la variable de entorno, si no, usa SQLite local.
+# Usa la base de datos de Render si está disponible, si no, usa SQLite local.
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///db.sqlite3',
         conn_max_age=600,
-        ssl_require=not DEBUG  # Requiere SSL en producción (Render Postgres)
+        ssl_require=not DEBUG  # Requiere SSL en producción
     )
 }
 
@@ -140,7 +127,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Modelo de usuario personalizado
 AUTH_USER_MODEL = 'users.User'
 
 # ==========================================
@@ -153,21 +139,21 @@ USE_I18N = True
 USE_TZ = True
 
 # ==========================================
-# 9. ARCHIVOS ESTÁTICOS (CSS, JS, IMAGES)
+# 9. ARCHIVOS ESTÁTICOS (SOLUCIÓN PANTALLA BLANCA)
 # ==========================================
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Motor de almacenamiento para producción (WhiteNoise)
-# Esto comprime y cachea los archivos estáticos automáticamente.
+# Configuración WhiteNoise
 if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Usamos CompressedStaticFilesStorage en lugar de Manifest...
+    # Esto evita que la página se rompa si falta algún archivo referenciado.
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 else:
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
-# Configuración de Media (Archivos subidos por el usuario)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -177,11 +163,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Redirecciones tras Login/Logout
-LOGIN_REDIRECT_URL = 'dashboard'  # Asegúrate que esta URL name exista en urls.py
-LOGOUT_REDIRECT_URL = 'home'      # Asegúrate que esta URL name exista en urls.py
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
 
-# Variables de entorno personalizadas (Opcional)
+# Variables de entorno opcionales
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 BOLD_SECRET_KEY = os.environ.get('BOLD_SECRET_KEY')
