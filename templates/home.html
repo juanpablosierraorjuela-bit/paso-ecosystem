@@ -3,7 +3,7 @@
 
 {% block extra_css %}
 <style>
-    /* Estilos Específicos del Home (Blobs y Tarjetas) */
+    /* Estilos Específicos del Home */
     header { text-align: center; padding: 60px 20px 60px; max-width: 900px; margin: 0 auto; }
     .hero-title { font-size: 4rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px; background: linear-gradient(180deg, #0f172a 20%, #475569 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: fadeUp 0.8s ease-out forwards; }
     .hero-title span { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -24,7 +24,9 @@
     .salon-card.hidden { display: none; }
     
     .card-header-custom { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-    .salon-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--primary); font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #fff; }
+    .salon-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--primary); font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #fff; object-fit: cover; overflow: hidden;}
+    .salon-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
     .salon-info h3 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); }
     .salon-info span { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
     .address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -33,7 +35,7 @@
     .status-pill.open { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .status-pill.closed { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
     
-    .social-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    .social-row { display: flex; gap: 10px; margin-bottom: 20px; position: relative; z-index: 5; }
     .social-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--secondary); font-size: 0.95rem; transition: 0.2s; text-decoration: none; border: 1px solid #e2e8f0; }
     .social-icon:hover { background: var(--primary); color: white; border-color: var(--primary); transform: translateY(-3px); }
     
@@ -52,8 +54,10 @@
         <div class="search-container">
             <select id="city-selector" class="city-select" onchange="filtrarCiudad(this.value)">
                 <option value="">🌎 Ver todas las ciudades</option>
-                {% for c in ciudades %}
-                    <option value="{{ c }}">📍 {{ c }}</option>
+                {# Truco de Django: Agrupamos por ciudad para llenar el select automáticamente #}
+                {% regroup salons by city as city_list %}
+                {% for c in city_list %}
+                    <option value="{{ c.grouper }}">📍 {{ c.grouper }}</option>
                 {% endfor %}
             </select>
             <button class="btn-geo" onclick="usarUbicacion()" title="Buscar cerca de mí">📍</button>
@@ -61,14 +65,22 @@
     </header>
 
     <div class="grid-wrapper" id="salon-grid">
-        {% for salon in salones %}
+        {% for salon in salons %}
+            {# IMPORTANTE: Asegúrate de tener una URL llamada 'salon_detail' en urls.py #}
+            {# Si no la tienes, cambia el href a "#" temporalmente #}
             <a href="{% url 'salon_detail' salon.slug %}" class="salon-card" 
                data-lat="{{ salon.latitude|default:'0' }}" 
                data-lon="{{ salon.longitude|default:'0' }}" 
                data-ciudad="{{ salon.city }}">
                 
                 <div class="card-header-custom">
-                    <div class="salon-avatar">{{ salon.name|first|upper }}</div>
+                    <div class="salon-avatar">
+                        {% if salon.logo %}
+                            <img src="{{ salon.logo.url }}" alt="{{ salon.name }}">
+                        {% else %}
+                            {{ salon.name|first|upper }}
+                        {% endif %}
+                    </div>
                     <div class="salon-info">
                         <h3>{{ salon.name }}</h3>
                         <span>{{ salon.city|default:"Tunja" }}</span>
@@ -77,16 +89,24 @@
                 
                 <p class="address">{{ salon.address|default:"Ubicación pendiente" }}</p>
                 
+                {# Redes Sociales #}
                 {% if salon.instagram or salon.facebook or salon.tiktok %}
                 <div class="social-row" onclick="event.preventDefault(); event.stopPropagation();"> 
-                    {% if salon.instagram %} <object><a href="{{ salon.instagram }}" target="_blank" class="social-icon instagram" title="Instagram"><i class="fab fa-instagram"></i></a></object> {% endif %}
-                    {% if salon.facebook %} <object><a href="{{ salon.facebook }}" target="_blank" class="social-icon facebook" title="Facebook"><i class="fab fa-facebook-f"></i></a></object> {% endif %}
-                    {% if salon.tiktok %} <object><a href="{{ salon.tiktok }}" target="_blank" class="social-icon tiktok" title="TikTok"><i class="fab fa-tiktok"></i></a></object> {% endif %}
+                    {% if salon.instagram %} 
+                        <a href="{{ salon.instagram }}" target="_blank" class="social-icon instagram" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    {% endif %}
+                    {% if salon.facebook %} 
+                        <a href="{{ salon.facebook }}" target="_blank" class="social-icon facebook" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    {% endif %}
+                    {% if salon.tiktok %} 
+                        <a href="{{ salon.tiktok }}" target="_blank" class="social-icon tiktok" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                    {% endif %}
                 </div>
                 {% endif %}
                 
                 <div style="display:flex; justify-content: space-between; align-items: center;">
                     <div style="display:flex; gap:8px;">
+                        {# El método is_open debe existir en tu modelo Salon, si no, saldrá CERRADO por defecto #}
                         {% if salon.is_open %}
                             <div class="status-pill open">ABIERTO</div>
                         {% else %}
@@ -100,6 +120,7 @@
             <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #94a3b8;">
                 <div style="font-size: 3rem; margin-bottom: 20px;">☕</div>
                 <p>No hay salones registrados aún.</p>
+                <a href="{% url 'register' %}" class="btn btn-primary mt-3">Registrar mi Negocio</a>
             </div>
         {% endfor %}
     </div>
@@ -115,7 +136,7 @@
     }
 
     function usarUbicacion() {
-        if(!navigator.geolocation) { alert("GPS no soportado."); return; }
+        if(!navigator.geolocation) { alert("Tu navegador no soporta geolocalización."); return; }
         
         navigator.geolocation.getCurrentPosition(pos => {
             const myLat = pos.coords.latitude; 
@@ -132,7 +153,8 @@
                 
                 const dist = getDistance(myLat, myLon, lat, lon);
                 
-                if(dist <= 5) { 
+                // Muestra salones a menos de 10km (aumentado de 5km para mayor alcance)
+                if(dist <= 10) { 
                     card.classList.remove('hidden'); 
                     count++; 
                 } else { 
@@ -140,12 +162,15 @@
                 }
             });
             
-            if(count === 0) alert("No encontramos salones a menos de 5km con coordenadas configuradas.");
-        }, () => alert("Necesitamos permiso de ubicación para mostrarte salones cercanos."));
+            if(count === 0) alert("No encontramos salones cercanos con coordenadas configuradas.");
+        }, (error) => {
+            console.error(error);
+            alert("Necesitamos permiso de ubicación para mostrarte salones cercanos.");
+        });
     }
 
     function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371; 
+        const R = 6371; // Radio de la tierra en KM
         const dLat = (lat2-lat1)*Math.PI/180; 
         const dLon = (lon2-lon1)*Math.PI/180;
         const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)* Math.sin(dLon/2)*Math.sin(dLon/2);
