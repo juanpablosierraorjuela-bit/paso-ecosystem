@@ -65,12 +65,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- BASE DE DATOS HÍBRIDA ---
-# Si estamos en Render, usa su DB. Si no, usa la local de Docker.
+# --- BASE DE DATOS HÍBRIDA (Producción primero, local después) ---
+# Usamos .parse() y la lógica OR para garantizar que lea correctamente 
+# la URL compleja de Render, o que use el default local si no hay variable de entorno.
+DB_URL_RENDER = os.environ.get('DATABASE_URL')
+DB_URL_LOCAL = 'postgresql://paso_user:paso_password@db:5432/paso_beauty_db'
+
 DATABASES = {
-    'default': dj_database_url.config(
-        # Esta es tu DB local por defecto:
-        default='postgresql://paso_user:paso_password@db:5432/paso_beauty_db',
+    'default': dj_database_url.parse(
+        DB_URL_RENDER or DB_URL_LOCAL,
         conn_max_age=600
     )
 }
