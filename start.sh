@@ -1,19 +1,14 @@
 #!/bin/bash
-
-# Detener el script si hay algún error
 set -e
 
-echo "--- 0. Reparando Migraciones ---"
-# Forzamos la creación de migraciones para las apps específicas
-python manage.py makemigrations users businesses --noinput
-python manage.py makemigrations --noinput
+echo "--- 0. FORZANDO MIGRACIONES ---"
+# Esto creará una nueva migración '0007_auto...' detectando el invite_token
+python manage.py makemigrations businesses
+python manage.py makemigrations users
+python manage.py migrate --noinput
 
-echo "--- 1. Aplicando Migraciones (Falso positivo permitido) ---"
-# Intentamos aplicar todo. Si hay error de 'ya existe', continuamos.
-python manage.py migrate --noinput || echo "Advertencia: Migración parcial, continuando..."
-
-echo "--- 2. Recolectando Archivos Estáticos ---"
+echo "--- 1. Recolectando Estáticos ---"
 python manage.py collectstatic --noinput
 
-echo "--- 3. Iniciando Servidor Gunicorn ---"
+echo "--- 2. Iniciando Servidor ---"
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
