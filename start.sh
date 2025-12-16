@@ -1,14 +1,18 @@
 #!/bin/bash
+
+# Detener el script si hay algún error grave
 set -e
 
-echo "--- 0. FORZANDO MIGRACIONES ---"
-# Esto creará una nueva migración '0007_auto...' detectando el invite_token
-python manage.py makemigrations businesses
-python manage.py makemigrations users
+echo "--- 0. EJECUTANDO REPARACIÓN MANUAL DE DB ---"
+# Ejecutamos el script que acabamos de crear
+python fix_db.py
+
+echo "--- 1. Migraciones Normales (Por si acaso) ---"
+python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 
-echo "--- 1. Recolectando Estáticos ---"
+echo "--- 2. Recolectando Archivos Estáticos ---"
 python manage.py collectstatic --noinput
 
-echo "--- 2. Iniciando Servidor ---"
+echo "--- 3. Iniciando Servidor Gunicorn ---"
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
