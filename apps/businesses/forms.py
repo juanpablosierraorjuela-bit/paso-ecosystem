@@ -33,7 +33,7 @@ class SalonCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name in self.fields:
-            if field_name not in ['name', 'city', 'address', 'phone']: 
+            if field_name not in ['name', 'city', 'address', 'phone']: # Solo obligatorios
                 self.fields[field_name].required = False
 
 class ServiceForm(forms.ModelForm):
