@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
+from django.core.exceptions import ObjectDoesNotExist
 
 from apps.businesses.models import Salon, Employee, Booking
 from apps.businesses.forms import SalonCreateForm
@@ -26,13 +27,18 @@ def register(request):
 @login_required
 def dashboard_view(request):
     """
-    Panel Unificado con Enrutamiento de Roles
+    Panel Unificado con Enrutamiento de Roles (CORREGIDO)
     """
     user = request.user
 
-    # 1. ¿ES EMPLEADO? -> Redirigir a configuración de empleado
-    if hasattr(user, 'employee'):
-        return redirect('employee_settings')
+    # 1. ¿ES EMPLEADO? (Verificación Segura)
+    try:
+        # Intentamos acceder al perfil de empleado
+        if user.employee:
+            return redirect('employee_settings')
+    except ObjectDoesNotExist:
+        # Si no existe, no es empleado. Continuamos.
+        pass
 
     # 2. ¿ES DUEÑO? -> Panel de Dueño
     is_owner = getattr(user, 'role', '') == 'ADMIN' or getattr(user, 'is_business_owner', False)
@@ -43,7 +49,6 @@ def dashboard_view(request):
         return render(request, 'dashboard/index.html', {'salon': salon})
 
     # 3. ¿ES CLIENTE? -> Panel de Cliente (Historial de Citas)
-    # Buscamos las reservas asociadas a este usuario
     my_bookings = Booking.objects.filter(customer=user).order_by('-start_time')
     return render(request, 'dashboard/client_dashboard.html', {'bookings': my_bookings})
 
@@ -63,7 +68,6 @@ def create_salon_view(request):
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
 def salon_detail(request, slug):
-    # Esta vista ahora se maneja en businesses/views.py para la lógica de booking
-    # Redirigimos importación o usamos la de businesses
+    # Redirección a la vista de businesses para mantener la lógica de reservas
     from apps.businesses.views import salon_detail as business_salon_detail
     return business_salon_detail(request, slug)

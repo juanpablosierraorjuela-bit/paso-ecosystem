@@ -3,16 +3,15 @@ from django.conf import settings
 from django.utils import timezone
 import datetime
 
-# --- MODELO SALON ---
 class Salon(models.Model):
     owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salon')
-    name = models.CharField(max_length=200, verbose_name="Nombre del Negocio")
+    name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    description = models.TextField(blank=True, verbose_name="Descripción")
+    description = models.TextField(blank=True)
     
-    city = models.CharField(max_length=100, verbose_name="Ciudad")
-    address = models.CharField(max_length=255, verbose_name="Dirección")
-    phone = models.CharField(max_length=20, verbose_name="Teléfono")
+    city = models.CharField(max_length=100)
+    address = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20)
     
     latitude = models.FloatField(default=0.0, blank=True)
     longitude = models.FloatField(default=0.0, blank=True)
@@ -53,7 +52,6 @@ class Salon(models.Model):
     def __str__(self):
         return self.name
 
-# --- MODELO SERVICIOS ---
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100)
@@ -63,7 +61,6 @@ class Service(models.Model):
     def __str__(self):
         return f"{self.name} - ${self.price}"
 
-# --- MODELO EMPLEADOS ---
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
@@ -74,16 +71,14 @@ class Employee(models.Model):
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
 
-    # Integraciones del Empleado (Telegram Personal)
-    bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
-    bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
-    telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
-    telegram_chat_id = models.CharField(max_length=255, blank=True, verbose_name="Telegram Chat ID")
+    bold_api_key = models.CharField(max_length=255, blank=True)
+    bold_signing_key = models.CharField(max_length=255, blank=True)
+    telegram_bot_token = models.CharField(max_length=255, blank=True)
+    telegram_chat_id = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return self.name
 
-# --- HORARIOS DE APERTURA ---
 class OpeningHours(models.Model):
     WEEKDAYS = [
         (0, "Lunes"), (1, "Martes"), (2, "Miércoles"), (3, "Jueves"),
@@ -99,22 +94,17 @@ class OpeningHours(models.Model):
         ordering = ('weekday', 'from_hour')
         unique_together = ('salon', 'weekday')
 
-# --- RESERVAS (Booking) ---
 class Booking(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
-    
-    # NUEVO CAMPO: Cliente registrado (para el Panel de Cliente)
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='my_bookings')
-    
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='my_bookings')
     customer_name = models.CharField(max_length=100)
     customer_phone = models.CharField(max_length=20)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     status = models.CharField(max_length=20, default='confirmed')
 
-# --- HORARIOS DE EMPLEADOS ---
 class EmployeeSchedule(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='schedules')
     weekday = models.IntegerField(choices=OpeningHours.WEEKDAYS)

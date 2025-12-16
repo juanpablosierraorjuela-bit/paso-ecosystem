@@ -2,29 +2,26 @@
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
 class SalonCreateForm(forms.ModelForm):
-    """
-    Formulario para crear y editar la información de la Peluquería/Negocio.
-    """
     class Meta:
         model = Salon
-        # Eliminamos 'logo' y 'banner' porque no existen en el modelo aún
         fields = [
             'name', 'slug', 'description', 'city', 'address', 'phone', 
             'latitude', 'longitude', 
+            'logo', 'banner',
             'instagram', 'facebook', 'tiktok',
             'bold_api_key', 'bold_signing_key', 
             'telegram_bot_token', 'telegram_chat_id'
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Peluquería Estilo'}),
-            'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'identificador-unico-sin-espacios'}),
-            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Tunja'}),
-            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Cra 10 # 20-30'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '310 123 4567'}),
-            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': '0.0'}),
-            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': '0.0'}),
-            'instagram': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/...'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'slug': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'instagram': forms.URLInput(attrs={'class': 'form-control'}),
             'facebook': forms.URLInput(attrs={'class': 'form-control'}),
             'tiktok': forms.URLInput(attrs={'class': 'form-control'}),
             'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
@@ -35,25 +32,18 @@ class SalonCreateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacemos opcionales los campos no vitales
-        optional_fields = [
-            'slug', 'latitude', 'longitude', 
-            'instagram', 'facebook', 'tiktok', 
-            'bold_api_key', 'bold_signing_key', 
-            'telegram_bot_token', 'telegram_chat_id'
-        ]
-        for field in optional_fields:
-            if field in self.fields:
-                self.fields[field].required = False
+        for field_name in self.fields:
+            if field_name not in ['name', 'city', 'address', 'phone']: # Solo obligatorios
+                self.fields[field_name].required = False
 
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
         fields = ['name', 'duration_minutes', 'price']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Corte de Cabello'}),
-            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '25000'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
 class OpeningHoursForm(forms.ModelForm):
@@ -71,8 +61,7 @@ class BookingForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
         queryset=Employee.objects.none(),
         required=False,
-        label="¿Prefieres a alguien?",
-        empty_label="Cualquiera (El sistema asignará al mejor)",
+        empty_label="Cualquiera (El sistema asignará)",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
@@ -80,8 +69,8 @@ class BookingForm(forms.ModelForm):
         model = Booking
         fields = ['employee', 'customer_name', 'customer_phone', 'start_time']
         widgets = {
-            'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu nombre'}),
-            'customer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu celular'}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'customer_phone': forms.TextInput(attrs={'class': 'form-control'}),
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         }
 
@@ -98,10 +87,10 @@ class EmployeeSettingsForm(forms.ModelForm):
         widgets = {
             'lunch_start': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'lunch_end': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'bold_api_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Identity Key'}),
-            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Secret Key'}),
-            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Token del Bot'}),
-            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ID de Chat'}),
+            'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class EmployeeScheduleForm(forms.ModelForm):
