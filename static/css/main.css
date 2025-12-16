@@ -80,7 +80,7 @@ body {
 
 /* --- 2. NAVBAR (Cristal Esmerilado Sticky) --- */
 .navbar {
-    background: rgba(255, 255, 255, 0.05); /* Casi transparente al inicio */
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
@@ -101,7 +101,7 @@ body {
 }
 
 .navbar-brand i {
-    color: #ec4899; /* Icono rosa */
+    color: #ec4899;
 }
 
 .nav-link {
@@ -140,7 +140,7 @@ body {
 }
 
 .hero-title {
-    font-size: 4.5rem; /* Gigante */
+    font-size: 4.5rem;
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: -2px;
@@ -171,17 +171,18 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- 4. BARRA DE BÚSQUEDA FLOTANTE --- */
+/* --- 4. BARRA DE BÚSQUEDA Y BOTÓN GPS DE LUJO --- */
 .search-container {
     background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(20px);
     border: 1px solid #fff;
-    border-radius: 20px;
-    padding: 10px;
+    border-radius: 50px;
+    padding: 8px 15px;
     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
     display: flex;
+    align-items: center;
     gap: 10px;
-    max-width: 700px;
+    max-width: 750px;
     margin: 0 auto 4rem;
     animation: fadeUp 1.2s ease-out;
 }
@@ -189,23 +190,72 @@ body {
 .search-input {
     border: none;
     background: transparent;
-    padding: 15px 20px;
+    padding: 12px 15px;
     font-size: 1rem;
     color: var(--text-main);
     width: 100%;
 }
 .search-input:focus { outline: none; }
 
-.btn-search {
-    background: var(--text-main);
-    color: #fff;
-    border: none;
-    border-radius: 14px;
-    padding: 0 30px;
-    font-weight: 600;
-    transition: transform 0.2s;
+/* BOTÓN GPS DE LUJO (Icono Location) */
+.btn-location-pulse {
+    background: #fff; /* Fondo blanco puro para contraste */
+    color: #ec4899;   /* Icono rosa vibrante */
+    border: 2px solid #ec4899; /* Borde fino elegante */
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: visible;
+    flex-shrink: 0;
 }
-.btn-search:hover { transform: scale(1.05); }
+
+/* Efecto de Radar Sutil */
+.btn-location-pulse::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: rgba(236, 72, 153, 0.2);
+    z-index: -1;
+    animation: radar-wave 2s infinite;
+}
+
+.btn-location-pulse:hover {
+    background: var(--accent-gradient);
+    color: #fff;
+    border-color: transparent;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+}
+
+.btn-location-pulse:hover::before {
+    animation: none; /* Detener onda al hacer hover */
+}
+
+@keyframes radar-wave {
+    0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+    }
+    100% {
+        width: 180%;
+        height: 180%;
+        opacity: 0;
+    }
+}
 
 /* --- 5. TARJETAS (Glassmorphism & Hover) --- */
 .salon-card {
@@ -213,7 +263,7 @@ body {
     border-radius: var(--card-radius);
     border: 1px solid rgba(255,255,255,0.8);
     box-shadow: var(--shadow-soft);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto rebote suave */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     overflow: hidden;
     height: 100%;
     position: relative;
@@ -268,7 +318,7 @@ body {
 }
 
 .status-open {
-    background-color: #dcfce7; /* Verde pastel */
+    background-color: #dcfce7;
     color: #166534;
 }
 .status-open::before {
@@ -281,7 +331,7 @@ body {
 }
 
 .status-closed {
-    background-color: #fee2e2; /* Rojo pastel */
+    background-color: #fee2e2;
     color: #991b1b;
 }
 .status-closed::before {
@@ -308,16 +358,14 @@ body {
     gap: 5px;
 }
 
-/* Footer Limpio */
 footer {
     background-color: #fff;
     border-top: 1px solid #f1f5f9;
     color: var(--text-muted);
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .hero-title { font-size: 2.8rem; }
-    .search-container { flex-direction: column; padding: 15px; }
-    .btn-search { width: 100%; padding: 12px; margin-top: 10px; }
+    .search-container { flex-direction: column; padding: 15px; border-radius: 28px; }
+    .btn-location-pulse { width: 100%; border-radius: 14px; margin-top: 10px; }
 }

@@ -33,8 +33,9 @@
                 <i class="bi bi-search text-muted fs-5"></i>
                 <input type="text" id="nombreBusqueda" class="search-input" placeholder="¿Qué buscas hoy?" onkeyup="filtrarNombre()">
             </div>
-            <button class="btn-search" onclick="usarUbicacion()">
-                <i class="bi bi-crosshair"></i> Cerca
+            
+            <button class="btn-location-pulse" onclick="usarUbicacion()" title="Ver negocios cercanos (600m)" data-bs-toggle="tooltip">
+                <i class="bi bi-geo-alt-fill"></i>
             </button>
         </div>
     </div>
@@ -96,6 +97,14 @@
 </section>
 
 <script>
+    // Inicializar Tooltips de Bootstrap (para el mensaje al pasar el mouse)
+    document.addEventListener("DOMContentLoaded", function(){
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+
     function filtrarCiudad() {
         let ciudad = document.getElementById('ciudadSelect').value;
         let items = document.querySelectorAll('.salon-item');
@@ -115,21 +124,44 @@
 
     function usarUbicacion() {
         if (navigator.geolocation) {
+            const btn = document.querySelector('.btn-location-pulse');
+            const icon = btn.querySelector('i');
+            // Cambiar icono a spinner mientras carga
+            const originalIconClass = icon.className;
+            icon.className = 'spinner-border spinner-border-sm';
+
             navigator.geolocation.getCurrentPosition(position => {
                 const userLat = position.coords.latitude;
                 const userLng = position.coords.longitude;
-                let items = Array.from(document.querySelectorAll('.salon-item'));
-                
-                items.sort((a, b) => {
-                    let distA = getDistance(userLat, userLng, a.dataset.lat, a.dataset.lng);
-                    let distB = getDistance(userLat, userLng, b.dataset.lat, b.dataset.lng);
-                    return distA - distB;
+                let items = document.querySelectorAll('.salon-item');
+                let encontrados = 0;
+
+                items.forEach(item => {
+                    let lat = parseFloat(item.dataset.lat);
+                    let lng = parseFloat(item.dataset.lng);
+                    let dist = getDistance(userLat, userLng, lat, lng);
+                    
+                    if (dist <= 0.6) { // 600 metros
+                        item.style.display = 'block';
+                        encontrados++;
+                    } else {
+                        item.style.display = 'none';
+                    }
                 });
 
-                const grid = document.getElementById('salonGrid');
-                grid.innerHTML = '';
-                items.forEach(item => grid.appendChild(item));
-                alert("Ordenado por cercanía a tu ubicación.");
+                // Restaurar icono
+                icon.className = originalIconClass;
+
+                if (encontrados > 0) {
+                    document.getElementById('salonGrid').scrollIntoView({behavior: 'smooth'});
+                } else {
+                    alert("No encontramos negocios cercanos (600m). Mostrando todo de nuevo.");
+                    items.forEach(item => item.style.display = 'block');
+                }
+
+            }, error => {
+                icon.className = originalIconClass;
+                alert("Necesitamos tu permiso de ubicación para buscar cerca.");
             });
         } else {
             alert("Geolocalización no soportada.");
@@ -147,7 +179,6 @@
         return R * c; 
     }
 
-    // Efecto Navbar Scroll
     window.addEventListener('scroll', function() {
         const navbar = document.querySelector('.navbar');
         if (window.scrollY > 50) {
