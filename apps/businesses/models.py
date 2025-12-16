@@ -28,7 +28,7 @@ class Salon(models.Model):
     facebook = models.URLField(blank=True)
     tiktok = models.URLField(blank=True)
 
-    # Integraciones (Configuración Global del Salón)
+    # Integraciones
     bold_api_key = models.CharField(max_length=255, blank=True)
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
@@ -44,9 +44,7 @@ class Salon(models.Model):
 
     @property
     def is_open(self):
-        """
-        Calcula si el negocio está abierto AHORA MISMO en hora de Colombia.
-        """
+        """Calcula si el negocio está abierto AHORA MISMO en hora de Colombia."""
         now = timezone.localtime(timezone.now())
         current_day = now.weekday()
         current_time = now.time()
@@ -72,18 +70,20 @@ class Service(models.Model):
     def __str__(self):
         return f"{self.name} - ${self.price}"
 
-# --- MODELO EMPLEADOS ---
+# --- MODELO EMPLEADOS (CORREGIDO PARA MIGRACIÓN) ---
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20)
+    
+    # Agregamos default="Empleado" para evitar error de migración en registros antiguos
+    name = models.CharField(max_length=100, default="Empleado")
+    phone = models.CharField(max_length=20, default="")
     
     # Horario de Almuerzo
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
 
-    # Integraciones Específicas del Empleado
+    # Integraciones Específicas
     bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
     bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
     telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
