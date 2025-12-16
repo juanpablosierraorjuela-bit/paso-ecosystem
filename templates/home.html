@@ -59,8 +59,8 @@
                 {% endif %}
 
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="salon-avatar">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="salon-avatar flex-shrink-0">
                             {% if salon.logo %}
                                 <img src="{{ salon.logo.url }}" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
                             {% else %}
@@ -68,16 +68,27 @@
                             {% endif %}
                         </div>
                         
-                        <div class="flex-grow-1">
+                        <div class="flex-grow-1 ms-3">
                             <h5 class="card-title">{{ salon.name }}</h5>
-                            <div class="card-location">
+                            <div class="card-location mb-2">
                                 <i class="bi bi-geo-alt-fill text-danger small"></i> {{ salon.city }}
                             </div>
-                        </div>
 
-                        <span class="status-pill {% if salon.is_open %}status-open{% else %}status-closed{% endif %}">
-                            {% if salon.is_open %}ABIERTO{% else %}CERRADO{% endif %}
-                        </span>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                {% if salon.is_open %}
+                                    <span class="status-pill status-open">
+                                        ABIERTO
+                                    </span>
+                                {% else %}
+                                    <span class="status-pill status-closed">
+                                        CERRADO
+                                    </span>
+                                    <button class="btn-agenda-247">
+                                        <i class="bi bi-calendar-check-fill me-1"></i> Agenda 24/7
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                     
                     <p class="text-muted small mb-0 text-truncate">
@@ -97,7 +108,6 @@
 </section>
 
 <script>
-    // Inicializar Tooltips de Bootstrap (para el mensaje al pasar el mouse)
     document.addEventListener("DOMContentLoaded", function(){
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -126,7 +136,6 @@
         if (navigator.geolocation) {
             const btn = document.querySelector('.btn-location-pulse');
             const icon = btn.querySelector('i');
-            // Cambiar icono a spinner mientras carga
             const originalIconClass = icon.className;
             icon.className = 'spinner-border spinner-border-sm';
 
@@ -141,7 +150,7 @@
                     let lng = parseFloat(item.dataset.lng);
                     let dist = getDistance(userLat, userLng, lat, lng);
                     
-                    if (dist <= 0.6) { // 600 metros
+                    if (dist <= 0.6) { 
                         item.style.display = 'block';
                         encontrados++;
                     } else {
@@ -149,19 +158,18 @@
                     }
                 });
 
-                // Restaurar icono
                 icon.className = originalIconClass;
 
                 if (encontrados > 0) {
                     document.getElementById('salonGrid').scrollIntoView({behavior: 'smooth'});
                 } else {
-                    alert("No encontramos negocios cercanos (600m). Mostrando todo de nuevo.");
+                    alert("No encontramos negocios a menos de 600m. 📍");
                     items.forEach(item => item.style.display = 'block');
                 }
 
             }, error => {
                 icon.className = originalIconClass;
-                alert("Necesitamos tu permiso de ubicación para buscar cerca.");
+                alert("Necesitamos permiso de ubicación.");
             });
         } else {
             alert("Geolocalización no soportada.");
