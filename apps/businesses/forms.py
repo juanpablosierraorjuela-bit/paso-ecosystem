@@ -4,13 +4,12 @@ from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSch
 class SalonCreateForm(forms.ModelForm):
     """
     Formulario para crear y editar la información de la Peluquería/Negocio.
-    Se usa en el registro inicial del dueño y en la configuración del salón.
     """
     class Meta:
         model = Salon
+        # Eliminamos 'logo' y 'banner' porque no existen en el modelo aún
         fields = [
             'name', 'slug', 'description', 'city', 'address', 'phone', 
-            'logo', 'banner', # Agregados por si quieres subir imágenes
             'latitude', 'longitude', 
             'instagram', 'facebook', 'tiktok',
             'bold_api_key', 'bold_signing_key', 
@@ -36,9 +35,9 @@ class SalonCreateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacemos opcionales los campos que no son vitales para empezar
+        # Hacemos opcionales los campos no vitales
         optional_fields = [
-            'slug', 'logo', 'banner', 'latitude', 'longitude', 
+            'slug', 'latitude', 'longitude', 
             'instagram', 'facebook', 'tiktok', 
             'bold_api_key', 'bold_signing_key', 
             'telegram_bot_token', 'telegram_chat_id'
@@ -90,7 +89,6 @@ class BookingForm(forms.ModelForm):
         service = kwargs.pop('service', None)
         super().__init__(*args, **kwargs)
         if service:
-            # Filtramos empleados que pertenezcan al mismo salón del servicio
             self.fields['employee'].queryset = service.salon.employees.all()
 
 class EmployeeSettingsForm(forms.ModelForm):
