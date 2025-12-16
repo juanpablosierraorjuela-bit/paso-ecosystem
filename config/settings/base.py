@@ -16,9 +16,12 @@ RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    # --- FIX CRÍTICO PARA ERROR 403 EN RENDER ---
-    # Le decimos a Django que confíe en el dominio de Render para formularios (Login/Logout)
-    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
+    # --- FIX CRÍTICO PARA RENDER (Error 403) ---
+    # Esto permite que los formularios (Logout/Login) funcionen en el dominio de Render
+    CSRF_TRUSTED_ORIGINS = [
+        f'https://{RENDER_EXTERNAL_HOSTNAME}',
+        'https://*.onrender.com'  # Comodín extra por seguridad
+    ]
 else:
     # Configuración local
     ALLOWED_HOSTS = ['*']
@@ -33,7 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # MIS APPS
+    # MIS APPS (Tu lógica de negocio)
     'apps.users',
     'apps.businesses',
 ]

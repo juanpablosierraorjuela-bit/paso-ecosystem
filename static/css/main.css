@@ -1,133 +1,122 @@
-/* --- ESTILO BARBERÍA DARK LUXURY --- */
+/* --- ESTILO MARKETPLACE DE BELLEZA (Clean & Elegant) --- */
 :root {
-    --bg-dark: #121212;       /* Negro Fondo */
-    --bg-card: #1E1E1E;       /* Gris Oscuro Tarjetas */
-    --gold: #D4AF37;          /* Dorado Lujo */
-    --gold-hover: #B5952F;    /* Dorado Oscuro */
-    --text-main: #E0E0E0;     /* Blanco Humo */
-    --text-muted: #A0A0A0;    /* Gris Texto Secundario */
+    --primary-color: #d63384;   /* Rosa Profundo Elegante */
+    --secondary-color: #6f42c1; /* Lila Sofisticado */
+    --bg-light: #f8f9fa;        /* Fondo muy claro */
+    --text-dark: #343a40;       /* Texto gris oscuro (no negro puro) */
+    --card-shadow: 0 4px 15px rgba(0,0,0,0.05); /* Sombra suave */
 }
 
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* Títulos con estilo */
-h1, h2, h3, h4, h5, h6 {
-    color: var(--gold);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+/* --- TÍTULOS Y TEXTOS --- */
+h1, h2, h3, h4 {
+    color: var(--text-dark);
+    font-weight: 600;
 }
 
-/* --- TARJETAS --- */
-.card {
-    background-color: var(--bg-card);
-    border: 1px solid #333;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+a {
+    text-decoration: none;
+    transition: all 0.3s ease;
 }
 
-.card-header {
-    background-color: #252525 !important;
-    border-bottom: 1px solid var(--gold);
-    color: var(--gold) !important;
-    font-weight: bold;
-}
-
-.card-body {
-    color: var(--text-main);
-}
-
-/* --- BOTONES --- */
-.btn-primary {
-    background-color: var(--gold);
-    border-color: var(--gold);
-    color: #000;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.btn-primary:hover {
-    background-color: var(--gold-hover);
-    border-color: var(--gold-hover);
-    color: #000;
-}
-
-.btn-outline-primary {
-    color: var(--gold);
-    border-color: var(--gold);
-}
-
-.btn-outline-primary:hover {
-    background-color: var(--gold);
-    color: #000;
-}
-
-.btn-success {
-    background-color: #2E7D32; /* Verde Oscuro elegante */
-    border: none;
-}
-
-/* --- FORMULARIOS OSCUROS --- */
-.form-control, .form-select {
-    background-color: #2C2C2C;
-    border: 1px solid #444;
-    color: #FFF;
-}
-
-.form-control:focus, .form-select:focus {
-    background-color: #333;
-    border-color: var(--gold);
-    color: #FFF;
-    box-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
-}
-
-.form-control::placeholder {
-    color: #888;
-}
-
-/* --- NAVBAR --- */
+/* --- NAVBAR (Limpio y Blanco) --- */
 .navbar {
-    background-color: #000 !important;
-    border-bottom: 2px solid var(--gold);
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 1rem 0;
 }
 
 .navbar-brand {
-    color: var(--gold) !important;
+    color: var(--primary-color) !important;
+    font-weight: 700;
     font-size: 1.5rem;
-    font-weight: 900;
+    letter-spacing: -0.5px;
 }
 
 .nav-link {
-    color: #FFF !important;
-    text-transform: uppercase;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
+    color: #555 !important;
+    font-weight: 500;
+    margin-left: 15px;
 }
 
 .nav-link:hover {
-    color: var(--gold) !important;
+    color: var(--primary-color) !important;
 }
 
-/* --- TABLAS --- */
-.table {
-    color: var(--text-main);
-}
-.table thead th {
-    background-color: #000;
-    color: var(--gold);
-    border-color: #444;
-}
-.table td {
-    border-color: #333;
+/* --- TARJETAS (Estilo Spa) --- */
+.card {
+    border: none;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s ease;
+    overflow: hidden;
 }
 
-/* --- ALERTA --- */
-.alert-info {
-    background-color: #2c3e50;
-    color: #FFF;
-    border: 1px solid var(--gold);
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+/* --- BOTONES (Gradientes suaves) --- */
+.btn-primary {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    border: none;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 50px; /* Botones redondos modernos */
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    box-shadow: 0 4px 10px rgba(214, 51, 132, 0.3);
+}
+
+.btn-outline-primary {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 50px;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+/* --- FORMULARIOS (Limpios) --- */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 12px;
+}
+
+.form-control:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+}
+
+/* --- DETALLES --- */
+.badge-status {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
+
+/* Footer limpio */
+footer {
+    background-color: #fff;
+    color: #777;
+    border-top: 1px solid #eee;
 }
