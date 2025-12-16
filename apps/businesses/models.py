@@ -11,7 +11,8 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # SISTEMA DE INVITACIÓN (Token único para links)
+    # SISTEMA DE INVITACIÓN (Token único)
+    # null=True y blank=True evitan errores con salones ya existentes
     invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
 
     city = models.CharField(max_length=100, verbose_name="Ciudad")
@@ -40,7 +41,7 @@ class Salon(models.Model):
         if not self.slug:
             from django.utils.text import slugify
             self.slug = slugify(self.name)
-        # Generar token si no existe
+        # Generar token si no existe al guardar
         if not self.invite_token:
             self.invite_token = uuid.uuid4()
         super().save(*args, **kwargs)
@@ -74,26 +75,25 @@ class Service(models.Model):
 # --- MODELO EMPLEADOS ---
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
-    # Relación vital para el dashboard
+    # related_name='employee' es CRÍTICO para que user.employee funcione en las vistas
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='employee')
     
     name = models.CharField(max_length=100, default="Empleado")
     phone = models.CharField(max_length=20, default="")
     
-    # Hora de Almuerzo Global
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
 
-    # Integraciones Propias
-    bold_api_key = models.CharField(max_length=255, blank=True)
-    bold_signing_key = models.CharField(max_length=255, blank=True)
-    telegram_bot_token = models.CharField(max_length=255, blank=True)
-    telegram_chat_id = models.CharField(max_length=255, blank=True)
+    # Integraciones del Empleado
+    bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
+    bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
+    telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
+    telegram_chat_id = models.CharField(max_length=255, blank=True, verbose_name="Telegram Chat ID")
 
     def __str__(self):
         return self.name
 
-# --- HORARIOS GENERALES ---
+# --- HORARIOS GENERALES (Del Salón) ---
 class OpeningHours(models.Model):
     WEEKDAYS = [
         (0, "Lunes"), (1, "Martes"), (2, "Miércoles"), (3, "Jueves"),
@@ -121,7 +121,7 @@ class Booking(models.Model):
     end_time = models.DateTimeField()
     status = models.CharField(max_length=20, default='confirmed')
 
-# --- HORARIOS DEL EMPLEADO (NUEVO) ---
+# --- HORARIOS DEL EMPLEADO ---
 class EmployeeSchedule(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='schedules')
     weekday = models.IntegerField(choices=OpeningHours.WEEKDAYS)

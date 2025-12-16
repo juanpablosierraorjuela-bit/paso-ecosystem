@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 import logging
 
+# Logger para ver errores en Render si algo falla
 logger = logging.getLogger(__name__)
 
 from apps.businesses.models import Salon, Employee, Booking
@@ -17,43 +18,56 @@ def home(request):
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
-    """Registro inteligente con soporte para invitaciones"""
+    """
+    Registro BLINDADO: Asegura que el empleado se cree SÍ o SÍ antes de redirigir.
+    """
     if request.user.is_authenticated:
         return redirect('dashboard')
     
-    # 1. Detectar si hay invitación
+    # 1. Recuperar token de invitación (si existe)
     invite_token = request.GET.get('invite') or request.POST.get('invite_token')
     inviting_salon = None
     
     if invite_token:
         try:
             inviting_salon = Salon.objects.get(invite_token=invite_token)
-        except:
-            pass # Token inválido, registro normal
+            logger.info(f"--- INVITACIÓN DETECTADA PARA: {inviting_salon.name} ---")
+        except Salon.DoesNotExist:
+            logger.warning("--- TOKEN DE INVITACIÓN INVÁLIDO O NO ENCONTRADO ---")
 
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             
-            # LÓGICA DE VINCULACIÓN AUTOMÁTICA
+            # --- LÓGICA CRÍTICA: CREACIÓN DEL EMPLEADO ---
             if inviting_salon:
-                user.role = 'EMPLOYEE' # Forzamos el rol
-                user.save()
-                # Creamos el perfil de empleado vinculado al salón
-                Employee.objects.create(
-                    user=user,
-                    salon=inviting_salon,
-                    name=f"{user.first_name} {user.last_name}",
-                    phone=user.phone
-                )
+                logger.info(f"--- REGISTRANDO EMPLEADO: {user.username} ---")
+                
+                # 1. Forzar el rol de empleado
+                user.role = 'EMPLOYEE'
+                user.save() 
+                
+                # 2. Crear el perfil Employee INMEDIATAMENTE
+                try:
+                    Employee.objects.create(
+                        user=user,
+                        salon=inviting_salon,
+                        name=f"{user.first_name} {user.last_name}" or user.username,
+                        phone=getattr(user, 'phone', '')
+                    )
+                    logger.info("--- OBJETO EMPLOYEE CREADO EXITOSAMENTE ---")
+                except Exception as e:
+                    logger.error(f"--- ERROR FATAL CREANDO EMPLOYEE: {e} ---")
             else:
+                # Registro normal (Dueño o Cliente)
                 user.save()
 
+            # 3. Iniciar sesión y redirigir al Dashboard
             login(request, user)
             return redirect('dashboard')
     else:
-        # Pre-seleccionar rol si hay invitación
+        # Pre-configurar el formulario si hay invitación
         initial_data = {}
         if inviting_salon:
             initial_data = {'role': 'EMPLOYEE'}
@@ -66,20 +80,22 @@ def register(request):
 
 @login_required
 def dashboard_view(request):
-    """Enrutador de Paneles"""
+    """
+    Enrutador Inteligente: Redirige según el ROL y el estado del usuario.
+    """
     user = request.user
     role = getattr(user, 'role', 'CUSTOMER') 
 
-    # Panel Empleado
+    # --- ROL EMPLEADO ---
     if role == 'EMPLOYEE':
-        try:
-            if hasattr(user, 'employee') and user.employee:
-                return redirect('employee_settings')
-            return redirect('employee_join')
-        except:
+        # Verificación: ¿Tiene el perfil de empleado creado?
+        if hasattr(user, 'employee'):
+            return redirect('employee_settings') # ¡ÉXITO! Va al panel de horarios.
+        else:
+            # Si tiene el rol pero no el perfil, algo falló o no usó invitación.
             return redirect('employee_join')
 
-    # Panel Dueño
+    # --- ROL DUEÑO ---
     elif role in ['ADMIN', 'OWNER'] or getattr(user, 'is_business_owner', False):
         try:
             salon = Salon.objects.filter(owner=user).first()
@@ -89,7 +105,7 @@ def dashboard_view(request):
         except:
             return redirect('create_salon')
 
-    # Panel Cliente
+    # --- ROL CLIENTE (Por defecto) ---
     else:
         bookings = []
         try:
@@ -106,6 +122,7 @@ def employee_join_view(request):
 def create_salon_view(request):
     if Salon.objects.filter(owner=request.user).exists():
         return redirect('dashboard')
+    
     if request.method == 'POST':
         form = SalonCreateForm(request.POST, request.FILES)
         if form.is_valid():
