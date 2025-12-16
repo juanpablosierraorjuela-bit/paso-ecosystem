@@ -1,4 +1,4 @@
-﻿import uuid # <--- IMPORTANTE: Agregar esta línea al inicio
+﻿import uuid
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -11,9 +11,8 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # TOKEN DE INVITACIÓN (NUEVO)
-    # Genera un código único automáticamente (ej: a1b2-c3d4...)
-    invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    # CORRECCIÓN DE EMERGENCIA: null=True para permitir migración en BD existente
+    invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
 
     city = models.CharField(max_length=100, verbose_name="Ciudad")
     address = models.CharField(max_length=255, verbose_name="Dirección")
@@ -40,6 +39,9 @@ class Salon(models.Model):
         if not self.slug:
             from django.utils.text import slugify
             self.slug = slugify(self.name)
+        # Asegurar que siempre haya token aunque venga vacío
+        if not self.invite_token:
+            self.invite_token = uuid.uuid4()
         super().save(*args, **kwargs)
 
     @property
