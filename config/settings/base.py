@@ -16,14 +16,11 @@ RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    # --- FIX CRÍTICO PARA RENDER (Error 403) ---
-    # Esto permite que los formularios (Logout/Login) funcionen en el dominio de Render
     CSRF_TRUSTED_ORIGINS = [
         f'https://{RENDER_EXTERNAL_HOSTNAME}',
-        'https://*.onrender.com'  # Comodín extra por seguridad
+        'https://*.onrender.com'
     ]
 else:
-    # Configuración local
     ALLOWED_HOSTS = ['*']
     CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
@@ -35,8 +32,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # MIS APPS (Tu lógica de negocio)
     'apps.users',
     'apps.businesses',
 ]
@@ -44,7 +39,7 @@ INSTALLED_APPS = [
 # MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Estilos en la nube
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -55,7 +50,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
-# PLANTILLAS (HTML)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -74,9 +68,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- BASE DE DATOS ---
+# BASE DE DATOS
 DB_RENDER = os.environ.get('DATABASE_URL')
-# Tu base de datos local
 DB_LOCAL = 'postgresql://paso_user:paso_password@db:5432/paso_beauty_db'
 
 DATABASES = {
@@ -87,7 +80,6 @@ DATABASES = {
     )
 }
 
-# VALIDACIÓN DE CONTRASEÑAS
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
     { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
@@ -95,13 +87,11 @@ AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-# IDIOMA Y ZONA HORARIA
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
-# --- ARCHIVOS ESTÁTICOS ---
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -112,14 +102,23 @@ if not DEBUG:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# CONFIGURACIÓN DE USUARIO
 AUTH_USER_MODEL = 'users.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# VARIABLES DE ENTORNO
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-BOLD_SECRET_KEY = os.environ.get('BOLD_SECRET_KEY', '')
-
-# REDIRECCIÓN DE AUTENTICACIÓN
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+
+# --- CONFIGURACIÓN DE LOGS (PARA VER ERRORES EN RENDER) ---
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}

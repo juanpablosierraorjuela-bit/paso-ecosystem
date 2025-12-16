@@ -2,6 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.core.exceptions import ObjectDoesNotExist
+import logging
+
+# Configurar logger para ver errores en Render
+logger = logging.getLogger(__name__)
 
 from apps.businesses.models import Salon, Employee, Booking
 from apps.businesses.forms import SalonCreateForm
@@ -10,8 +14,10 @@ from .forms import CustomUserCreationForm
 def home(request):
     """Página de inicio"""
     try:
-        salons = Salon.objects.all().order_by('-id')
-    except:
+        # Usamos list() para forzar la consulta y evitar errores en el template
+        salons = list(Salon.objects.all().order_by('-id'))
+    except Exception as e:
+        logger.error(f"Error cargando Home: {e}")
         salons = []
     return render(request, 'home.html', {'salons': salons})
 
@@ -32,17 +38,18 @@ def register(request):
 @login_required
 def dashboard_view(request):
     """
-    Panel Unificado BLINDADO contra Error 500.
+    Panel Unificado BLINDADO.
+    Usa list() para capturar errores de BD antes de renderizar.
     """
     user = request.user
 
     # 1. INTENTO DE DETECTAR EMPLEADO
-    # Usamos un bloque try/except explícito. Si la relación falla, asumimos que no es empleado.
     try:
+        # Forzamos la evaluación de la relación inversa
         if hasattr(user, 'employee') and user.employee:
             return redirect('employee_settings')
-    except (ObjectDoesNotExist, AttributeError):
-        pass # No pasa nada, seguimos evaluando
+    except Exception as e:
+        logger.warning(f"Usuario {user.id} no es empleado o falló la consulta: {e}")
 
     # 2. INTENTO DE DETECTAR DUEÑO
     try:
@@ -53,18 +60,17 @@ def dashboard_view(request):
                 return redirect('create_salon')
             return render(request, 'dashboard/index.html', {'salon': salon})
     except Exception as e:
-        print(f"Error verificando dueño: {e}")
-        # Si falla, seguimos como cliente para no mostrar error 500
+        logger.error(f"Error verificando dueño para {user.id}: {e}")
+        # Si falla, seguimos para intentar mostrar panel de cliente
 
     # 3. PANEL DE CLIENTE (Fallback seguro)
     bookings = []
     try:
-        # Intentamos obtener las reservas. Si el campo 'customer' no existe aún,
-        # esto fallará, pero el 'except' lo atrapará y mostrará lista vacía.
-        bookings = Booking.objects.filter(customer=user).order_by('-start_time')
+        # CRÍTICO: Usamos list() para que si la tabla Booking está rota, falle AQUI y no en el HTML
+        bookings = list(Booking.objects.filter(customer=user).order_by('-start_time'))
     except Exception as e:
-        print(f"Error obteniendo reservas: {e}")
-        bookings = []
+        logger.error(f"Error crítico obteniendo reservas (posible error de migración): {e}")
+        bookings = [] # Mostramos lista vacía para no romper la página
 
     return render(request, 'dashboard/client_dashboard.html', {'bookings': bookings})
 
@@ -74,7 +80,7 @@ def create_salon_view(request):
         if Salon.objects.filter(owner=request.user).exists():
             return redirect('dashboard')
     except:
-        pass # Si falla la consulta, permitimos intentar crear
+        pass 
 
     if request.method == 'POST':
         form = SalonCreateForm(request.POST, request.FILES)
