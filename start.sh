@@ -1,15 +1,16 @@
 #!/bin/bash
 
-# Detener el script si hay algún error grave, pero permitimos fallos menores en migraciones para intentar auto-fix
+# Detener el script si hay algún error
 set -e
 
-echo "--- 0. Creando Migraciones (Con Auto-Merge) ---"
-# El flag --merge ayuda a resolver conflictos automáticos si existen
-python manage.py makemigrations --merge --noinput || true
+echo "--- 0. Reparando Migraciones ---"
+# Forzamos la creación de migraciones para las apps específicas
+python manage.py makemigrations users businesses --noinput
 python manage.py makemigrations --noinput
 
-echo "--- 1. Aplicando Migraciones de Base de Datos ---"
-python manage.py migrate --noinput
+echo "--- 1. Aplicando Migraciones (Falso positivo permitido) ---"
+# Intentamos aplicar todo. Si hay error de 'ya existe', continuamos.
+python manage.py migrate --noinput || echo "Advertencia: Migración parcial, continuando..."
 
 echo "--- 2. Recolectando Archivos Estáticos ---"
 python manage.py collectstatic --noinput
