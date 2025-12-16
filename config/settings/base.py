@@ -6,22 +6,23 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # --- SEGURIDAD ---
-# En producción, usa la clave de Render. En local, usa una por defecto.
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-secreta-para-desarrollo-paso')
 
-# DEBUG: Falso en Render (Producción), Verdadero en tu PC
+# DEBUG: False en Render, True en local
 DEBUG = 'RENDER' not in os.environ
 
-# HOSTS PERMITIDOS
 ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-# También permitimos localhost para cuando trabajes en tu PC
-ALLOWED_HOSTS.append('localhost')
-ALLOWED_HOSTS.append('127.0.0.1')
-ALLOWED_HOSTS.append('0.0.0.0')
-
+    # --- FIX CRÍTICO PARA ERROR 403 EN RENDER ---
+    # Le decimos a Django que confíe en el dominio de Render para formularios (Login/Logout)
+    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
+else:
+    # Configuración local
+    ALLOWED_HOSTS = ['*']
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # APLICACIONES INSTALADAS
 INSTALLED_APPS = [
@@ -40,7 +41,7 @@ INSTALLED_APPS = [
 # MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- VITAL: Estilos en la nube
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Estilos en la nube
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -70,16 +71,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- BASE DE DATOS ROBUSTA ---
-# Lógica: Intenta leer la de Render. Si no existe, usa la local.
+# --- BASE DE DATOS ---
 DB_RENDER = os.environ.get('DATABASE_URL')
+# Tu base de datos local
 DB_LOCAL = 'postgresql://paso_user:paso_password@db:5432/paso_beauty_db'
 
 DATABASES = {
     'default': dj_database_url.config(
         default=DB_RENDER or DB_LOCAL,
         conn_max_age=600,
-        ssl_require='RENDER' in os.environ # Solo exige SSL en la nube
+        ssl_require='RENDER' in os.environ
     )
 }
 
@@ -97,12 +98,11 @@ TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
-# --- ARCHIVOS ESTÁTICOS (CSS/Imágenes) ---
+# --- ARCHIVOS ESTÁTICOS ---
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Almacenamiento eficiente con compresión para Render
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -113,7 +113,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 AUTH_USER_MODEL = 'users.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# VARIABLES DE ENTORNO (Integraciones)
+# VARIABLES DE ENTORNO
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 BOLD_SECRET_KEY = os.environ.get('BOLD_SECRET_KEY', '')
 
