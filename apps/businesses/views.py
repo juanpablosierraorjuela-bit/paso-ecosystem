@@ -1,54 +1,46 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Salon
-from .forms import SalonCreateForm # Lo crearemos en el siguiente paso
-
-def home(request):
-    """Vista principal: Muestra todos los salones disponibles"""
-    salons = Salon.objects.all()
-    return render(request, 'home.html', {'salons': salons})
+from django.forms import modelformset_factory
+from .models import Salon, OpeningHours
+from .forms import SalonCreateForm, OpeningHoursForm
 
 @login_required
-def dashboard_view(request):
+def salon_settings_view(request):
     """
-    Controlador de tráfico:
-    - Si el usuario no tiene salón, lo obliga a crear uno.
-    - Si ya tiene, le muestra su panel.
+    Vista de Configuración del Salón:
+    Permite editar la info del negocio Y los horarios de apertura en una sola pantalla.
     """
-    user = request.user
+    # Buscar el salón del usuario logueado
+    salon = get_object_or_404(Salon, owner=request.user)
+    
+    # 1. AUTOGENERAR HORARIOS SI NO EXISTEN
+    # Si el salón es nuevo, creamos los 7 días por defecto (Lunes=0 ... Domingo=6)
+    if salon.opening_hours.count() < 7:
+        for i in range(7):
+            OpeningHours.objects.get_or_create(
+                salon=salon, 
+                weekday=i, 
+                defaults={'from_hour': '09:00', 'to_hour': '18:00', 'is_closed': False}
+            )
 
-    # 1. Verificar si es dueño
-    if user.is_business_owner:
-        # Intentar obtener el salón del usuario
-        # Asumiendo que la relación en models.py es OneToOne o ForeignKey
-        # Si tu modelo User no tiene 'salon', usamos la relación inversa.
-        salon = Salon.objects.filter(owner=user).first()
-
-        if not salon:
-            # SI NO TIENE SALÓN -> REDIRIGIR A CREARLO
-            return redirect('create_salon')
-        
-        # SI YA TIENE SALÓN -> MOSTRAR DASHBOARD
-        return render(request, 'dashboard/index.html', {'salon': salon})
-
-    # 2. Lógica para empleados (si aplica)
-    return render(request, 'dashboard/employee_dashboard.html')
-
-@login_required
-def create_salon_view(request):
-    """Vista para registrar el negocio por primera vez"""
-    # Si ya tiene salón, no debería estar aquí
-    if Salon.objects.filter(owner=request.user).exists():
-        return redirect('dashboard')
-
+    # 2. CONFIGURAR EL "FORMSET" (Permite editar 7 formularios de horario a la vez)
+    # extra=0 para no agregar filas vacías, solo mostrar las 7 existentes
+    HoursFormSet = modelformset_factory(OpeningHours, form=OpeningHoursForm, extra=0)
+    
     if request.method == 'POST':
-        form = SalonCreateForm(request.POST, request.FILES)
-        if form.is_valid():
-            salon = form.save(commit=False)
-            salon.owner = request.user # Asignar el dueño actual
-            salon.save()
-            return redirect('dashboard')
+        salon_form = SalonCreateForm(request.POST, request.FILES, instance=salon)
+        hours_formset = HoursFormSet(request.POST, queryset=salon.opening_hours.all())
+        
+        if salon_form.is_valid() and hours_formset.is_valid():
+            salon_form.save()
+            hours_formset.save()
+            return redirect('dashboard') # Guardar y volver al panel
     else:
-        form = SalonCreateForm()
+        salon_form = SalonCreateForm(instance=salon)
+        hours_formset = HoursFormSet(queryset=salon.opening_hours.all())
 
-    return render(request, 'dashboard/create_salon.html', {'form': form})
+    return render(request, 'dashboard/settings.html', {
+        'salon_form': salon_form,
+        'hours_formset': hours_formset,
+        'salon': salon
+    })

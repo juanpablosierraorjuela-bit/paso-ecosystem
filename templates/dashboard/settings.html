@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">⚙️ Configuración del Negocio</h4>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light">Volver al Panel</a>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">Información Básica</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="hours-tab" data-bs-toggle="tab" data-bs-target="#hours" type="button">⏰ Horarios de Atención</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="myTabContent">
+                        
+                        <div class="tab-pane fade show active" id="info" role="tabpanel">
+                            <h5 class="mb-3">Datos del Salón</h5>
+                            {% for field in salon_form %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        <div class="text-danger small">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="tab-pane fade" id="hours" role="tabpanel">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Define tu horario de apertura y cierre para cada día. Marca "Cerrado" si no trabajas ese día.
+                            </div>
+                            
+                            {{ hours_formset.management_form }}
+                            
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Día</th>
+                                            <th>Abre a las</th>
+                                            <th>Cierra a las</th>
+                                            <th>¿Cerrado?</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for form in hours_formset %}
+                                            <tr>
+                                                {{ form.id }}
+                                                
+                                                <td class="fw-bold">
+                                                    {{ form.instance.get_weekday_display }}
+                                                    <div class="d-none">{{ form.weekday }}</div> </td>
+                                                <td>{{ form.from_hour }}</td>
+                                                <td>{{ form.to_hour }}</td>
+                                                <td>
+                                                    <div class="form-check form-switch">
+                                                        {{ form.is_closed }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
