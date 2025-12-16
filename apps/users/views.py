@@ -4,6 +4,7 @@ from django.contrib.auth import login
 from django.core.exceptions import ObjectDoesNotExist
 import logging
 
+# Configurar logger para ver errores en Render
 logger = logging.getLogger(__name__)
 
 from apps.businesses.models import Salon, Employee, Booking
@@ -11,104 +12,89 @@ from apps.businesses.forms import SalonCreateForm
 from .forms import CustomUserCreationForm
 
 def home(request):
+    """Página de inicio"""
     try:
-        # Usamos list() para forzar la consulta y detectar errores aquí
+        # Usamos list() para evitar errores de lazy loading
         salons = list(Salon.objects.all().order_by('-id'))
     except Exception as e:
-        logger.error(f"Error Home: {e}")
+        logger.error(f"Error cargando Home: {e}")
         salons = []
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
+    """Registro de usuarios con inicio de sesión automático"""
     if request.user.is_authenticated:
         return redirect('dashboard')
     
-    # 1. Detectar Invitación
-    invite_token = request.GET.get('invite') or request.POST.get('invite_token')
-    inviting_salon = None
-    
-    if invite_token:
-        try:
-            inviting_salon = Salon.objects.get(invite_token=invite_token)
-        except Exception:
-            pass # Token inválido, registro normal
-
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            
-            # Si hay invitación, forzamos rol EMPLEADO y vinculamos
-            if inviting_salon:
-                user.role = 'EMPLOYEE'
-                user.save()
-                Employee.objects.create(
-                    user=user,
-                    salon=inviting_salon,
-                    name=f"{user.first_name} {user.last_name}",
-                    phone=user.phone
-                )
-            else:
-                user.save()
-
+            user = form.save()
             login(request, user)
+            # El dashboard leerá el rol recién creado y redirigirá correctamente
             return redirect('dashboard')
     else:
-        initial_data = {}
-        if inviting_salon:
-            initial_data = {'role': 'EMPLOYEE'}
-        form = CustomUserCreationForm(initial=initial_data)
-
-    return render(request, 'registration/register.html', {
-        'form': form, 
-        'inviting_salon': inviting_salon
-    })
+        form = CustomUserCreationForm()
+    return render(request, 'registration/register.html', {'form': form})
 
 @login_required
 def dashboard_view(request):
-    """Redirección estricta por rol"""
+    """
+    CONTROLADOR DE TRÁFICO ESTRICTO
+    Redirige a cada usuario a su panel correspondiente según su ROL.
+    """
     user = request.user
-    # Si no tiene rol, asumimos CUSTOMER
-    role = getattr(user, 'role', 'CUSTOMER') 
+    role = getattr(user, 'role', 'CUSTOMER') # Por defecto Cliente si no tiene rol
 
-    # --- ROL EMPLEADO ---
+    # --- CASO 1: EMPLEADO (EMPLOYEE) ---
     if role == 'EMPLOYEE':
         try:
+            # Verificamos si ya está vinculado a un salón
             if hasattr(user, 'employee') and user.employee:
-                return redirect('employee_settings')
-            return redirect('employee_join')
-        except:
+                return redirect('employee_settings') # Panel de Gestión
+            else:
+                return redirect('employee_join') # Pantalla "Únete a un equipo"
+        except Exception as e:
+            logger.error(f"Error Dashboard Empleado: {e}")
             return redirect('employee_join')
 
-    # --- ROL DUEÑO (ADMIN/OWNER) ---
-    elif role in ['ADMIN', 'OWNER'] or getattr(user, 'is_business_owner', False):
+    # --- CASO 2: DUEÑO (ADMIN) ---
+    elif role == 'ADMIN' or getattr(user, 'is_business_owner', False):
         try:
             salon = Salon.objects.filter(owner=user).first()
             if not salon:
-                return redirect('create_salon')
+                return redirect('create_salon') # Debe crear su negocio primero
             return render(request, 'dashboard/index.html', {'salon': salon})
-        except:
-            # Si falla la BD, enviar a crear para intentar recuperar
+        except Exception as e:
+            logger.error(f"Error Dashboard Dueño: {e}")
+            # Si falla la BD, lo enviamos a crear salón para intentar arreglarlo
             return redirect('create_salon')
 
-    # --- ROL CLIENTE (Default) ---
+    # --- CASO 3: CLIENTE (CUSTOMER) - Solo si no es lo anterior ---
     else:
         bookings = []
         try:
             bookings = list(Booking.objects.filter(customer=user).order_by('-start_time'))
-        except:
+        except Exception as e:
+            logger.error(f"Error Dashboard Cliente: {e}")
             bookings = []
+        
         return render(request, 'dashboard/client_dashboard.html', {'bookings': bookings})
 
 @login_required
 def employee_join_view(request):
+    """Vista para colaboradores nuevos"""
     return render(request, 'registration/employee_join.html')
 
 @login_required
 def create_salon_view(request):
-    if Salon.objects.filter(owner=request.user).exists():
-        return redirect('dashboard')
-    
+    """Vista para crear negocio"""
+    try:
+        if Salon.objects.filter(owner=request.user).exists():
+            return redirect('dashboard')
+    except:
+        pass 
+
     if request.method == 'POST':
         form = SalonCreateForm(request.POST, request.FILES)
         if form.is_valid():
@@ -118,6 +104,7 @@ def create_salon_view(request):
             return redirect('dashboard')
     else:
         form = SalonCreateForm()
+
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
 def salon_detail(request, slug):
