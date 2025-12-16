@@ -22,29 +22,27 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Inicio</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Peluquería</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Uñas & Spa</a></li>
                 </ul>
 
-                <ul class="navbar-nav align-items-center">
+                <ul class="navbar-nav align-items-center gap-2">
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link fw-bold text-primary" href="{% url 'dashboard' %}">
-                                <i class="bi bi-grid-fill"></i> Mi Panel
+                            <a class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" href="{% url 'dashboard' %}">
+                                <i class="bi bi-grid-fill me-1"></i> Mi Panel
                             </a>
                         </li>
-                        <li class="nav-item ms-3">
+                        <li class="nav-item">
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 border-0">
                                     Salir
                                 </button>
                             </form>
                         </li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Ingresar</a></li>
-                        <li class="nav-item ms-2">
-                            <a class="btn btn-primary" href="{% url 'register' %}">Crear Cuenta</a>
+                        <li class="nav-item"><a class="btn-nav-login nav-link" href="{% url 'login' %}">Ingresar</a></li>
+                        <li class="nav-item">
+                            <a class="btn btn-nav-action" href="{% url 'register' %}">Crear Cuenta</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -74,7 +72,7 @@
     <footer class="text-center py-4 mt-auto">
         <div class="container">
             <p class="mb-0 small">
-                &copy; 2025 <strong>PASO Beauty</strong>. Conectando profesionales y clientes.
+                &copy; 2025 <strong>PASO Beauty</strong>. Conectando belleza.
             </p>
         </div>
     </footer>
