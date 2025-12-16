@@ -10,32 +10,25 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # Ubicación
     city = models.CharField(max_length=100, verbose_name="Ciudad")
     address = models.CharField(max_length=255, verbose_name="Dirección")
     phone = models.CharField(max_length=20, verbose_name="Teléfono")
     
-    # Coordenadas
     latitude = models.FloatField(default=0.0, blank=True)
     longitude = models.FloatField(default=0.0, blank=True)
 
-    # Imágenes
     logo = models.ImageField(upload_to='salons/logos/', blank=True, null=True)
     banner = models.ImageField(upload_to='salons/banners/', blank=True, null=True)
 
-    # Redes Sociales
     instagram = models.URLField(blank=True)
     facebook = models.URLField(blank=True)
     tiktok = models.URLField(blank=True)
 
-    # Integraciones
     bold_api_key = models.CharField(max_length=255, blank=True)
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
 
-    # SOLUCIÓN DEL ERROR DE DESPLIEGUE:
-    # Usamos timezone.now como valor por defecto para que la migración no falle
     created_at = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
@@ -46,23 +39,15 @@ class Salon(models.Model):
 
     @property
     def is_open(self):
-        """
-        Lógica Inteligente:
-        Devuelve True si el negocio está abierto AHORA (Hora Colombia).
-        Si no tiene horario configurado, devuelve False.
-        """
         now = timezone.localtime(timezone.now())
-        current_day = now.weekday() # 0=Lunes, 6=Domingo
+        current_day = now.weekday()
         current_time = now.time()
-
         try:
             today_schedule = self.opening_hours.get(weekday=current_day)
             if today_schedule.is_closed:
                 return False
-            # Verifica si la hora actual está dentro del rango
             return today_schedule.from_hour <= current_time <= today_schedule.to_hour
         except:
-            # Si no ha configurado horarios, asumimos CERRADO (y mostramos botón 24/7)
             return False
 
     def __str__(self):
@@ -83,15 +68,13 @@ class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     
-    # SOLUCIÓN DE ERROR: Defaults para evitar problemas de migración
     name = models.CharField(max_length=100, default="Empleado")
     phone = models.CharField(max_length=20, default="")
     
-    # Horario de Almuerzo
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
 
-    # Integraciones Específicas
+    # Integraciones del Empleado (Telegram Personal)
     bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
     bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
     telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
@@ -116,9 +99,13 @@ class OpeningHours(models.Model):
         ordering = ('weekday', 'from_hour')
         unique_together = ('salon', 'weekday')
 
-# --- RESERVAS ---
+# --- RESERVAS (Booking) ---
 class Booking(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    
+    # NUEVO CAMPO: Cliente registrado (para el Panel de Cliente)
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='my_bookings')
+    
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
     customer_name = models.CharField(max_length=100)

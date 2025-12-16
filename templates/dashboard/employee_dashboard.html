@@ -1,179 +1,104 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h2 class="fw-bold mb-1">Hola, {{ employee.user.first_name }} 👋</h2>
-            <p class="text-muted m-0">Panel Profesional - {{ employee.salon.name }}</p>
-        </div>
-        <span class="badge bg-primary rounded-pill px-3 py-2">Modo Pro</span>
-    </div>
-
-    <ul class="nav nav-pills nav-pills-custom mb-4 justify-content-center" id="pills-tab" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active rounded-pill" data-bs-toggle="pill" data-bs-target="#citas">
-                <i class="bi bi-calendar2-check me-2"></i>Agenda
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#horario">
-                <i class="bi bi-clock-history me-2"></i>Mi Horario
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#pagos">
-                <i class="bi bi-credit-card-2-front me-2"></i>Pagos (Bold)
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#notificaciones">
-                <i class="bi bi-telegram me-2"></i>Telegram
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="pills-tabContent">
-        
-        <div class="tab-pane fade show active" id="citas">
-            <div class="card-premium p-4">
-                <h5 class="fw-bold mb-4">Agenda Asignada</h5>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="bg-light">
-                            <tr><th>Cliente</th><th>Servicio</th><th>Hora</th><th>Estado</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for booking in appointments %}
-                            <tr>
-                                <td><div class="fw-bold">{{ booking.customer_name }}</div><small class="text-muted">{{ booking.customer_phone }}</small></td>
-                                <td>{{ booking.service.name }}</td>
-                                <td>{{ booking.start_time|date:"d M, H:i" }}</td>
-                                <td><span class="badge bg-success">Confirmada</span></td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="text-center py-4 text-muted">No tienes citas pendientes.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="horario">
-            <div class="row">
-                <div class="col-md-5">
-                    <div class="card-premium p-4 mb-3">
-                        <h5 class="fw-bold mb-3">Disponibilidad</h5>
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="update_schedule" value="1">
-                            <div class="mb-3"><label class="small fw-bold">Día</label>{{ schedule_form.weekday }}</div>
-                            <div class="row mb-3">
-                                <div class="col-6"><label class="small fw-bold">Desde</label>{{ schedule_form.from_hour }}</div>
-                                <div class="col-6"><label class="small fw-bold">Hasta</label>{{ schedule_form.to_hour }}</div>
-                            </div>
-                            <div class="mb-3 form-check">
-                                {{ schedule_form.is_closed }} <label class="form-check-label">Marcar como día libre</label>
-                            </div>
-                            <button type="submit" class="btn btn-primary-custom w-100">Guardar Horario</button>
-                        </form>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold">💇‍♂️ Panel de Profesional</h4>
+                        <p class="mb-0 small text-white-50">Hola, {{ employee.name }}</p>
                     </div>
+                    <span class="badge bg-light text-primary">{{ employee.salon.name }}</span>
                 </div>
-                <div class="col-md-7">
-                    <div class="card-premium p-4">
-                        <h5 class="fw-bold mb-3">Mi Semana</h5>
-                        <ul class="list-group list-group-flush">
-                            {% for h in my_schedule %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
-                                <span class="fw-bold text-muted">{{ h.get_weekday_display }}</span>
-                                {% if h.is_closed %}<span class="badge bg-danger-subtle text-danger">Libre</span>{% else %}<span class="text-dark fw-bold">{{ h.from_hour|time:"H:i" }} - {{ h.to_hour|time:"H:i" }}</span>{% endif %}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="pagos">
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card-premium p-5">
-                        <div class="text-center mb-4">
-                            <img src="https://bold.co/assets/img/logo-bold-black.svg" style="height: 30px;" alt="Bold Logo">
-                            <h4 class="fw-bold mt-3">Conecta tu Datáfono Virtual</h4>
-                        </div>
-
-                        <div class="alert alert-light border shadow-sm mb-4">
-                            <h6 class="fw-bold mb-2"><i class="bi bi-info-circle-fill me-2"></i>¿Cómo obtener mis llaves?</h6>
-                            <ol class="small mb-0 ps-3">
-                                <li>Ingresa a tu cuenta en <a href="https://bold.co" target="_blank">Bold.co</a>.</li>
-                                <li>Ve al menú <strong>Desarrolladores</strong> o <strong>Integraciones</strong>.</li>
-                                <li>Copia el "Identity Key" y el "Secret Key" y pégalos abajo.</li>
-                                <li class="mt-2 text-primary fw-bold">Importante: Pega este Webhook en Bold:</li>
-                                <div class="input-group input-group-sm mt-1">
-                                    <input type="text" class="form-control bg-white" value="{{ webhook_url }}" readonly>
+                
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row g-4">
+                            <div class="col-md-5 border-end">
+                                <h5 class="text-primary mb-3">⚙️ Configuración Personal</h5>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Horario de Almuerzo</label>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">Inicio</span>
+                                        {{ settings_form.lunch_start }}
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Fin</span>
+                                        {{ settings_form.lunch_end }}
+                                    </div>
                                 </div>
-                            </ol>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-info">
+                                        <i class="bi bi-telegram"></i> Integración Telegram
+                                    </label>
+                                    <p class="small text-muted">Recibe notificaciones en tu celular cuando un cliente te elija.</p>
+                                    
+                                    <div class="mb-2">
+                                        <label class="small text-muted">Bot Token</label>
+                                        {{ settings_form.telegram_bot_token }}
+                                    </div>
+                                    <div>
+                                        <label class="small text-muted">Chat ID</label>
+                                        {{ settings_form.telegram_chat_id }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-7">
+                                <h5 class="text-primary mb-3">📅 Tu Horario Semanal</h5>
+                                <p class="small text-muted mb-3">Define cuándo estás disponible para recibir citas.</p>
+                                
+                                {{ schedule_formset.management_form }}
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle">
+                                        <thead>
+                                            <tr class="text-muted small">
+                                                <th>Día</th>
+                                                <th>Entrada</th>
+                                                <th>Salida</th>
+                                                <th>Descanso</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for form in schedule_formset %}
+                                                <tr>
+                                                    {{ form.id }}
+                                                    <td class="fw-bold">
+                                                        {{ form.instance.get_weekday_display }}
+                                                        <div class="d-none">{{ form.weekday }}</div>
+                                                    </td>
+                                                    <td>{{ form.from_hour }}</td>
+                                                    <td>{{ form.to_hour }}</td>
+                                                    <td>
+                                                        <div class="form-check form-switch">
+                                                            {{ form.is_closed }}
+                                                            <label class="form-check-label small">No trabajo</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
 
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="update_keys" value="1">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Identity Key</label>
-                                {{ settings_form.bold_api_key }}
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small">Secret Key</label>
-                                {{ settings_form.bold_signing_key }}
-                            </div>
-                            <button type="submit" class="btn btn-dark w-100 py-3 fw-bold">Guardar Llaves de Pago</button>
-                        </form>
-                    </div>
+                        <div class="d-grid mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-success btn-lg rounded-pill">
+                                Guardar Mi Configuración
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-
-        <div class="tab-pane fade" id="notificaciones">
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card-premium p-5">
-                        <div class="text-center mb-4">
-                            <div class="text-primary display-4 mb-2"><i class="bi bi-telegram"></i></div>
-                            <h4 class="fw-bold">Recibe alertas en tu celular</h4>
-                            <p class="text-muted">Te avisaremos cada vez que tengas una nueva cita.</p>
-                        </div>
-
-                        <div class="alert alert-info border-0 bg-info-subtle text-info-emphasis mb-4">
-                            <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb-fill me-2"></i>Paso a Paso</h6>
-                            <ol class="small mb-0 ps-3">
-                                <li>Abre Telegram y busca <strong>@BotFather</strong>.</li>
-                                <li>Escribe <code>/newbot</code> y sigue los pasos para crear tu bot personal.</li>
-                                <li>Copia el <strong>Token</strong> que te da @BotFather y pégalo abajo.</li>
-                                <li>Ahora busca <strong>@userinfobot</strong>, dale iniciar y copia tu <strong>ID</strong>.</li>
-                            </ol>
-                        </div>
-
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="update_keys" value="1">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Token del Bot</label>
-                                {{ settings_form.telegram_bot_token }}
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small">Tu ID de Chat</label>
-                                {{ settings_form.telegram_chat_id }}
-                            </div>
-                            <button type="submit" class="btn btn-primary-custom w-100 py-3">Activar Notificaciones</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 </div>
 {% endblock %}
