@@ -1,67 +1,61 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-3 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-body text-center">
-                {% if salon.logo %}
-                    <img src="{{ salon.logo.url }}" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
-                {% else %}
-                    <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center text-white mb-3" style="width: 100px; height: 100px; font-size: 2rem;">
-                        {{ salon.name|slice:":1" }}
-                    </div>
-                {% endif %}
-                <h5>{{ salon.name }}</h5>
-                <span class="badge {% if salon.is_open %}bg-success{% else %}bg-danger{% endif %} mb-3">
-                    {% if salon.is_open %}ABIERTO AHORA{% else %}CERRADO{% endif %}
-                </span>
-                
-                <div class="d-grid gap-2">
-                    <a href="{% url 'salon_settings' %}" class="btn btn-outline-primary">
-                        <i class="bi bi-gear"></i> Configurar & Horarios
-                    </a>
-                    <a href="{% url 'salon_detail' salon.slug %}" class="btn btn-outline-dark" target="_blank">
-                        <i class="bi bi-eye"></i> Ver como Cliente
-                    </a>
-                </div>
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark">{{ salon.name }}</h2>
+            <p class="text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {{ salon.address }}, {{ salon.city }}</p>
+        </div>
+        <a href="{% url 'salon_settings' %}" class="btn btn-outline-secondary rounded-pill">
+            <i class="bi bi-gear-fill"></i> Configurar
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-people-fill me-2"></i> Invita a tu Equipo</h4>
+                <p class="mb-0 opacity-75">Envía este enlace a tus empleados para que creen su cuenta y gestionen su agenda.</p>
+            </div>
+            <div class="bg-white rounded-pill p-1 d-flex align-items-center shadow-sm" style="max-width: 450px; width: 100%;">
+                <input type="text" value="{{ request.scheme }}://{{ request.get_host }}{% url 'register' %}?invite={{ salon.invite_token }}" 
+                       class="form-control border-0 rounded-pill ps-3 text-dark" 
+                       id="inviteLink" readonly style="background: transparent;">
+                <button onclick="copiarLink()" class="btn btn-dark rounded-pill px-4 fw-bold">
+                    Copiar Link
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="col-md-9">
-        <h2 class="mb-4">Panel de Control</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card text-white bg-primary h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Citas Hoy</h5>
-                        <p class="card-text display-6">0</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-success h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Ingresos Hoy</h5>
-                        <p class="card-text display-6">$0</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-info h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Empleados</h5>
-                        <p class="card-text display-6">{{ salon.employees.count }}</p>
-                    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold text-primary mb-0">{{ salon.employees.count }}</h1>
+                    <p class="text-muted">Colaboradores</p>
                 </div>
             </div>
         </div>
-
-        <div class="mt-5 text-center text-muted">
-            <i class="bi bi-calendar-check" style="font-size: 3rem;"></i>
-            <p class="mt-3">Aquí aparecerán tus próximas reservas.</p>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold text-success mb-0">{{ salon.bookings.count }}</h1>
+                    <p class="text-muted">Reservas</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    function copiarLink() {
+        var copyText = document.getElementById("inviteLink");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(copyText.value);
+        alert("¡Enlace copiado! Compártelo por WhatsApp.");
+    }
+</script>
 {% endblock %}
