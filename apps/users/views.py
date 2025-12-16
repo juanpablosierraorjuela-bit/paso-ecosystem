@@ -4,7 +4,7 @@ from django.contrib.auth import login
 from django.core.exceptions import ObjectDoesNotExist
 import logging
 
-# Configurar logger para ver errores en Render
+# Logger para monitoreo en Render
 logger = logging.getLogger(__name__)
 
 from apps.businesses.models import Salon, Employee, Booking
@@ -14,7 +14,6 @@ from .forms import CustomUserCreationForm
 def home(request):
     """Página de inicio"""
     try:
-        # Usamos list() para forzar la consulta y evitar errores en el template
         salons = list(Salon.objects.all().order_by('-id'))
     except Exception as e:
         logger.error(f"Error cargando Home: {e}")
@@ -22,6 +21,7 @@ def home(request):
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
+    """Registro con redirección inteligente según el Rol"""
     if request.user.is_authenticated:
         return redirect('dashboard')
     
@@ -29,7 +29,9 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Iniciar sesión automáticamente
             login(request, user)
+            # El dashboard se encargará de redirigir según el rol elegido
             return redirect('dashboard')
     else:
         form = CustomUserCreationForm()
@@ -38,41 +40,51 @@ def register(request):
 @login_required
 def dashboard_view(request):
     """
-    Panel Unificado BLINDADO.
-    Usa list() para capturar errores de BD antes de renderizar.
+    CONTROLADOR DE TRÁFICO CENTRAL
+    Redirige a cada usuario a su panel correspondiente según su ROL.
     """
     user = request.user
 
-    # 1. INTENTO DE DETECTAR EMPLEADO
-    try:
-        # Forzamos la evaluación de la relación inversa
-        if hasattr(user, 'employee') and user.employee:
-            return redirect('employee_settings')
-    except Exception as e:
-        logger.warning(f"Usuario {user.id} no es empleado o falló la consulta: {e}")
+    # --- CASO 1: COLABORADOR / EMPLEADO ---
+    if user.role == 'EMPLOYEE':
+        try:
+            # Verificamos si ya está vinculado a un salón (tiene perfil Employee)
+            if hasattr(user, 'employee') and user.employee:
+                return redirect('employee_settings') # Panel de Empleado (Horarios/Telegram)
+            else:
+                # Se registró como empleado pero aún no tiene jefe/salón
+                return redirect('employee_join') # Pantalla de "Unirse a un Equipo"
+        except Exception as e:
+            logger.error(f"Error en dashboard empleado: {e}")
+            return redirect('employee_join')
 
-    # 2. INTENTO DE DETECTAR DUEÑO
-    try:
-        is_owner = getattr(user, 'role', '') == 'ADMIN' or getattr(user, 'is_business_owner', False)
-        if is_owner:
+    # --- CASO 2: DUEÑO (ADMIN) ---
+    if user.role == 'ADMIN' or getattr(user, 'is_business_owner', False):
+        try:
             salon = Salon.objects.filter(owner=user).first()
             if not salon:
-                return redirect('create_salon')
-            return render(request, 'dashboard/index.html', {'salon': salon})
-    except Exception as e:
-        logger.error(f"Error verificando dueño para {user.id}: {e}")
-        # Si falla, seguimos para intentar mostrar panel de cliente
+                return redirect('create_salon') # Debe crear su negocio
+            return render(request, 'dashboard/index.html', {'salon': salon}) # Panel de Dueño
+        except Exception as e:
+            logger.error(f"Error en dashboard dueño: {e}")
 
-    # 3. PANEL DE CLIENTE (Fallback seguro)
+    # --- CASO 3: CLIENTE (CUSTOMER) ---
+    # Si es Customer o cualquier otro rol no definido, va al panel de cliente
     bookings = []
     try:
-        # CRÍTICO: Usamos list() para que si la tabla Booking está rota, falle AQUI y no en el HTML
         bookings = list(Booking.objects.filter(customer=user).order_by('-start_time'))
     except Exception as e:
-        logger.error(f"Error crítico obteniendo reservas (posible error de migración): {e}")
-        bookings = [] # Mostramos lista vacía para no romper la página
+        logger.error(f"Error cargando reservas de cliente: {e}")
+        bookings = []
 
     return render(request, 'dashboard/client_dashboard.html', {'bookings': bookings})
+
+@login_required
+def employee_join_view(request):
+    """Vista para colaboradores nuevos que buscan unirse a un salón"""
+    # Aquí podrías agregar lógica para buscar salón o ingresar un código
+    # Por ahora renderizamos la plantilla estática que ya tienes
+    return render(request, 'registration/employee_join.html')
 
 @login_required
 def create_salon_view(request):
