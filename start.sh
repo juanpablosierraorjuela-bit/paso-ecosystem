@@ -3,13 +3,16 @@
 # Detener el script si hay algún error
 set -e
 
+echo "--- 0. Creando Migraciones (Si hay cambios en Modelos) ---"
+# Esto generará los archivos de migración necesarios para los nuevos campos
+python manage.py makemigrations --noinput
+
 echo "--- 1. Aplicando Migraciones de Base de Datos ---"
-# Esto crea las tablas en la base de datos de Render automáticamente
+# Esto aplica los cambios a la base de datos real
 python manage.py migrate --noinput
 
-echo "--- 2. Recolectando Archivos Estáticos (Por seguridad) ---"
+echo "--- 2. Recolectando Archivos Estáticos ---"
 python manage.py collectstatic --noinput
 
 echo "--- 3. Iniciando Servidor Gunicorn ---"
-# Inicia la aplicación web en el puerto que Render espera
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
