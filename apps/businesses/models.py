@@ -1,116 +1,128 @@
-﻿from django import forms
-from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
+﻿from django.db import models
+from django.conf import settings
+from django.utils import timezone
+import datetime
 
-class SalonCreateForm(forms.ModelForm):
+# --- MODELO SALON ---
+class Salon(models.Model):
+    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salon')
+    name = models.CharField(max_length=200, verbose_name="Nombre del Negocio")
+    slug = models.SlugField(unique=True, blank=True)
+    description = models.TextField(blank=True, verbose_name="Descripción")
+    
+    # Ubicación
+    city = models.CharField(max_length=100, verbose_name="Ciudad")
+    address = models.CharField(max_length=255, verbose_name="Dirección")
+    phone = models.CharField(max_length=20, verbose_name="Teléfono")
+    
+    # Coordenadas
+    latitude = models.FloatField(default=0.0, blank=True)
+    longitude = models.FloatField(default=0.0, blank=True)
+
+    # Imágenes
+    logo = models.ImageField(upload_to='salons/logos/', blank=True, null=True)
+    banner = models.ImageField(upload_to='salons/banners/', blank=True, null=True)
+
+    # Redes Sociales
+    instagram = models.URLField(blank=True)
+    facebook = models.URLField(blank=True)
+    tiktok = models.URLField(blank=True)
+
+    # Integraciones (Configuración Global del Salón)
+    bold_api_key = models.CharField(max_length=255, blank=True)
+    bold_signing_key = models.CharField(max_length=255, blank=True)
+    telegram_bot_token = models.CharField(max_length=255, blank=True)
+    telegram_chat_id = models.CharField(max_length=255, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_open(self):
+        """
+        Calcula si el negocio está abierto AHORA MISMO en hora de Colombia.
+        """
+        now = timezone.localtime(timezone.now())
+        current_day = now.weekday()
+        current_time = now.time()
+
+        try:
+            today_schedule = self.opening_hours.get(weekday=current_day)
+            if today_schedule.is_closed:
+                return False
+            return today_schedule.from_hour <= current_time <= today_schedule.to_hour
+        except:
+            return False
+
+    def __str__(self):
+        return self.name
+
+# --- MODELO SERVICIOS ---
+class Service(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
+    name = models.CharField(max_length=100)
+    duration_minutes = models.PositiveIntegerField(default=30)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.name} - ${self.price}"
+
+# --- MODELO EMPLEADOS ---
+class Employee(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    
+    # Horario de Almuerzo
+    lunch_start = models.TimeField(default=datetime.time(12, 0))
+    lunch_end = models.TimeField(default=datetime.time(13, 0))
+
+    # Integraciones Específicas del Empleado
+    bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
+    bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
+    telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
+    telegram_chat_id = models.CharField(max_length=255, blank=True, verbose_name="Telegram Chat ID")
+
+    def __str__(self):
+        return self.name
+
+# --- HORARIOS DE APERTURA ---
+class OpeningHours(models.Model):
+    WEEKDAYS = [
+        (0, "Lunes"), (1, "Martes"), (2, "Miércoles"), (3, "Jueves"),
+        (4, "Viernes"), (5, "Sábado"), (6, "Domingo"),
+    ]
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='opening_hours')
+    weekday = models.IntegerField(choices=WEEKDAYS)
+    from_hour = models.TimeField()
+    to_hour = models.TimeField()
+    is_closed = models.BooleanField(default=False)
+
     class Meta:
-        model = Salon
-        fields = [
-            'name', 'slug', 'description', 'city', 'address', 'phone', 
-            'latitude', 'longitude', 
-            'logo', 'banner',
-            'instagram', 'facebook', 'tiktok',
-            'bold_api_key', 'bold_signing_key', 
-            'telegram_bot_token', 'telegram_chat_id'
-        ]
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Peluquería Estilo'}),
-            'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'identificador-unico-sin-espacios'}),
-            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Tunja'}),
-            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Cra 10 # 20-30'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '310 123 4567'}),
-            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': '0.0'}),
-            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': '0.0'}),
-            'instagram': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/...'}),
-            'facebook': forms.URLInput(attrs={'class': 'form-control'}),
-            'tiktok': forms.URLInput(attrs={'class': 'form-control'}),
-            'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
-            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}),
-            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}),
-            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'}),
-        }
+        ordering = ('weekday', 'from_hour')
+        unique_together = ('salon', 'weekday')
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Campos opcionales
-        optional_fields = [
-            'slug', 'latitude', 'longitude', 'logo', 'banner',
-            'instagram', 'facebook', 'tiktok', 
-            'bold_api_key', 'bold_signing_key', 
-            'telegram_bot_token', 'telegram_chat_id'
-        ]
-        for field in optional_fields:
-            if field in self.fields:
-                self.fields[field].required = False
+# --- RESERVAS ---
+class Booking(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
+    customer_name = models.CharField(max_length=100)
+    customer_phone = models.CharField(max_length=20)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    status = models.CharField(max_length=20, default='confirmed')
 
-class ServiceForm(forms.ModelForm):
-    class Meta:
-        model = Service
-        fields = ['name', 'duration_minutes', 'price']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Corte de Cabello'}),
-            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '25000'}),
-        }
-
-class OpeningHoursForm(forms.ModelForm):
-    class Meta:
-        model = OpeningHours
-        fields = ['weekday', 'from_hour', 'to_hour', 'is_closed']
-        widgets = {
-            'weekday': forms.Select(attrs={'class': 'form-select'}),
-            'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-
-class BookingForm(forms.ModelForm):
-    employee = forms.ModelChoiceField(
-        queryset=Employee.objects.none(),
-        required=False,
-        label="¿Prefieres a alguien?",
-        empty_label="Cualquiera (El sistema asignará al mejor)",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-
-    class Meta:
-        model = Booking
-        fields = ['employee', 'customer_name', 'customer_phone', 'start_time']
-        widgets = {
-            'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu nombre'}),
-            'customer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu celular'}),
-            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        service = kwargs.pop('service', None)
-        super().__init__(*args, **kwargs)
-        if service:
-            self.fields['employee'].queryset = service.salon.employees.all()
-
-class EmployeeSettingsForm(forms.ModelForm):
-    """
-    Formulario de Configuración del Empleado (COMPLETO)
-    """
-    class Meta:
-        model = Employee
-        fields = ['lunch_start', 'lunch_end', 'bold_api_key', 'bold_signing_key', 'telegram_bot_token', 'telegram_chat_id']
-        widgets = {
-            'lunch_start': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'lunch_end': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'bold_api_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Identity Key'}),
-            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Secret Key'}),
-            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Token del Bot'}),
-            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ID de Chat'}),
-        }
-
-class EmployeeScheduleForm(forms.ModelForm):
-    class Meta:
-        model = EmployeeSchedule
-        fields = ['weekday', 'from_hour', 'to_hour', 'is_closed']
-        widgets = {
-            'weekday': forms.Select(attrs={'class': 'form-select'}),
-            'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+# --- HORARIOS DE EMPLEADOS ---
+class EmployeeSchedule(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='schedules')
+    weekday = models.IntegerField(choices=OpeningHours.WEEKDAYS)
+    from_hour = models.TimeField()
+    to_hour = models.TimeField()
+    is_closed = models.BooleanField(default=False)
