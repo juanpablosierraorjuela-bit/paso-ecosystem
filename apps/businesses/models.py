@@ -34,7 +34,8 @@ class Salon(models.Model):
     telegram_bot_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    # CORRECCIÓN PARA MIGRACIÓN: Usamos timezone.now como default para registros antiguos
+    created_at = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -70,12 +71,12 @@ class Service(models.Model):
     def __str__(self):
         return f"{self.name} - ${self.price}"
 
-# --- MODELO EMPLEADOS (CORREGIDO PARA MIGRACIÓN) ---
+# --- MODELO EMPLEADOS ---
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     
-    # Agregamos default="Empleado" para evitar error de migración en registros antiguos
+    # Defaults para migración
     name = models.CharField(max_length=100, default="Empleado")
     phone = models.CharField(max_length=20, default="")
     
