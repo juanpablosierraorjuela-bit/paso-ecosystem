@@ -5,4 +5,4 @@ requests
 gunicorn
 whitenoise
 dj_database_url
-Pillow  
+Pillow

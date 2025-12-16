@@ -1,56 +1,29 @@
 from pathlib import Path
 import os
 import dj_database_url
-import sys
 
-# ==========================================
-# 1. CONFIGURACIÓN BASE Y DIRECTORIOS
-# ==========================================
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-# Estamos en config/settings/base.py, así que subimos 3 niveles para llegar a la raíz.
+# Directorio Base
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# ==========================================
-# 2. SEGURIDAD Y ENTORNO
-# ==========================================
+# --- SEGURIDAD ---
+# En producción, usa la clave de Render. En local, usa una por defecto.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-secreta-para-desarrollo-paso')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo-paso-beauty')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-# Si la variable RENDER existe, DEBUG se apaga automáticamente.
+# DEBUG: Falso en Render (Producción), Verdadero en tu PC
 DEBUG = 'RENDER' not in os.environ
 
-# ALLOWED_HOSTS
-ALLOWED_HOSTS = ['*']
-
+# HOSTS PERMITIDOS
+ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# También permitimos localhost para cuando trabajes en tu PC
+ALLOWED_HOSTS.append('localhost')
+ALLOWED_HOSTS.append('127.0.0.1')
+ALLOWED_HOSTS.append('0.0.0.0')
 
 
-# --- CORRECCIONES CRÍTICAS PARA RENDER ---
-
-# 1. Confiar en los orígenes de Render (Wildcard para cualquier subdominio)
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
-]
-
-# 2. Decirle a Django que confíe en el encabezado HTTPS del proxy de Render
-# VITAL: Sin esto, Django cree que la conexión es insegura y bloquea formularios (Error 403).
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# 3. Configuraciones de cookies en Producción
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-
-# ==========================================
-# 3. APLICACIONES INSTALADAS
-# ==========================================
-
+# APLICACIONES INSTALADAS
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -59,18 +32,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Mis Aplicaciones
+    # MIS APPS
     'apps.users',
     'apps.businesses',
 ]
 
-# ==========================================
-# 4. MIDDLEWARE
-# ==========================================
-
+# MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- VITAL: Manejo de estáticos
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- VITAL: Estilos en la nube
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,14 +51,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
-# ==========================================
-# 5. PLANTILLAS (TEMPLATES)
-# ==========================================
-
+# PLANTILLAS (HTML)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Busca en la carpeta templates en la raíz
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -103,70 +70,53 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# ==========================================
-# 6. BASE DE DATOS
-# ==========================================
+# --- BASE DE DATOS ROBUSTA ---
+# Lógica: Intenta leer la de Render. Si no existe, usa la local.
+DB_RENDER = os.environ.get('DATABASE_URL')
+DB_LOCAL = 'postgresql://paso_user:paso_password@db:5432/paso_beauty_db'
 
-# Usa la base de datos de Render si está disponible, si no, usa SQLite local.
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
+        default=DB_RENDER or DB_LOCAL,
         conn_max_age=600,
-        ssl_require=not DEBUG  # Requiere SSL en producción
+        ssl_require='RENDER' in os.environ # Solo exige SSL en la nube
     )
 }
 
-# ==========================================
-# 7. VALIDACIÓN DE PASSWORD & USUARIO
-# ==========================================
-
+# VALIDACIÓN DE CONTRASEÑAS
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-AUTH_USER_MODEL = 'users.User'
-
-# ==========================================
-# 8. IDIOMA Y ZONA HORARIA
-# ==========================================
-
+# IDIOMA Y ZONA HORARIA
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
-# ==========================================
-# 9. ARCHIVOS ESTÁTICOS (SOLUCIÓN PANTALLA BLANCA)
-# ==========================================
-
-STATIC_URL = '/static/'
+# --- ARCHIVOS ESTÁTICOS (CSS/Imágenes) ---
+STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Configuración WhiteNoise
+# Almacenamiento eficiente con compresión para Render
 if not DEBUG:
-    # Usamos CompressedStaticFilesStorage en lugar de Manifest...
-    # Esto evita que la página se rompa si falta algún archivo referenciado.
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-else:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# ==========================================
-# 10. OTRAS CONFIGURACIONES
-# ==========================================
-
+# CONFIGURACIÓN DE USUARIO
+AUTH_USER_MODEL = 'users.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# VARIABLES DE ENTORNO (Integraciones)
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+BOLD_SECRET_KEY = os.environ.get('BOLD_SECRET_KEY', '')
+
+# REDIRECCIÓN DE AUTENTICACIÓN
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
-LOGIN_URL = 'login'
-
-# Variables de entorno opcionales
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-BOLD_SECRET_KEY = os.environ.get('BOLD_SECRET_KEY')
