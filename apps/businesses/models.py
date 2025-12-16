@@ -1,27 +1,39 @@
-﻿from django.db import models
+﻿import uuid # <--- IMPORTANTE: Agregar esta línea al inicio
+from django.db import models
 from django.conf import settings
 from django.utils import timezone
 import datetime
 
+# --- MODELO SALON ---
 class Salon(models.Model):
     owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salon')
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, verbose_name="Nombre del Negocio")
     slug = models.SlugField(unique=True, blank=True)
-    description = models.TextField(blank=True)
-    city = models.CharField(max_length=100)
-    address = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20)
+    description = models.TextField(blank=True, verbose_name="Descripción")
+    
+    # TOKEN DE INVITACIÓN (NUEVO)
+    # Genera un código único automáticamente (ej: a1b2-c3d4...)
+    invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    city = models.CharField(max_length=100, verbose_name="Ciudad")
+    address = models.CharField(max_length=255, verbose_name="Dirección")
+    phone = models.CharField(max_length=20, verbose_name="Teléfono")
+    
     latitude = models.FloatField(default=0.0, blank=True)
     longitude = models.FloatField(default=0.0, blank=True)
+
     logo = models.ImageField(upload_to='salons/logos/', blank=True, null=True)
     banner = models.ImageField(upload_to='salons/banners/', blank=True, null=True)
+
     instagram = models.URLField(blank=True)
     facebook = models.URLField(blank=True)
     tiktok = models.URLField(blank=True)
+
     bold_api_key = models.CharField(max_length=255, blank=True)
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
+
     created_at = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
@@ -37,48 +49,66 @@ class Salon(models.Model):
         current_time = now.time()
         try:
             today_schedule = self.opening_hours.get(weekday=current_day)
-            if today_schedule.is_closed: return False
+            if today_schedule.is_closed:
+                return False
             return today_schedule.from_hour <= current_time <= today_schedule.to_hour
-        except: return False
+        except:
+            return False
 
-    def __str__(self): return self.name
+    def __str__(self):
+        return self.name
 
+# --- MODELO SERVICIOS ---
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100)
     duration_minutes = models.PositiveIntegerField(default=30)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    def __str__(self): return f"{self.name} - ${self.price}"
 
+    def __str__(self):
+        return f"{self.name} - ${self.price}"
+
+# --- MODELO EMPLEADOS ---
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
-    # ESTO ES CRÍTICO: related_name='employee' permite llamar user.employee
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='employee')
+    
     name = models.CharField(max_length=100, default="Empleado")
     phone = models.CharField(max_length=20, default="")
+    
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
-    bold_api_key = models.CharField(max_length=255, blank=True)
-    bold_signing_key = models.CharField(max_length=255, blank=True)
-    telegram_bot_token = models.CharField(max_length=255, blank=True)
-    telegram_chat_id = models.CharField(max_length=255, blank=True)
-    def __str__(self): return self.name
 
+    bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
+    bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
+    telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
+    telegram_chat_id = models.CharField(max_length=255, blank=True, verbose_name="Telegram Chat ID")
+
+    def __str__(self):
+        return self.name
+
+# --- HORARIOS ---
 class OpeningHours(models.Model):
-    WEEKDAYS = [(0, "Lunes"), (1, "Martes"), (2, "Miércoles"), (3, "Jueves"), (4, "Viernes"), (5, "Sábado"), (6, "Domingo")]
+    WEEKDAYS = [
+        (0, "Lunes"), (1, "Martes"), (2, "Miércoles"), (3, "Jueves"),
+        (4, "Viernes"), (5, "Sábado"), (6, "Domingo"),
+    ]
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='opening_hours')
     weekday = models.IntegerField(choices=WEEKDAYS)
     from_hour = models.TimeField()
     to_hour = models.TimeField()
     is_closed = models.BooleanField(default=False)
-    class Meta: ordering = ('weekday', 'from_hour'); unique_together = ('salon', 'weekday')
 
+    class Meta:
+        ordering = ('weekday', 'from_hour')
+        unique_together = ('salon', 'weekday')
+
+# --- RESERVAS ---
 class Booking(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='my_bookings')
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
-    # Campo cliente con related_name para historial
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='my_bookings')
     customer_name = models.CharField(max_length=100)
     customer_phone = models.CharField(max_length=20)
     start_time = models.DateTimeField()
