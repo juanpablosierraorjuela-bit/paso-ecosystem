@@ -1,48 +1,61 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login
 
-# --- CORRECCIÓN DE IMPORTACIONES ---
-# Antes buscaba en .models (users), ahora busca en la app correcta (businesses)
+# --- IMPORTACIONES CORRECTAS ---
+# Modelos de Negocio (desde apps.businesses)
 from apps.businesses.models import Salon
 from apps.businesses.forms import SalonCreateForm
+# Formularios de Usuario (Registro)
+from .forms import CustomUserCreationForm
 
 def home(request):
-    """Muestra la lista de salones en la página de inicio"""
-    # Filtramos solo los que tengan datos básicos para no mostrar vacíos
+    """Página de inicio: Muestra los salones disponibles"""
     salons = Salon.objects.all().order_by('-id')
     return render(request, 'home.html', {'salons': salons})
+
+def register(request):
+    """Vista de Registro de Usuarios (Clientes y Dueños)"""
+    # Si ya está logueado, lo mandamos al dashboard
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Iniciar sesión automáticamente tras el registro
+            login(request, user)
+            return redirect('dashboard')
+    else:
+        form = CustomUserCreationForm()
+    
+    return render(request, 'registration/register.html', {'form': form})
 
 @login_required
 def dashboard_view(request):
     """
-    Controlador de tráfico:
-    1. ¿Es dueño? -> ¿Tiene salón? -> Si no, mandar a crear. Si sí, mostrar panel.
-    2. ¿Es empleado? -> Mostrar panel de empleado.
+    Panel de Control Principal:
+    - Dueños: Ven su salón o formulario para crearlo.
+    - Empleados/Clientes: Ven su panel correspondiente.
     """
     user = request.user
-
-    # Verificamos si es dueño (ADMIN) o tiene el flag is_business_owner
-    # Usamos getattr para evitar errores si el campo aún no existe en la BD
+    
+    # Lógica para determinar si es dueño (ADMIN)
     is_owner = getattr(user, 'role', '') == 'ADMIN' or getattr(user, 'is_business_owner', False)
 
     if is_owner:
-        # Buscamos si este usuario ya tiene un salón registrado
         salon = Salon.objects.filter(owner=user).first()
-        
         if not salon:
-            # SI ES DUEÑO PERO NO TIENE SALÓN -> REDIRIGIR A CREARLO
             return redirect('create_salon')
-        
-        # SI YA TIENE SALÓN -> MOSTRAR DASHBOARD DE NEGOCIO
         return render(request, 'dashboard/index.html', {'salon': salon})
 
-    # Caso 2: Empleado o Cliente (pendiente de implementar lógica completa)
+    # Lógica para Empleados/Clientes
     return render(request, 'dashboard/employee_dashboard.html')
 
 @login_required
 def create_salon_view(request):
-    """Vista para que el dueño registre su peluquería por primera vez"""
-    # Si ya tiene salón, lo sacamos de aquí para evitar duplicados
+    """Formulario para que un dueño registre su negocio"""
     if Salon.objects.filter(owner=request.user).exists():
         return redirect('dashboard')
 
@@ -59,6 +72,6 @@ def create_salon_view(request):
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
 def salon_detail(request, slug):
-    """Vista pública del perfil del salón"""
+    """Perfil público del salón"""
     salon = get_object_or_404(Salon, slug=slug)
     return render(request, 'salon_detail.html', {'salon': salon})
