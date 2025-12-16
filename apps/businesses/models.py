@@ -11,7 +11,7 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # CORRECCIÓN DE EMERGENCIA: null=True para permitir migración en BD existente
+    # SOLUCIÓN ERROR 500: 'null=True' permite que la BD se actualice sin borrar datos
     invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
 
     city = models.CharField(max_length=100, verbose_name="Ciudad")
@@ -39,7 +39,7 @@ class Salon(models.Model):
         if not self.slug:
             from django.utils.text import slugify
             self.slug = slugify(self.name)
-        # Asegurar que siempre haya token aunque venga vacío
+        # Generar token si no existe
         if not self.invite_token:
             self.invite_token = uuid.uuid4()
         super().save(*args, **kwargs)
@@ -81,10 +81,10 @@ class Employee(models.Model):
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
 
-    bold_api_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Identity Key")
-    bold_signing_key = models.CharField(max_length=255, blank=True, verbose_name="Bold Secret Key")
-    telegram_bot_token = models.CharField(max_length=255, blank=True, verbose_name="Telegram Bot Token")
-    telegram_chat_id = models.CharField(max_length=255, blank=True, verbose_name="Telegram Chat ID")
+    bold_api_key = models.CharField(max_length=255, blank=True)
+    bold_signing_key = models.CharField(max_length=255, blank=True)
+    telegram_bot_token = models.CharField(max_length=255, blank=True)
+    telegram_chat_id = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return self.name
