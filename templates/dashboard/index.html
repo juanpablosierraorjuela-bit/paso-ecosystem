@@ -12,17 +12,17 @@
         </a>
     </div>
 
-    <div class="card border-0 shadow-sm mb-4 bg-primary text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card border-0 shadow-sm mb-4 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         <div class="card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <h4 class="fw-bold mb-1"><i class="bi bi-person-plus-fill me-2"></i> Invita a tu Equipo</h4>
-                <p class="mb-0 opacity-75">Envía este enlace a tus colaboradores para que se unan a tu agenda.</p>
+                <h4 class="fw-bold mb-1"><i class="bi bi-people-fill me-2"></i> Invita a tu Equipo</h4>
+                <p class="mb-0 opacity-75">Envía este enlace a tus empleados para que se unan.</p>
             </div>
-            <div class="bg-white rounded-pill p-1 d-flex align-items-center" style="max-width: 400px; width: 100%;">
+            <div class="bg-white rounded-pill p-1 d-flex align-items-center shadow-sm" style="max-width: 400px; width: 100%;">
                 <input type="text" value="{{ request.scheme }}://{{ request.get_host }}{% url 'register' %}?invite={{ salon.invite_token }}" 
-                       class="form-control border-0 rounded-pill ps-3 bg-transparent text-dark" 
-                       id="inviteLink" readonly>
-                <button onclick="copiarLink()" class="btn btn-primary rounded-pill px-4 fw-bold">
+                       class="form-control border-0 rounded-pill ps-3 text-dark" 
+                       id="inviteLink" readonly style="background: transparent;">
+                <button onclick="copiarLink()" class="btn btn-dark rounded-pill px-4 fw-bold">
                     Copiar
                 </button>
             </div>
@@ -42,14 +42,14 @@
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body text-center">
                     <h1 class="display-4 fw-bold text-success mb-0">{{ salon.bookings.count }}</h1>
-                    <p class="text-muted">Reservas Totales</p>
+                    <p class="text-muted">Reservas</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body text-center">
-                    <h1 class="display-4 fw-bold text-info mb-0">4.9</h1>
+                    <h1 class="display-4 fw-bold text-warning mb-0">★ 5.0</h1>
                     <p class="text-muted">Calificación</p>
                 </div>
             </div>
@@ -60,28 +60,28 @@
         <div class="col-md-6">
             <a href="{% url 'salon_settings' %}" class="card shadow-sm border-0 text-decoration-none h-100 hover-card">
                 <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-square bg-light text-primary rounded-circle p-3 me-3">
-                        <i class="bi bi-calendar-week fs-3"></i>
+                    <div class="bg-light text-primary rounded-circle p-3 me-3">
+                        <i class="bi bi-clock-history fs-3"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold text-dark mb-1">Gestionar Horarios</h5>
-                        <p class="text-muted small mb-0">Define cuándo está abierto tu negocio.</p>
+                        <h5 class="fw-bold text-dark mb-1">Horarios</h5>
+                        <p class="text-muted small mb-0">Gestiona apertura y cierre.</p>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-md-6">
-            <a href="#" class="card shadow-sm border-0 text-decoration-none h-100 hover-card">
+            <div class="card shadow-sm border-0 text-decoration-none h-100 opacity-75">
                 <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-square bg-light text-success rounded-circle p-3 me-3">
+                    <div class="bg-light text-secondary rounded-circle p-3 me-3">
                         <i class="bi bi-scissors fs-3"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold text-dark mb-1">Servicios y Precios</h5>
-                        <p class="text-muted small mb-0">Agrega cortes, tintes y más.</p>
+                        <h5 class="fw-bold text-dark mb-1">Servicios (Pronto)</h5>
+                        <p class="text-muted small mb-0">Gestión de catálogo.</p>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
     </div>
 </div>
@@ -92,11 +92,11 @@
         copyText.select();
         copyText.setSelectionRange(0, 99999); 
         navigator.clipboard.writeText(copyText.value);
-        alert("¡Enlace copiado! Envíalo a tu equipo.");
+        alert("¡Enlace copiado al portapapeles!");
     }
 </script>
 
 <style>
-    .hover-card:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
+    .hover-card:hover { transform: translateY(-5px); transition: transform 0.2s; }
 </style>
 {% endblock %}

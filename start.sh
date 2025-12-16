@@ -2,7 +2,7 @@
 set -e
 
 echo "--- 0. Reparando Migraciones ---"
-# Forzamos deteccion de cambios (invite_token nullable)
+# Forzamos creación de migraciones para detectar el nuevo campo invite_token
 python manage.py makemigrations businesses users --noinput
 python manage.py makemigrations --noinput
 

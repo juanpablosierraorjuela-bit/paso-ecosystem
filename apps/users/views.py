@@ -4,7 +4,6 @@ from django.contrib.auth import login
 from django.core.exceptions import ObjectDoesNotExist
 import logging
 
-# Logger para depuración (Mira esto en los logs de Render si algo falla)
 logger = logging.getLogger(__name__)
 
 from apps.businesses.models import Salon, Employee, Booking
@@ -13,76 +12,75 @@ from .forms import CustomUserCreationForm
 
 def home(request):
     try:
+        # Usamos list() para forzar la consulta y detectar errores aquí
         salons = list(Salon.objects.all().order_by('-id'))
     except Exception as e:
-        logger.error(f"Error cargando Home: {e}")
+        logger.error(f"Error Home: {e}")
         salons = []
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
-    """Registro con soporte para invitaciones"""
     if request.user.is_authenticated:
         return redirect('dashboard')
     
+    # 1. Detectar Invitación
     invite_token = request.GET.get('invite') or request.POST.get('invite_token')
     inviting_salon = None
     
     if invite_token:
         try:
             inviting_salon = Salon.objects.get(invite_token=invite_token)
-        except:
-            pass
+        except Exception:
+            pass # Token inválido, registro normal
 
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             
-            # LÓGICA DE ROLES EN REGISTRO
+            # Si hay invitación, forzamos rol EMPLEADO y vinculamos
             if inviting_salon:
                 user.role = 'EMPLOYEE'
                 user.save()
                 Employee.objects.create(
-                    user=user, salon=inviting_salon, 
-                    name=f"{user.first_name} {user.last_name}", phone=user.phone
+                    user=user,
+                    salon=inviting_salon,
+                    name=f"{user.first_name} {user.last_name}",
+                    phone=user.phone
                 )
             else:
-                # Guardamos el rol seleccionado en el formulario
                 user.save()
 
             login(request, user)
             return redirect('dashboard')
     else:
         initial_data = {}
-        if inviting_salon: initial_data = {'role': 'EMPLOYEE'}
+        if inviting_salon:
+            initial_data = {'role': 'EMPLOYEE'}
         form = CustomUserCreationForm(initial=initial_data)
 
     return render(request, 'registration/register.html', {
-        'form': form, 'inviting_salon': inviting_salon
+        'form': form, 
+        'inviting_salon': inviting_salon
     })
 
 @login_required
 def dashboard_view(request):
-    """
-    DASHBOARD UNIFICADO E INTELIGENTE
-    """
+    """Redirección estricta por rol"""
     user = request.user
-    role = getattr(user, 'role', 'CUSTOMER')
-    
-    # CHIVATO: Esto imprimirá en los logs de Render qué rol tiene el usuario
-    logger.info(f"Usuario: {user.username} | Rol detectado: {role}")
+    # Si no tiene rol, asumimos CUSTOMER
+    role = getattr(user, 'role', 'CUSTOMER') 
 
-    # --- ROL DE EMPLEADO ---
+    # --- ROL EMPLEADO ---
     if role == 'EMPLOYEE':
         try:
             if hasattr(user, 'employee') and user.employee:
                 return redirect('employee_settings')
-            else:
-                return redirect('employee_join')
+            return redirect('employee_join')
         except:
             return redirect('employee_join')
 
-    # --- ROL DE DUEÑO (Soporta 'ADMIN' y 'OWNER') ---
+    # --- ROL DUEÑO (ADMIN/OWNER) ---
     elif role in ['ADMIN', 'OWNER'] or getattr(user, 'is_business_owner', False):
         try:
             salon = Salon.objects.filter(owner=user).first()
@@ -90,9 +88,10 @@ def dashboard_view(request):
                 return redirect('create_salon')
             return render(request, 'dashboard/index.html', {'salon': salon})
         except:
+            # Si falla la BD, enviar a crear para intentar recuperar
             return redirect('create_salon')
 
-    # --- ROL DE CLIENTE (Por defecto) ---
+    # --- ROL CLIENTE (Default) ---
     else:
         bookings = []
         try:

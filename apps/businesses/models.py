@@ -11,7 +11,7 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # SOLUCIÓN ERROR 500: 'null=True' permite que la BD se actualice sin borrar datos
+    # CORRECCIÓN CRÍTICA: null=True permite reparar la base de datos sin borrar nada
     invite_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
 
     city = models.CharField(max_length=100, verbose_name="Ciudad")
@@ -28,6 +28,7 @@ class Salon(models.Model):
     facebook = models.URLField(blank=True)
     tiktok = models.URLField(blank=True)
 
+    # Integraciones
     bold_api_key = models.CharField(max_length=255, blank=True)
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
@@ -39,7 +40,7 @@ class Salon(models.Model):
         if not self.slug:
             from django.utils.text import slugify
             self.slug = slugify(self.name)
-        # Generar token si no existe
+        # Generar token automáticamente si falta
         if not self.invite_token:
             self.invite_token = uuid.uuid4()
         super().save(*args, **kwargs)
@@ -108,7 +109,9 @@ class OpeningHours(models.Model):
 # --- RESERVAS ---
 class Booking(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    # Relación con Cliente
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='my_bookings')
+    
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
     customer_name = models.CharField(max_length=100)
