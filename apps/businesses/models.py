@@ -34,7 +34,8 @@ class Salon(models.Model):
     telegram_bot_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
 
-    # CORRECCIÓN PARA MIGRACIÓN: Usamos timezone.now como default para registros antiguos
+    # SOLUCIÓN DEL ERROR DE DESPLIEGUE:
+    # Usamos timezone.now como valor por defecto para que la migración no falle
     created_at = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
@@ -45,17 +46,23 @@ class Salon(models.Model):
 
     @property
     def is_open(self):
-        """Calcula si el negocio está abierto AHORA MISMO en hora de Colombia."""
+        """
+        Lógica Inteligente:
+        Devuelve True si el negocio está abierto AHORA (Hora Colombia).
+        Si no tiene horario configurado, devuelve False.
+        """
         now = timezone.localtime(timezone.now())
-        current_day = now.weekday()
+        current_day = now.weekday() # 0=Lunes, 6=Domingo
         current_time = now.time()
 
         try:
             today_schedule = self.opening_hours.get(weekday=current_day)
             if today_schedule.is_closed:
                 return False
+            # Verifica si la hora actual está dentro del rango
             return today_schedule.from_hour <= current_time <= today_schedule.to_hour
         except:
+            # Si no ha configurado horarios, asumimos CERRADO (y mostramos botón 24/7)
             return False
 
     def __str__(self):
@@ -76,7 +83,7 @@ class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     
-    # Defaults para migración
+    # SOLUCIÓN DE ERROR: Defaults para evitar problemas de migración
     name = models.CharField(max_length=100, default="Empleado")
     phone = models.CharField(max_length=20, default="")
     
