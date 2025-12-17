@@ -12,7 +12,7 @@ from .models import Salon, OpeningHours, EmployeeSchedule, Employee, Service
 from .forms import (
     SalonCreateForm, OpeningHoursForm, BookingForm, 
     EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm,
-    ServiceForm  # Importamos el nuevo form
+    ServiceForm  # Importante: ahora sí importamos ServiceForm
 )
 # Servicios
 from .services import create_booking_service
@@ -20,7 +20,7 @@ from .utils import notify_new_booking
 
 User = get_user_model()
 
-# --- GESTIÓN DE SERVICIOS (NUEVO) ---
+# --- GESTIÓN DE SERVICIOS (RESTAURADO) ---
 
 @login_required
 def manage_services_view(request):
@@ -86,8 +86,7 @@ def delete_service_view(request, service_id):
         messages.error(request, "Error al eliminar.")
     return redirect('manage_services')
 
-
-# --- GESTIÓN DE EMPLEADOS ---
+# --- FIN GESTIÓN DE SERVICIOS ---
 
 @login_required
 def create_employee_view(request):
@@ -132,8 +131,6 @@ def create_employee_view(request):
 
     return render(request, 'dashboard/create_employee.html', {'form': form, 'salon': salon})
 
-# --- CONFIGURACIÓN SALÓN ---
-
 @login_required
 def salon_settings_view(request):
     salon = get_object_or_404(Salon, owner=request.user)
@@ -157,8 +154,6 @@ def salon_settings_view(request):
         hours_formset = HoursFormSet(queryset=salon.opening_hours.all())
         
     return render(request, 'dashboard/settings.html', {'salon_form': salon_form, 'hours_formset': hours_formset, 'salon': salon})
-
-# --- PANEL EMPLEADO ---
 
 @login_required
 def employee_settings_view(request):
@@ -196,12 +191,8 @@ def employee_settings_view(request):
         'employee': employee
     })
 
-# --- VISTA PÚBLICA (VITRINA) ---
-
 def salon_detail(request, slug):
     salon = get_object_or_404(Salon, slug=slug)
-    
-    # Obtener el servicio seleccionado (si viene por URL o POST)
     service_id = request.POST.get('service') or request.GET.get('service')
     service = None
     if service_id:

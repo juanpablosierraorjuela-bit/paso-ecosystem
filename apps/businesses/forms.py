@@ -2,7 +2,7 @@
 from django.utils import timezone
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
-# --- FORMULARIO DE SERVICIOS (NUEVO) ---
+# --- FORMULARIO DE SERVICIOS (ESTE FALTABA) ---
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service

@@ -15,18 +15,18 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     
-    # DASHBOARD PRINCIPAL
+    # DASHBOARD
     path('dashboard/', user_views.dashboard_view, name='dashboard'),
     path('dashboard/create-salon/', user_views.create_salon_view, name='create_salon'),
     path('dashboard/create-employee/', biz_views.create_employee_view, name='create_employee'),
     
-    # GESTIÓN DE SERVICIOS (NUEVAS RUTAS)
+    # GESTIÓN DE SERVICIOS (ESTAS FALTABAN)
     path('dashboard/services/', biz_views.manage_services_view, name='manage_services'),
     path('dashboard/services/add/', biz_views.add_service_view, name='add_service'),
     path('dashboard/services/edit/<int:service_id>/', biz_views.edit_service_view, name='edit_service'),
     path('dashboard/services/delete/<int:service_id>/', biz_views.delete_service_view, name='delete_service'),
     
-    # CONFIGURACIONES
+    # GESTIÓN DEL NEGOCIO
     path('dashboard/settings/', biz_views.salon_settings_view, name='salon_settings'),
     path('dashboard/employee/settings/', biz_views.employee_settings_view, name='employee_settings'),
     
