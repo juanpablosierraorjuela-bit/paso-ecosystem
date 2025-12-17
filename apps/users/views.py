@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.db import transaction
 from django.contrib import messages
+from django.urls import reverse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,19 +21,11 @@ def home(request):
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
-    """
-    REGISTRO CENTRALIZADO
-    """
-    # 1. Recuperar token
+    """REGISTRO ROBUSTO (NO PIERDE EL TOKEN)"""
+    # 1. Recuperar token (GET o POST)
     invite_token = request.GET.get('invite') or request.POST.get('invite_token')
     
-    # 2. CASO: YA LOGUEADO
-    if request.user.is_authenticated:
-        if invite_token:
-            request.session['pending_invite'] = invite_token
-            return redirect('accept_invite')
-        return redirect('dashboard')
-
+    # Validar salón para mostrar nombre en pantalla
     inviting_salon = None
     if invite_token:
         try:
@@ -41,25 +34,33 @@ def register(request):
         except:
             pass
 
-    # 3. CASO: REGISTRO NUEVO
+    # 2. SI YA ESTÁ LOGUEADO -> Ir directo a aceptar
+    if request.user.is_authenticated:
+        if invite_token:
+            return redirect(f"/accept-invite/?invite={invite_token}")
+        return redirect('dashboard')
+
+    # 3. PROCESAR REGISTRO
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
+            
+            # Si hay invitación, preparamos rol
             if invite_token:
                 user.role = 'EMPLOYEE'
+                
             user.save()
             login(request, user)
 
+            # --- REDIRECCIÓN SEGURA ---
             if invite_token:
-                request.session['pending_invite'] = invite_token
-                return redirect('accept_invite')
+                # Enviamos el token en la URL para que no se pierda
+                return redirect(f"/accept-invite/?invite={invite_token}")
             
             return redirect('dashboard')
     else:
-        initial = {}
-        if inviting_salon:
-            initial = {'role': 'EMPLOYEE'}
+        initial = {'role': 'EMPLOYEE'} if inviting_salon else {}
         form = CustomUserCreationForm(initial=initial)
 
     return render(request, 'registration/register.html', {
@@ -69,13 +70,10 @@ def register(request):
 
 @login_required
 def accept_invite_view(request):
-    """
-    PANTALLA INTERMEDIA: CONFIRMACIÃ“N
-    """
-    token = request.session.get('pending_invite')
-    if not token:
-        token = request.GET.get('invite') # Intento extra
-
+    """VISTA INTERMEDIA: ¡HOLA, ÚNETE!"""
+    # Intentamos recuperar el token de la URL (más seguro) o de la sesión
+    token = request.GET.get('invite') or request.session.get('pending_invite')
+    
     if not token:
         return redirect('dashboard')
 
@@ -87,32 +85,32 @@ def accept_invite_view(request):
         pass
 
     if not salon:
+        messages.error(request, "La invitación no es válida.")
         return redirect('dashboard')
 
     if request.method == 'POST':
+        # --- USUARIO DICE QUE SÍ ---
         try:
             Employee.objects.get_or_create(
                 user=request.user,
                 salon=salon,
                 defaults={
-                    'name': f"{request.user.first_name} {request.user.last_name}" or request.user.username,
+                    'name': f"{request.user.first_name} {request.user.last_name}",
                     'phone': getattr(request.user, 'phone', '')
                 }
             )
             request.user.role = 'EMPLOYEE'
             request.user.save()
             
-            if 'pending_invite' in request.session:
-                del request.session['pending_invite']
-                
-            messages.success(request, f"Â¡Bienvenido a {salon.name}!")
-            return redirect('employee_settings')
+            messages.success(request, f"¡Bienvenido a {salon.name}!")
+            return redirect('employee_settings') # ---> AL PANEL
             
         except Exception as e:
-            logger.error(f"Error aceptando: {e}")
+            logger.error(f"Error uniendo: {e}")
+            messages.error(request, "Error al unirse.")
             return redirect('dashboard')
 
-    return render(request, 'registration/accept_invite.html', {'salon': salon})
+    return render(request, 'registration/accept_invite.html', {'salon': salon, 'token': token})
 
 @login_required
 def dashboard_view(request):

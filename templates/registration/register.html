@@ -1,17 +1,20 @@
 ﻿{% extends 'base.html' %}
+
 {% block content %}
 <div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
     <div class="col-md-5 col-lg-4">
+        
         <div class="text-center mb-4">
             <h3 class="fw-bold">Crear Cuenta</h3>
             {% if inviting_salon %}
                 <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill mt-2">
-                    <i class="bi bi-shop me-1"></i> RegistrÃ¡ndose en: <strong>{{ inviting_salon.name }}</strong>
+                    <i class="bi bi-shop me-1"></i> Registrándose en: <strong>{{ inviting_salon.name }}</strong>
                 </div>
             {% else %}
-                <p class="text-muted">Ãšnete a PASO Beauty.</p>
+                <p class="text-muted">Únete a PASO Beauty.</p>
             {% endif %}
         </div>
+
         <div class="card-premium p-4 shadow-lg bg-white rounded-4 border-0">
             <form method="post">
                 {% csrf_token %}
@@ -27,7 +30,9 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">{{ field.label }}</label>
                             {{ field }}
-                            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors.0 }}</div>{% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                            {% endif %}
                         </div>
                     {% endif %}
                 {% endfor %}
@@ -36,9 +41,12 @@
                     Continuar <i class="bi bi-arrow-right-short"></i>
                 </button>
             </form>
+
             <div class="text-center mt-4 border-top pt-3">
-                <span class="text-muted small">Â¿Ya tienes cuenta?</span>
-                <a href="{% url 'login' %}" class="text-primary fw-bold text-decoration-none ms-1">Inicia SesiÃ³n</a>
+                <span class="text-muted small">¿Ya tienes cuenta?</span>
+                <a href="{% url 'login' %}" class="text-primary fw-bold text-decoration-none ms-1">
+                    Inicia Sesión
+                </a>
             </div>
         </div>
     </div>

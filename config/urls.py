@@ -8,14 +8,17 @@ from apps.businesses import views as biz_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # RUTAS PRINCIPALES
     path('', user_views.home, name='home'),
     path('register/', user_views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     
-    # RUTA CRÃTICA
+    # RUTA CRÍTICA: ACEPTAR INVITACIÓN
     path('accept-invite/', user_views.accept_invite_view, name='accept_invite'),
 
+    # DASHBOARD Y PANELES
     path('dashboard/', user_views.dashboard_view, name='dashboard'),
     path('dashboard/join/', user_views.employee_join_view, name='employee_join'),
     path('dashboard/create-salon/', user_views.create_salon_view, name='create_salon'),
