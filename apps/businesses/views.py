@@ -32,16 +32,15 @@ def salon_settings_view(request):
 @login_required
 def employee_settings_view(request):
     """
-    PANEL DEL EMPLEADO: Aquí configura sus horarios.
+    PANEL DEL EMPLEADO: Aquí llegan tras aceptar la invitación.
     """
-    # Intentamos obtener el perfil de empleado del usuario logueado
     try:
         employee = request.user.employee
-    except Exception:
-        # Si no tiene perfil, lo mandamos a la pantalla de unirse
+    except:
+        # Si no tiene perfil, lo mandamos a unirse (medida de seguridad)
         return redirect('employee_join')
     
-    # Crear horarios por defecto si es la primera vez que entra
+    # 1. Asegurar que tenga horarios base creados
     if employee.schedules.count() < 7:
         for i in range(7):
             EmployeeSchedule.objects.get_or_create(
@@ -49,7 +48,6 @@ def employee_settings_view(request):
                 defaults={'from_hour': '09:00', 'to_hour': '18:00', 'is_closed': False}
             )
 
-    # Formset para editar los 7 días
     ScheduleFormSet = modelformset_factory(EmployeeSchedule, form=EmployeeScheduleForm, extra=0)
 
     if request.method == 'POST':
@@ -59,8 +57,8 @@ def employee_settings_view(request):
         if settings_form.is_valid() and schedule_formset.is_valid():
             settings_form.save()
             schedule_formset.save()
-            messages.success(request, "¡Horario actualizado correctamente!")
-            return redirect('dashboard')
+            messages.success(request, "¡Tu horario está listo!")
+            return redirect('dashboard') # O recargar la misma página
     else:
         settings_form = EmployeeSettingsForm(instance=employee)
         schedule_formset = ScheduleFormSet(queryset=employee.schedules.all())
@@ -73,19 +71,15 @@ def employee_settings_view(request):
 
 def salon_detail(request, slug):
     salon = get_object_or_404(Salon, slug=slug)
-    
     if request.method == 'POST':
         form = BookingForm(request.POST, service=None)
         service = None
-        
-        # Recuperar servicio seleccionado
         if 'service' in request.POST:
             from .models import Service
             try:
                 service = Service.objects.get(id=request.POST.get('service'))
                 form = BookingForm(request.POST, service=service)
-            except:
-                pass
+            except: pass
 
         if form.is_valid() and service:
             booking = form.save(commit=False)
@@ -93,35 +87,22 @@ def salon_detail(request, slug):
             booking.service = service
             if request.user.is_authenticated:
                 booking.customer = request.user
-            
             booking.end_time = booking.start_time + timezone.timedelta(minutes=service.duration_minutes)
             
-            # --- VALIDACIÓN DE HORARIO DEL EMPLEADO ---
+            # Validación Horario Empleado
             if booking.employee:
                 try:
                     weekday = booking.start_time.weekday()
                     schedule = booking.employee.schedules.get(weekday=weekday)
                     emp_time = booking.start_time.time()
-                    
-                    # Si el empleado cerró ese día o la hora no cuadra
                     if schedule.is_closed or not (schedule.from_hour <= emp_time <= schedule.to_hour):
-                        messages.error(request, f"Lo sentimos, {booking.employee.name} no trabaja en ese horario.")
+                        messages.error(request, f"{booking.employee.name} no trabaja a esa hora.")
                         return render(request, 'salon_detail.html', {'salon': salon, 'form': form})
-                except:
-                    pass # Si falla la validación por algo técnico, permitimos reservar
+                except: pass
 
             booking.save()
-
-            # Notificaciones Telegram
-            msg = f"🔔 *Nueva Reserva*\n\n📅 {booking.start_time.strftime('%d/%m %H:%M')}\n👤 {booking.customer_name}\n💇 {service.name}"
-            if salon.telegram_bot_token and salon.telegram_chat_id:
-                send_telegram_message(salon.telegram_bot_token, salon.telegram_chat_id, msg)
-            if booking.employee and booking.employee.telegram_bot_token and booking.employee.telegram_chat_id:
-                send_telegram_message(booking.employee.telegram_bot_token, booking.employee.telegram_chat_id, msg)
-
             messages.success(request, "¡Reserva confirmada!")
             return redirect('salon_detail', slug=slug)
     else:
         form = BookingForm()
-
     return render(request, 'salon_detail.html', {'salon': salon, 'form': form})
