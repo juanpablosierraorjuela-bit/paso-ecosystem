@@ -7,20 +7,90 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 # Modelos
-from .models import Salon, OpeningHours, EmployeeSchedule, Employee
+from .models import Salon, OpeningHours, EmployeeSchedule, Employee, Service
 # Forms
-from .forms import SalonCreateForm, OpeningHoursForm, BookingForm, EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm
+from .forms import (
+    SalonCreateForm, OpeningHoursForm, BookingForm, 
+    EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm,
+    ServiceForm  # Importamos el nuevo form
+)
 # Servicios
 from .services import create_booking_service
 from .utils import notify_new_booking
 
 User = get_user_model()
 
+# --- GESTIÓN DE SERVICIOS (NUEVO) ---
+
+@login_required
+def manage_services_view(request):
+    """Lista los servicios del salón"""
+    try:
+        salon = request.user.salon
+    except:
+        return redirect('dashboard')
+    
+    services = salon.services.all()
+    return render(request, 'dashboard/services.html', {'salon': salon, 'services': services})
+
+@login_required
+def add_service_view(request):
+    """Crea un nuevo servicio"""
+    try:
+        salon = request.user.salon
+    except:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = ServiceForm(request.POST)
+        if form.is_valid():
+            service = form.save(commit=False)
+            service.salon = salon
+            service.save()
+            messages.success(request, "Servicio creado exitosamente.")
+            return redirect('manage_services')
+    else:
+        form = ServiceForm()
+    
+    return render(request, 'dashboard/service_form.html', {'form': form, 'title': 'Crear Servicio'})
+
+@login_required
+def edit_service_view(request, service_id):
+    """Edita un servicio existente"""
+    try:
+        salon = request.user.salon
+        service = get_object_or_404(Service, id=service_id, salon=salon)
+    except:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, instance=service)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Servicio actualizado.")
+            return redirect('manage_services')
+    else:
+        form = ServiceForm(instance=service)
+    
+    return render(request, 'dashboard/service_form.html', {'form': form, 'title': 'Editar Servicio'})
+
+@login_required
+def delete_service_view(request, service_id):
+    """Elimina un servicio"""
+    try:
+        salon = request.user.salon
+        service = get_object_or_404(Service, id=service_id, salon=salon)
+        service.delete()
+        messages.success(request, "Servicio eliminado.")
+    except:
+        messages.error(request, "Error al eliminar.")
+    return redirect('manage_services')
+
+
+# --- GESTIÓN DE EMPLEADOS ---
+
 @login_required
 def create_employee_view(request):
-    """
-    VISTA NUEVA: El dueño registra manualmente a su empleado.
-    """
     try:
         salon = request.user.salon
     except:
@@ -36,39 +106,33 @@ def create_employee_view(request):
             name = data['name']
             phone = data['phone']
 
-            # Verificamos si el usuario ya existe
             if User.objects.filter(email=email).exists():
-                messages.error(request, f"El correo {email} ya está registrado en la plataforma.")
+                messages.error(request, f"El correo {email} ya está registrado.")
             else:
                 try:
                     with transaction.atomic():
-                        # 1. Crear Usuario
                         user = User.objects.create_user(
-                            username=email, # Usamos email como username
+                            username=email,
                             email=email,
                             password=password,
                             role='EMPLOYEE'
                         )
-                        
-                        # 2. Crear Perfil Empleado y Vincular
                         Employee.objects.create(
                             salon=salon,
                             user=user,
                             name=name,
                             phone=phone
                         )
-                    
-                    messages.success(request, f"¡Empleado {name} creado! Ahora puede entrar con su correo y contraseña.")
+                    messages.success(request, f"¡Empleado {name} creado!")
                     return redirect('dashboard')
-                    
                 except Exception as e:
-                    messages.error(request, f"Error creando empleado: {e}")
+                    messages.error(request, f"Error: {e}")
     else:
         form = EmployeeCreationForm()
 
     return render(request, 'dashboard/create_employee.html', {'form': form, 'salon': salon})
 
-# --- (El resto de vistas se mantiene: settings, salon_detail, etc) ---
+# --- CONFIGURACIÓN SALÓN ---
 
 @login_required
 def salon_settings_view(request):
@@ -93,6 +157,8 @@ def salon_settings_view(request):
         hours_formset = HoursFormSet(queryset=salon.opening_hours.all())
         
     return render(request, 'dashboard/settings.html', {'salon_form': salon_form, 'hours_formset': hours_formset, 'salon': salon})
+
+# --- PANEL EMPLEADO ---
 
 @login_required
 def employee_settings_view(request):
@@ -130,12 +196,15 @@ def employee_settings_view(request):
         'employee': employee
     })
 
+# --- VISTA PÚBLICA (VITRINA) ---
+
 def salon_detail(request, slug):
     salon = get_object_or_404(Salon, slug=slug)
+    
+    # Obtener el servicio seleccionado (si viene por URL o POST)
     service_id = request.POST.get('service') or request.GET.get('service')
     service = None
     if service_id:
-        from .models import Service
         try:
             service = Service.objects.get(id=service_id, salon=salon)
         except Service.DoesNotExist:
@@ -159,4 +228,8 @@ def salon_detail(request, slug):
     else:
         form = BookingForm(service=service)
 
-    return render(request, 'salon_detail.html', {'salon': salon, 'form': form, 'selected_service': service})
+    return render(request, 'salon_detail.html', {
+        'salon': salon, 
+        'form': form, 
+        'selected_service': service
+    })

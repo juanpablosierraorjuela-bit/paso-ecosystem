@@ -1,200 +1,47 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block content %}
-
-<div class="ambient-bg">
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
-</div>
-
-<header class="hero-section">
-    <div class="container">
-        <h1 class="hero-title">
-            Encuentra tu estilo,<br>
-            reserva <span>tu tiempo</span>.
-        </h1>
-        <p class="hero-subtitle">
-            Explora los mejores salones, spas y barberías cerca de ti. Reserva en segundos.
-        </p>
-
-        <div class="search-container">
-            <div class="d-flex align-items-center flex-grow-1 px-2 border-end">
-                <i class="bi bi-geo-alt text-muted fs-5"></i>
-                <select id="ciudadSelect" class="search-input" onchange="filtrarCiudad()">
-                    <option value="todas">Todas las ciudades</option>
-                    <option value="Tunja">Tunja</option>
-                    <option value="Bogota">Bogotá</option>
-                    <option value="Medellin">Medellín</option>
-                </select>
-            </div>
-            <div class="d-flex align-items-center flex-grow-1 px-2">
-                <i class="bi bi-search text-muted fs-5"></i>
-                <input type="text" id="nombreBusqueda" class="search-input" placeholder="¿Qué buscas hoy?" onkeyup="filtrarNombre()">
-            </div>
-            
-            <button class="btn-location-pulse" onclick="usarUbicacion()" title="Ver negocios cercanos (600m)" data-bs-toggle="tooltip">
-                <i class="bi bi-geo-alt-fill"></i>
-            </button>
-        </div>
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary">Reserva tu estilo</h1>
+        <p class="lead text-muted">Encuentra y agenda citas en los mejores salones de belleza y barberías.</p>
     </div>
-</header>
 
-<section class="container mb-5">
-    <div class="row g-4" id="salonGrid">
+    <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for salon in salons %}
-        <div class="col-md-6 col-lg-4 salon-item" 
-             data-city="{{ salon.city }}" 
-             data-lat="{{ salon.latitude|default:0 }}" 
-             data-lng="{{ salon.longitude|default:0 }}">
-            
-            <a href="{% url 'salon_detail' salon.slug %}" class="salon-card">
-                {% if salon.banner %}
-                    <img src="{{ salon.banner.url }}" class="card-img-top" alt="{{ salon.name }}">
-                {% else %}
-                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light text-muted">
-                        <i class="bi bi-image fs-1 opacity-25"></i>
-                    </div>
-                {% endif %}
-
-                <div class="card-body">
-                    <div class="d-flex align-items-start mb-3">
-                        <div class="salon-avatar flex-shrink-0">
-                            {% if salon.logo %}
-                                <img src="{{ salon.logo.url }}" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
-                            {% else %}
-                                {{ salon.name|slice:":1" }}
-                            {% endif %}
+        <div class="col">
+            <div class="card h-100 shadow-sm border-0 transition-hover">
+                <div class="card-body text-center p-4">
+                    {% if salon.logo %}
+                        <img src="{{ salon.logo.url }}" class="rounded-circle mb-3 shadow" width="80" height="80" style="object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm text-primary fw-bold" style="width: 80px; height: 80px; font-size: 2rem;">
+                            {{ salon.name|slice:":1"|upper }}
                         </div>
-                        
-                        <div class="flex-grow-1 ms-3">
-                            <h5 class="card-title">{{ salon.name }}</h5>
-                            <div class="card-location mb-2">
-                                <i class="bi bi-geo-alt-fill text-danger small"></i> {{ salon.city }}
-                            </div>
+                    {% endif %}
 
-                            <div class="d-flex align-items-center flex-wrap gap-2">
-                                {% if salon.is_open %}
-                                    <span class="status-pill status-open">
-                                        ABIERTO
-                                    </span>
-                                {% else %}
-                                    <span class="status-pill status-closed">
-                                        CERRADO
-                                    </span>
-                                    <button class="btn-agenda-247">
-                                        <i class="bi bi-calendar-check-fill me-1"></i> Agenda 24/7
-                                    </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                    <h5 class="card-title fw-bold">{{ salon.name }}</h5>
+                    <p class="text-muted small"><i class="bi bi-geo-alt-fill"></i> {{ salon.city }}</p>
+
+                    {% if salon.is_open %}
+                        <span class="badge bg-success mb-3">ABIERTO</span>
+                    {% else %}
+                        <span class="badge bg-secondary mb-3">CERRADO</span>
+                    {% endif %}
                     
-                    <p class="text-muted small mb-0 text-truncate">
-                        {{ salon.description|default:"Sin descripción disponible." }}
-                    </p>
+                    <div class="d-grid mt-2">
+                        <a href="{% url 'salon_detail' salon.slug %}" class="btn btn-outline-primary">
+                            Agendar Cita
+                        </a>
+                    </div>
                 </div>
-            </a>
+            </div>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <h3 class="text-muted fw-light">Aún no hay negocios registrados.</h3>
-            <p>¡Sé el primero en unirte a PASO!</p>
-            <a href="{% url 'register' %}" class="btn btn-nav-action mt-3">Registrar mi Negocio</a>
+            <p class="text-muted">Aún no hay negocios registrados.</p>
         </div>
         {% endfor %}
     </div>
-</section>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function(){
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    });
-
-    function filtrarCiudad() {
-        let ciudad = document.getElementById('ciudadSelect').value;
-        let items = document.querySelectorAll('.salon-item');
-        items.forEach(item => {
-            item.style.display = (ciudad === 'todas' || item.dataset.city === ciudad) ? 'block' : 'none';
-        });
-    }
-
-    function filtrarNombre() {
-        let texto = document.getElementById('nombreBusqueda').value.toLowerCase();
-        let items = document.querySelectorAll('.salon-item');
-        items.forEach(item => {
-            let nombre = item.querySelector('.card-title').innerText.toLowerCase();
-            item.style.display = nombre.includes(texto) ? 'block' : 'none';
-        });
-    }
-
-    function usarUbicacion() {
-        if (navigator.geolocation) {
-            const btn = document.querySelector('.btn-location-pulse');
-            const icon = btn.querySelector('i');
-            const originalIconClass = icon.className;
-            icon.className = 'spinner-border spinner-border-sm';
-
-            navigator.geolocation.getCurrentPosition(position => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-                let items = document.querySelectorAll('.salon-item');
-                let encontrados = 0;
-
-                items.forEach(item => {
-                    let lat = parseFloat(item.dataset.lat);
-                    let lng = parseFloat(item.dataset.lng);
-                    let dist = getDistance(userLat, userLng, lat, lng);
-                    
-                    if (dist <= 0.6) { 
-                        item.style.display = 'block';
-                        encontrados++;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-
-                icon.className = originalIconClass;
-
-                if (encontrados > 0) {
-                    document.getElementById('salonGrid').scrollIntoView({behavior: 'smooth'});
-                } else {
-                    alert("No encontramos negocios a menos de 600m. 📍");
-                    items.forEach(item => item.style.display = 'block');
-                }
-
-            }, error => {
-                icon.className = originalIconClass;
-                alert("Necesitamos permiso de ubicación.");
-            });
-        } else {
-            alert("Geolocalización no soportada.");
-        }
-    }
-
-    function getDistance(lat1, lon1, lat2, lon2) {
-        if(lat2 == 0 || lon2 == 0) return 99999; 
-        var R = 6371; 
-        var dLat = (lat2-lat1) * (Math.PI/180);
-        var dLon = (lon2-lon1) * (Math.PI/180); 
-        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-        return R * c; 
-    }
-
-    window.addEventListener('scroll', function() {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
-</script>
-
+</div>
 {% endblock %}

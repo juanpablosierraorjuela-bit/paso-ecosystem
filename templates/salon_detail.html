@@ -1,74 +1,96 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-5">
+<div class="position-relative bg-dark text-white mb-5" style="height: 250px; overflow: hidden;">
+    {% if salon.banner %}
+        <img src="{{ salon.banner.url }}" class="w-100 h-100 object-fit-cover opacity-50">
+    {% else %}
+        <div class="w-100 h-100 bg-secondary"></div>
+    {% endif %}
     
-    <div class="row mb-5 align-items-center">
-        <div class="col-md-8">
-            <h1 class="display-4 fw-bold text-dark">{{ salon.name }}</h1>
-            <p class="lead text-muted">{{ salon.description }}</p>
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-secondary"><i class="bi bi-geo-alt-fill me-1"></i> {{ salon.city }} - {{ salon.address }}</span>
-                
-                {% if is_open %}
-                    <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm animate-pulse">
-                        <i class="bi bi-shop me-1"></i> ABIERTO AHORA
-                    </span>
-                {% else %}
-                    <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm">
-                        <i class="bi bi-door-closed-fill me-1"></i> CERRADO
-                    </span>
-                {% endif %}
-            </div>
-        </div>
+    <div class="position-absolute top-50 start-50 translate-middle text-center w-100">
+        <h1 class="fw-bold display-5">{{ salon.name }}</h1>
+        <p class="lead mb-2">{{ salon.city }} • {{ salon.address }}</p>
         
-        <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <div class="card border-0 bg-light p-3">
-                <small class="text-muted fw-bold text-uppercase">Contacto</small>
-                <p class="fs-5 fw-bold mb-1">{{ salon.phone }}</p>
-            </div>
-        </div>
-    </div>
-
-    <h3 class="fw-bold mb-4">Nuestros Servicios</h3>
-    <div class="row g-4">
-        {% for service in services %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm hover-effect">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="fw-bold mb-0">{{ service.name }}</h5>
-                        <span class="badge bg-light text-dark border">${{ service.price }}</span>
-                    </div>
-                    <div class="d-flex align-items-center text-muted small mb-4">
-                        <i class="bi bi-clock me-2"></i> {{ service.duration_minutes }} minutos
-                    </div>
-                    
-                    <a href="{% url 'booking_create' service.id %}" class="btn btn-dark w-100 fw-bold">
-                        Reservar Cita
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-12 text-center py-5">
-            <p class="text-muted">Este negocio aún no ha publicado sus servicios.</p>
-        </div>
-        {% endfor %}
+        {% if salon.is_open %}
+            <span class="badge bg-success fs-6 shadow">ABIERTO AHORA</span>
+        {% else %}
+            <span class="badge bg-danger fs-6 shadow">CERRADO</span>
+        {% endif %}
     </div>
 </div>
 
-<style>
-    /* Efecto de pulso para cuando está abierto */
-    @keyframes pulse-green {
-        0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
-    }
-    .animate-pulse {
-        animation: pulse-green 2s infinite;
-    }
-    .hover-effect { transition: transform 0.2s; }
-    .hover-effect:hover { transform: translateY(-5px); }
-</style>
+<div class="container pb-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <h3 class="fw-bold mb-4">Nuestros Servicios</h3>
+            
+            {% if salon.services.exists %}
+                <div class="list-group shadow-sm">
+                    {% for service in salon.services.all %}
+                        <div class="list-group-item list-group-item-action p-4 border-0 border-bottom">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1 fw-bold">{{ service.name }}</h5>
+                                    <p class="mb-1 text-muted small">{{ service.description|default:"Sin descripción" }}</p>
+                                    <small class="text-primary fw-bold"><i class="bi bi-clock"></i> {{ service.duration_minutes }} min</small>
+                                </div>
+                                <div class="text-end">
+                                    <h4 class="fw-bold text-success mb-2">${{ service.price }}</h4>
+                                    <a href="?service={{ service.id }}#booking-form" class="btn btn-sm btn-dark rounded-pill px-4">
+                                        Reservar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">Este salón aún no ha publicado sus servicios.</div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4 mt-4 mt-lg-0" id="booking-form">
+            <div class="card shadow border-0 sticky-top" style="top: 20px; z-index: 10;">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h5 class="mb-0">Agendar Cita</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if selected_service %}
+                        <div class="alert alert-success d-flex align-items-center mb-3">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <div>
+                                <strong>Servicio:</strong> {{ selected_service.name }}<br>
+                                <strong>Precio:</strong> ${{ selected_service.price }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if selected_service %}
+                            <input type="hidden" name="service" value="{{ selected_service.id }}">
+                        {% endif %}
+
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-uppercase">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small">{{ field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                                Confirmar Reserva
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
