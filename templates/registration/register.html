@@ -1,55 +1,64 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block content %}
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
-    <div class="col-md-5 col-lg-4">
-        
-        <div class="text-center mb-4">
-            <h3 class="fw-bold">Crear Cuenta</h3>
-            <p class="text-muted">Únete a PASO para empezar.</p>
-        </div>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-0">
+            <div class="card-body p-5">
+                <h3 class="text-center fw-bold mb-4">Crear Cuenta</h3>
 
-        <div class="card-premium p-4 shadow-lg" style="background: rgba(255,255,255,0.95); border-radius: 20px;">
-            
-            {% if request.GET.next %}
-                <div class="alert alert-info small border-0 bg-info-subtle text-info-emphasis mb-4">
-                    <i class="bi bi-ticket-perforated-fill me-2"></i>
-                    <strong>¡Estás a un paso!</strong> Regístrate para unirte al equipo.
-                </div>
-            {% endif %}
-
-            <form method="post" action="{% url 'register' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
-                {% csrf_token %}
-                
-                {% for field in form %}
-                    <div class="mb-3">
-                        {% if field.name != 'role' %}
-                            <label class="form-label fw-bold small text-muted">{{ field.label }}</label>
-                            {{ field }}
-                        {% else %}
-                            <label class="form-label fw-bold small text-primary d-block mb-2">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}
-                                <div class="form-text small">{{ field.help_text }}</div>
-                            {% endif %}
-                        {% endif %}
-                        
-                        {% if field.errors %}
-                            <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
-                        {% endif %}
+                {% if inviting_salon %}
+                    <div class="alert alert-success text-center mb-4">
+                        <i class="bi bi-ticket-perforated-fill"></i>
+                        Estás aceptando la invitación de <strong>{{ inviting_salon.name }}</strong>
                     </div>
-                {% endfor %}
-                
-                <button type="submit" class="btn btn-primary w-100 py-3 mt-2 fw-bold rounded-pill">
-                    Registrarme ✨
-                </button>
-            </form>
+                {% endif %}
 
-            <div class="text-center mt-4 border-top pt-3">
-                <span class="text-muted small">¿Ya tienes cuenta?</span>
-                <a href="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="text-primary fw-bold text-decoration-none ms-1">
-                    Inicia Sesión
-                </a>
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if invite_token %}
+                        <input type="hidden" name="invite_token" value="{{ invite_token }}">
+                    {% endif %}
+
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ field.label }}</label>
+                            
+                            {% if field.name == 'role' and inviting_salon %}
+                                <select name="{{ field.name }}" class="form-select" readonly style="pointer-events: none; background-color: #e9ecef;">
+                                    <option value="EMPLOYEE" selected>Empleado / Estilista</option>
+                                </select>
+                                <div class="form-text text-muted">Tu rol ha sido preseleccionado por la invitación.</div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            {% if inviting_salon %}
+                                Registrarse y Unirse
+                            {% else %}
+                                Crear Cuenta
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p class="small text-muted">
+                        ¿Ya tienes cuenta? 
+                        <a href="{% url 'login' %}{% if invite_token %}?invite={{ invite_token }}{% endif %}" class="text-decoration-none">
+                            Inicia sesión aquí
+                        </a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
