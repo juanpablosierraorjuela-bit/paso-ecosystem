@@ -1,9 +1,11 @@
+import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
+from django.db import transaction
+from django.contrib import messages
 import logging
 
-# Logger para ver errores en Render si algo falla
 logger = logging.getLogger(__name__)
 
 from apps.businesses.models import Salon, Employee, Booking
@@ -13,61 +15,67 @@ from .forms import CustomUserCreationForm
 def home(request):
     try:
         salons = list(Salon.objects.all().order_by('-id'))
-    except:
+    except Exception as e:
+        logger.error(f"Error Home: {e}")
         salons = []
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
     """
-    Registro BLINDADO: Asegura que el empleado se cree SÍ o SÍ antes de redirigir.
+    Registro BLINDADO contra errores 500.
     """
     if request.user.is_authenticated:
         return redirect('dashboard')
     
-    # 1. Recuperar token de invitación (si existe)
+    # 1. Recuperar y Validar Token
     invite_token = request.GET.get('invite') or request.POST.get('invite_token')
     inviting_salon = None
     
     if invite_token:
         try:
-            inviting_salon = Salon.objects.get(invite_token=invite_token)
-            logger.info(f"--- INVITACIÓN DETECTADA PARA: {inviting_salon.name} ---")
-        except Salon.DoesNotExist:
-            logger.warning("--- TOKEN DE INVITACIÓN INVÁLIDO O NO ENCONTRADO ---")
+            # Validamos que sea un UUID real antes de consultar la BD
+            uuid_obj = uuid.UUID(str(invite_token))
+            inviting_salon = Salon.objects.filter(invite_token=uuid_obj).first()
+            if inviting_salon:
+                logger.info(f"--- INVITACIÓN VÁLIDA: {inviting_salon.name} ---")
+        except (ValueError, Exception) as e:
+            logger.warning(f"--- TOKEN INVÁLIDO O ERROR: {e} ---")
+            # No hacemos nada, simplemente cargamos el registro normal
 
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            
-            # --- LÓGICA CRÍTICA: CREACIÓN DEL EMPLEADO ---
-            if inviting_salon:
-                logger.info(f"--- REGISTRANDO EMPLEADO: {user.username} ---")
-                
-                # 1. Forzar el rol de empleado
-                user.role = 'EMPLOYEE'
-                user.save() 
-                
-                # 2. Crear el perfil Employee INMEDIATAMENTE
-                try:
-                    Employee.objects.create(
-                        user=user,
-                        salon=inviting_salon,
-                        name=f"{user.first_name} {user.last_name}" or user.username,
-                        phone=getattr(user, 'phone', '')
-                    )
-                    logger.info("--- OBJETO EMPLOYEE CREADO EXITOSAMENTE ---")
-                except Exception as e:
-                    logger.error(f"--- ERROR FATAL CREANDO EMPLOYEE: {e} ---")
-            else:
-                # Registro normal (Dueño o Cliente)
-                user.save()
+            try:
+                # Transacción Atómica: O se crea todo o no se crea nada
+                with transaction.atomic():
+                    user = form.save(commit=False)
+                    
+                    if inviting_salon:
+                        # Forzamos rol empleado
+                        user.role = 'EMPLOYEE'
+                        user.save()
+                        
+                        # Crear perfil Employee
+                        Employee.objects.create(
+                            user=user,
+                            salon=inviting_salon,
+                            name=f"{user.first_name} {user.last_name}" or user.username,
+                            phone=getattr(user, 'phone', '')
+                        )
+                        logger.info(f"--- EMPLEADO CREADO: {user.username} ---")
+                    else:
+                        # Registro normal
+                        user.save()
 
-            # 3. Iniciar sesión y redirigir al Dashboard
-            login(request, user)
-            return redirect('dashboard')
+                # Login y Redirección
+                login(request, user)
+                messages.success(request, "¡Cuenta creada exitosamente!")
+                return redirect('dashboard')
+
+            except Exception as e:
+                logger.error(f"Error crítico en registro: {e}")
+                messages.error(request, "Hubo un error creando tu cuenta. Intenta de nuevo.")
     else:
-        # Pre-configurar el formulario si hay invitación
         initial_data = {}
         if inviting_salon:
             initial_data = {'role': 'EMPLOYEE'}
@@ -81,18 +89,18 @@ def register(request):
 @login_required
 def dashboard_view(request):
     """
-    Enrutador Inteligente: Redirige según el ROL y el estado del usuario.
+    Dashboard Robusto con Redirección Segura
     """
     user = request.user
-    role = getattr(user, 'role', 'CUSTOMER') 
+    role = getattr(user, 'role', 'CUSTOMER')
 
     # --- ROL EMPLEADO ---
     if role == 'EMPLOYEE':
-        # Verificación: ¿Tiene el perfil de empleado creado?
-        if hasattr(user, 'employee'):
-            return redirect('employee_settings') # ¡ÉXITO! Va al panel de horarios.
+        # Verificamos la relación de forma segura
+        if hasattr(user, 'employee') and user.employee:
+            return redirect('employee_settings')
         else:
-            # Si tiene el rol pero no el perfil, algo falló o no usó invitación.
+            # Si es empleado pero no tiene perfil, lo mandamos a unirse
             return redirect('employee_join')
 
     # --- ROL DUEÑO ---
@@ -105,7 +113,7 @@ def dashboard_view(request):
         except:
             return redirect('create_salon')
 
-    # --- ROL CLIENTE (Por defecto) ---
+    # --- ROL CLIENTE ---
     else:
         bookings = []
         try:
