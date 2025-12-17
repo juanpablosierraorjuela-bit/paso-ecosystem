@@ -12,6 +12,37 @@ from apps.businesses.models import Salon, Employee, Booking
 from apps.businesses.forms import SalonCreateForm
 from .forms import CustomUserCreationForm
 
+# --- HELPER: VINCULACIÓN SEGURA ---
+def vincular_y_redirigir(request, user, salon):
+    """Vincula al usuario como empleado y lo manda al panel"""
+    try:
+        # Verificar si ya existe el vínculo
+        employee, created = Employee.objects.get_or_create(
+            user=user,
+            salon=salon,
+            defaults={
+                'name': f"{user.first_name} {user.last_name}" or user.username,
+                'phone': getattr(user, 'phone', '')
+            }
+        )
+        
+        # Asegurar Rol
+        if user.role != 'EMPLOYEE':
+            user.role = 'EMPLOYEE'
+            user.save()
+
+        # Login si es necesario (para registros nuevos)
+        if not request.user.is_authenticated:
+            login(request, user)
+
+        messages.success(request, f"¡Bienvenido a {salon.name}!")
+        return redirect('employee_settings') # <--- SALTO DIRECTO AL PANEL
+
+    except Exception as e:
+        logger.error(f"Error vinculando: {e}")
+        messages.error(request, "Error al unirse al equipo.")
+        return redirect('dashboard')
+
 def home(request):
     try:
         salons = list(Salon.objects.all().order_by('-id'))
@@ -21,13 +52,9 @@ def home(request):
 
 def register(request):
     """
-    REGISTRO DE INVITACIÓN:
-    El token viaja del Link -> Formulario -> Base de Datos -> Panel.
+    REGISTRO CON INVITACIÓN FLUIDA
     """
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    
-    # 1. RECUPERAR EL TOKEN (Ya sea del Link o del Formulario enviado)
+    # 1. Recuperar Token (GET o POST)
     invite_token = request.POST.get('invite_token') or request.GET.get('invite')
     inviting_salon = None
     
@@ -36,44 +63,35 @@ def register(request):
             uuid_obj = uuid.UUID(str(invite_token))
             inviting_salon = Salon.objects.filter(invite_token=uuid_obj).first()
         except:
-            pass # Si el token falla, cargamos normal
+            pass
 
+    # 2. CASO: USUARIO YA LOGUEADO (Clic en link estando conectado)
+    if request.user.is_authenticated:
+        if inviting_salon:
+            return vincular_y_redirigir(request, request.user, inviting_salon)
+        return redirect('dashboard')
+
+    # 3. CASO: REGISTRO NUEVO
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
                     user = form.save(commit=False)
+                    user.save() # Guardamos primero el usuario base
                     
                     if inviting_salon:
-                        # --- ES UN EMPLEADO CON INVITACIÓN ---
-                        user.role = 'EMPLOYEE'
-                        user.save()
-                        
-                        # Crear el vínculo INMEDIATAMENTE
-                        Employee.objects.create(
-                            user=user,
-                            salon=inviting_salon,
-                            name=f"{user.first_name} {user.last_name}" or user.username,
-                            phone=getattr(user, 'phone', '')
-                        )
-                        
-                        # Login y salto directo al panel
-                        login(request, user)
-                        messages.success(request, f"¡Bienvenido al equipo de {inviting_salon.name}!")
-                        return redirect('employee_settings') # <--- SALTO MÁGICO
-                        
-                    else:
-                        # --- ES UN DUEÑO O CLIENTE ---
-                        user.save()
-                        login(request, user)
-                        return redirect('dashboard')
+                        # Si hay invitación, vinculamos y nos vamos
+                        return vincular_y_redirigir(request, user, inviting_salon)
+                    
+                    # Registro normal
+                    login(request, user)
+                    return redirect('dashboard')
 
             except Exception as e:
                 logger.error(f"Error registro: {e}")
-                messages.error(request, "Error en el sistema. Intenta de nuevo.")
+                messages.error(request, "Error en el registro. Intenta de nuevo.")
     else:
-        # Configuración inicial del formulario
         initial_data = {}
         if inviting_salon:
             initial_data = {'role': 'EMPLOYEE'}
@@ -86,15 +104,11 @@ def register(request):
 
 @login_required
 def dashboard_view(request):
-    """
-    Controlador de Tráfico
-    """
     user = request.user
     role = getattr(user, 'role', 'CUSTOMER') 
 
     # --- EMPLEADO ---
     if role == 'EMPLOYEE':
-        # Si ya tiene perfil, va al panel. Si no, va a la pantalla de código.
         if hasattr(user, 'employee'):
             return redirect('employee_settings')
         return redirect('employee_join')
@@ -120,7 +134,17 @@ def dashboard_view(request):
 
 @login_required
 def employee_join_view(request):
-    """Vista de respaldo por si el link falla"""
+    """Vista de respaldo manual"""
+    if request.method == 'POST':
+        token = request.POST.get('invite_token')
+        try:
+            uuid_obj = uuid.UUID(str(token))
+            salon = Salon.objects.filter(invite_token=uuid_obj).first()
+            if salon:
+                return vincular_y_redirigir(request, request.user, salon)
+        except:
+            pass
+        messages.error(request, "Código inválido.")
     return render(request, 'registration/employee_join.html')
 
 @login_required
