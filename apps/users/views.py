@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
@@ -21,16 +21,19 @@ def home(request):
 
 def register(request):
     """
-    PASO 1: REGISTRO
-    Si hay invitación, la guardamos en la sesión y enviamos a la pantalla de aceptación.
+    REGISTRO CENTRALIZADO
     """
+    # 1. Recuperar token
+    invite_token = request.GET.get('invite') or request.POST.get('invite_token')
+    
+    # 2. CASO: YA LOGUEADO
     if request.user.is_authenticated:
+        if invite_token:
+            request.session['pending_invite'] = invite_token
+            return redirect('accept_invite')
         return redirect('dashboard')
-    
-    # Detectar token en URL
-    invite_token = request.GET.get('invite')
+
     inviting_salon = None
-    
     if invite_token:
         try:
             uuid_obj = uuid.UUID(str(invite_token))
@@ -38,35 +41,26 @@ def register(request):
         except:
             pass
 
+    # 3. CASO: REGISTRO NUEVO
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            
-            # Recuperar token del formulario si existe
-            posted_token = request.POST.get('invite_token')
-            
-            # Guardar usuario
-            if posted_token:
-                user.role = 'EMPLOYEE' # Pre-asignamos rol si viene invitado
+            if invite_token:
+                user.role = 'EMPLOYEE'
             user.save()
-            
-            # Iniciar sesión
             login(request, user)
 
-            # --- LÓGICA DE INVITACIÓN ---
-            if posted_token:
-                # Guardamos el token en la "mochila" (sesión) del usuario
-                request.session['pending_invite'] = posted_token
-                return redirect('accept_invite') # VAMOS A LA NUEVA PÁGINA
+            if invite_token:
+                request.session['pending_invite'] = invite_token
+                return redirect('accept_invite')
             
             return redirect('dashboard')
     else:
-        # Pre-seleccionar rol
-        initial_data = {}
+        initial = {}
         if inviting_salon:
-            initial_data = {'role': 'EMPLOYEE'}
-        form = CustomUserCreationForm(initial=initial_data)
+            initial = {'role': 'EMPLOYEE'}
+        form = CustomUserCreationForm(initial=initial)
 
     return render(request, 'registration/register.html', {
         'form': form, 
@@ -76,13 +70,14 @@ def register(request):
 @login_required
 def accept_invite_view(request):
     """
-    PASO 2: PANTALLA INTERMEDIA DE ACEPTACIÓN
+    PANTALLA INTERMEDIA: CONFIRMACIÃ“N
     """
-    # Recuperar token de la sesión
     token = request.session.get('pending_invite')
-    
     if not token:
-        return redirect('dashboard') # Si no hay invitación, para la casa
+        token = request.GET.get('invite') # Intento extra
+
+    if not token:
+        return redirect('dashboard')
 
     salon = None
     try:
@@ -95,9 +90,7 @@ def accept_invite_view(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        # --- EL EMPLEADO DIJO "SI" ---
         try:
-            # Crear perfil
             Employee.objects.get_or_create(
                 user=request.user,
                 salon=salon,
@@ -106,20 +99,17 @@ def accept_invite_view(request):
                     'phone': getattr(request.user, 'phone', '')
                 }
             )
-            # Asegurar rol
             request.user.role = 'EMPLOYEE'
             request.user.save()
             
-            # Limpiar sesión
             if 'pending_invite' in request.session:
                 del request.session['pending_invite']
                 
-            messages.success(request, f"¡Ahora eres parte de {salon.name}!")
-            return redirect('employee_settings') # AL PANEL POR FIN
+            messages.success(request, f"Â¡Bienvenido a {salon.name}!")
+            return redirect('employee_settings')
             
         except Exception as e:
-            logger.error(f"Error aceptando invitación: {e}")
-            messages.error(request, "Ocurrió un error al unirsite.")
+            logger.error(f"Error aceptando: {e}")
             return redirect('dashboard')
 
     return render(request, 'registration/accept_invite.html', {'salon': salon})
@@ -129,13 +119,11 @@ def dashboard_view(request):
     user = request.user
     role = getattr(user, 'role', 'CUSTOMER') 
 
-    # --- EMPLEADO ---
     if role == 'EMPLOYEE':
         if hasattr(user, 'employee'):
             return redirect('employee_settings')
         return redirect('employee_join')
 
-    # --- DUEÑO ---
     elif role in ['ADMIN', 'OWNER'] or getattr(user, 'is_business_owner', False):
         try:
             salon = Salon.objects.filter(owner=user).first()
@@ -145,7 +133,6 @@ def dashboard_view(request):
         except:
             return redirect('create_salon')
 
-    # --- CLIENTE ---
     else:
         bookings = []
         try:
