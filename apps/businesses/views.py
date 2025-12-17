@@ -32,16 +32,15 @@ def salon_settings_view(request):
 @login_required
 def employee_settings_view(request):
     """
-    PANEL DE EMPLEADO (Destino Final)
+    PANEL DE EMPLEADO (Destino final tras invitación)
     """
     try:
-        # Intento robusto de obtener el perfil
-        employee = Employee.objects.get(user=request.user)
-    except Employee.DoesNotExist:
-        # Si no existe, es un error de flujo. Lo mandamos al dashboard para que el enrutador decida.
-        return redirect('dashboard')
+        employee = request.user.employee
+    except:
+        # Si llega aquí y no es empleado, lo mandamos a unirse
+        return redirect('employee_join')
     
-    # Crear horarios por defecto si no existen
+    # 1. Auto-Generar Horarios si es nuevo
     if employee.schedules.count() < 7:
         for i in range(7):
             EmployeeSchedule.objects.get_or_create(
@@ -58,7 +57,7 @@ def employee_settings_view(request):
         if settings_form.is_valid() and schedule_formset.is_valid():
             settings_form.save()
             schedule_formset.save()
-            messages.success(request, "¡Horario actualizado!")
+            messages.success(request, "¡Tu perfil y horarios están actualizados!")
             return redirect('dashboard')
     else:
         settings_form = EmployeeSettingsForm(instance=employee)
