@@ -1,24 +1,21 @@
 #!/bin/bash
 
-# Detener el script si hay errores graves
+# Detener si hay error
 set -e
 
-echo "--- 🏥 DIAGNÓSTICO Y REPARACIÓN DE ARRANQUE ---"
+echo "--- 🚀 INICIANDO DESPLIEGUE SEGURO ---"
 
-# 1. Forzar migraciones limpias (detecta cambios en invite_token y customer)
-echo "--- Generando migraciones pendientes ---"
+echo "--- 1. Detectando Cambios en Base de Datos ---"
 python manage.py makemigrations users businesses --noinput
 python manage.py makemigrations --noinput
 
-# 2. Aplicar migraciones (con fake-initial para evitar conflictos de tablas existentes)
-echo "--- Aplicando cambios a la Base de Datos ---"
+echo "--- 2. Aplicando Cambios (Migrate) ---"
+# fake-initial ayuda si la tabla ya existe pero Django cree que no
 python manage.py migrate --fake-initial --noinput
 
-# 3. Recolectar estáticos
-echo "--- Preparando archivos estáticos ---"
+echo "--- 3. Preparando Archivos ---"
 python manage.py collectstatic --noinput
 
-# 4. Iniciar Gunicorn (Servidor Web)
-echo "--- 🚀 INICIANDO SERVIDOR ---"
-# Aumentamos el timeout para dar tiempo a procesos lentos
+echo "--- 4. Encendiendo Motor ---"
+# Timeout alto para evitar cierres inesperados al inicio
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --timeout 120
