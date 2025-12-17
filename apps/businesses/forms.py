@@ -1,5 +1,4 @@
 ﻿from django import forms
-from django.utils import timezone
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
 class SalonCreateForm(forms.ModelForm):
@@ -16,7 +15,35 @@ class SalonCreateForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            # ... (resto de widgets igual que tenías) ...
+            'slug': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'instagram': forms.URLInput(attrs={'class': 'form-control'}),
+            'facebook': forms.URLInput(attrs={'class': 'form-control'}),
+            'tiktok': forms.URLInput(attrs={'class': 'form-control'}),
+            'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.fields:
+            if field_name not in ['name', 'city', 'address', 'phone']: # Solo obligatorios
+                self.fields[field_name].required = False
+
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'duration_minutes', 'price']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
 class OpeningHoursForm(forms.ModelForm):
@@ -34,7 +61,7 @@ class BookingForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
         queryset=Employee.objects.none(),
         required=False,
-        empty_label="Cualquiera (Asignación Automática)",
+        empty_label="Cualquiera (El sistema asignará)",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
@@ -42,8 +69,8 @@ class BookingForm(forms.ModelForm):
         model = Booking
         fields = ['employee', 'customer_name', 'customer_phone', 'start_time']
         widgets = {
-            'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu nombre'}),
-            'customer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu teléfono'}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'customer_phone': forms.TextInput(attrs={'class': 'form-control'}),
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         }
 
@@ -52,12 +79,6 @@ class BookingForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if service:
             self.fields['employee'].queryset = service.salon.employees.all()
-    
-    def clean_start_time(self):
-        start_time = self.cleaned_data['start_time']
-        if start_time < timezone.now():
-            raise forms.ValidationError("No puedes reservar en el pasado.")
-        return start_time
 
 class EmployeeSettingsForm(forms.ModelForm):
     class Meta:
@@ -77,7 +98,7 @@ class EmployeeScheduleForm(forms.ModelForm):
         model = EmployeeSchedule
         fields = ['weekday', 'from_hour', 'to_hour', 'is_closed']
         widgets = {
-            'weekday': forms.Select(attrs={'class': 'form-select', 'disabled': 'disabled'}), # Solo lectura visualmente
+            'weekday': forms.Select(attrs={'class': 'form-select'}),
             'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
