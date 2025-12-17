@@ -32,15 +32,16 @@ def salon_settings_view(request):
 @login_required
 def employee_settings_view(request):
     """
-    PANEL DEL EMPLEADO: Aquí llegan tras aceptar la invitación.
+    PANEL DEL EMPLEADO: DESTINO FINAL TRAS INVITACIÓN
     """
     try:
+        # Obtenemos el perfil del empleado
         employee = request.user.employee
     except:
-        # Si no tiene perfil, lo mandamos a unirse (medida de seguridad)
+        # Si algo falló, lo mandamos a unirse (Safety Net)
         return redirect('employee_join')
     
-    # 1. Asegurar que tenga horarios base creados
+    # 1. AUTO-GENERAR HORARIOS si es nuevo
     if employee.schedules.count() < 7:
         for i in range(7):
             EmployeeSchedule.objects.get_or_create(
@@ -57,8 +58,8 @@ def employee_settings_view(request):
         if settings_form.is_valid() and schedule_formset.is_valid():
             settings_form.save()
             schedule_formset.save()
-            messages.success(request, "¡Tu horario está listo!")
-            return redirect('dashboard') # O recargar la misma página
+            messages.success(request, "¡Tu horario ha sido actualizado!")
+            return redirect('dashboard') # Refresca la página o va al dashboard
     else:
         settings_form = EmployeeSettingsForm(instance=employee)
         schedule_formset = ScheduleFormSet(queryset=employee.schedules.all())
@@ -89,14 +90,13 @@ def salon_detail(request, slug):
                 booking.customer = request.user
             booking.end_time = booking.start_time + timezone.timedelta(minutes=service.duration_minutes)
             
-            # Validación Horario Empleado
             if booking.employee:
                 try:
                     weekday = booking.start_time.weekday()
                     schedule = booking.employee.schedules.get(weekday=weekday)
                     emp_time = booking.start_time.time()
                     if schedule.is_closed or not (schedule.from_hour <= emp_time <= schedule.to_hour):
-                        messages.error(request, f"{booking.employee.name} no trabaja a esa hora.")
+                        messages.error(request, f"{booking.employee.name} no trabaja en ese horario.")
                         return render(request, 'salon_detail.html', {'salon': salon, 'form': form})
                 except: pass
 
