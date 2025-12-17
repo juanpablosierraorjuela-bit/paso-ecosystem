@@ -32,16 +32,15 @@ def salon_settings_view(request):
 @login_required
 def employee_settings_view(request):
     """
-    PANEL DEL EMPLEADO: DESTINO FINAL TRAS INVITACIÓN
+    PANEL DE EMPLEADO
     """
     try:
-        # Obtenemos el perfil del empleado
         employee = request.user.employee
     except:
-        # Si algo falló, lo mandamos a unirse (Safety Net)
+        # Si llega aquí sin perfil, lo mandamos al "Limbo" para que ingrese el código
         return redirect('employee_join')
     
-    # 1. AUTO-GENERAR HORARIOS si es nuevo
+    # Auto-crear horarios
     if employee.schedules.count() < 7:
         for i in range(7):
             EmployeeSchedule.objects.get_or_create(
@@ -58,8 +57,8 @@ def employee_settings_view(request):
         if settings_form.is_valid() and schedule_formset.is_valid():
             settings_form.save()
             schedule_formset.save()
-            messages.success(request, "¡Tu horario ha sido actualizado!")
-            return redirect('dashboard') # Refresca la página o va al dashboard
+            messages.success(request, "¡Perfil actualizado!")
+            return redirect('dashboard')
     else:
         settings_form = EmployeeSettingsForm(instance=employee)
         schedule_formset = ScheduleFormSet(queryset=employee.schedules.all())
