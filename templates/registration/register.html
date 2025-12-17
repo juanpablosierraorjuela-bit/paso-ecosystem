@@ -5,30 +5,18 @@
     <div class="col-md-5 col-lg-4">
         
         <div class="text-center mb-4">
+            <h3 class="fw-bold">Crear Cuenta</h3>
+            
             {% if inviting_salon %}
-                <div class="mb-3">
-                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
-                        {{ inviting_salon.name|slice:":1" }}
-                    </div>
+                <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill mt-2">
+                    <i class="bi bi-shop me-1"></i> Registrándose en: <strong>{{ inviting_salon.name }}</strong>
                 </div>
-                <h3 class="fw-bold">Únete al Equipo</h3>
-                <p class="text-muted">
-                    Estás aceptando la invitación de <strong class="text-primary">{{ inviting_salon.name }}</strong>
-                </p>
             {% else %}
-                <h3 class="fw-bold">Crear Cuenta</h3>
-                <p class="text-muted">Bienvenido a PASO Beauty</p>
+                <p class="text-muted">Únete a PASO Beauty hoy.</p>
             {% endif %}
         </div>
 
         <div class="card-premium p-4 shadow-lg bg-white rounded-4 border-0">
-            
-            {% if form.errors %}
-                <div class="alert alert-danger border-0 small">
-                    <strong>¡Ups!</strong> Por favor corrige los errores abajo.
-                </div>
-            {% endif %}
-
             <form method="post">
                 {% csrf_token %}
                 
@@ -51,11 +39,7 @@
                 {% endfor %}
                 
                 <button type="submit" class="btn btn-primary w-100 py-3 mt-2 fw-bold rounded-pill shadow-sm">
-                    {% if inviting_salon %}
-                        Aceptar y Unirme 🚀
-                    {% else %}
-                        Registrarme
-                    {% endif %}
+                    Continuar <i class="bi bi-arrow-right-short"></i>
                 </button>
             </form>
 

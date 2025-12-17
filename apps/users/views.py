@@ -12,34 +12,6 @@ from apps.businesses.models import Salon, Employee, Booking
 from apps.businesses.forms import SalonCreateForm
 from .forms import CustomUserCreationForm
 
-# --- FUNCIÓN AUXILIAR: VINCULAR Y SALTAR ---
-def vincular_empleado_y_redirigir(request, user, salon):
-    """Vincula al usuario con el salón y lo manda al panel de horarios"""
-    try:
-        # Verificar o crear el perfil de empleado
-        employee, created = Employee.objects.get_or_create(
-            user=user,
-            salon=salon,
-            defaults={
-                'name': f"{user.first_name} {user.last_name}" or user.username,
-                'phone': getattr(user, 'phone', '')
-            }
-        )
-        
-        # Asegurar el rol
-        if user.role != 'EMPLOYEE':
-            user.role = 'EMPLOYEE'
-            user.save()
-
-        # Mensaje de éxito y redirección
-        messages.success(request, f"¡Bienvenido al equipo de {salon.name}!")
-        return redirect('employee_settings')
-
-    except Exception as e:
-        logger.error(f"Error vinculando empleado: {e}")
-        messages.error(request, "Error al procesar la invitación.")
-        return redirect('dashboard')
-
 def home(request):
     try:
         salons = list(Salon.objects.all().order_by('-id'))
@@ -49,59 +21,48 @@ def home(request):
 
 def register(request):
     """
-    REGISTRO INTELIGENTE: Maneja usuarios nuevos y existentes con invitación.
+    PASO 1: REGISTRO
+    Si hay invitación, la guardamos en la sesión y enviamos a la pantalla de aceptación.
     """
-    # 1. RECUPERAR TOKEN (Prioridad: POST > GET)
-    invite_token = request.POST.get('invite_token') or request.GET.get('invite')
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    # Detectar token en URL
+    invite_token = request.GET.get('invite')
     inviting_salon = None
     
-    # 2. VALIDAR TOKEN
     if invite_token:
         try:
             uuid_obj = uuid.UUID(str(invite_token))
             inviting_salon = Salon.objects.filter(invite_token=uuid_obj).first()
         except:
-            pass # Token inválido, continuamos normal
+            pass
 
-    # 3. CASO: USUARIO YA LOGUEADO QUE CLIQUEA EL LINK
-    if request.user.is_authenticated:
-        if inviting_salon:
-            # ¡Lo vinculamos de inmediato!
-            return vincular_empleado_y_redirigir(request, request.user, inviting_salon)
-        return redirect('dashboard')
-
-    # 4. CASO: REGISTRO DE USUARIO NUEVO
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            try:
-                with transaction.atomic():
-                    user = form.save(commit=False)
-                    
-                    if inviting_salon:
-                        # Guardar como empleado
-                        user.role = 'EMPLOYEE'
-                        user.save()
-                        
-                        # Iniciar sesión antes de redirigir
-                        login(request, user)
-                        
-                        # VINCULAR Y SALTAR
-                        return vincular_empleado_y_redirigir(request, user, inviting_salon)
-                    else:
-                        # Registro normal (Dueño/Cliente)
-                        user.save()
-                        login(request, user)
-                        return redirect('dashboard')
+            user = form.save(commit=False)
+            
+            # Recuperar token del formulario si existe
+            posted_token = request.POST.get('invite_token')
+            
+            # Guardar usuario
+            if posted_token:
+                user.role = 'EMPLOYEE' # Pre-asignamos rol si viene invitado
+            user.save()
+            
+            # Iniciar sesión
+            login(request, user)
 
-            except Exception as e:
-                logger.error(f"Error crítico registro: {e}")
-                messages.error(request, "Error del sistema al crear cuenta.")
-        else:
-            # Si el formulario no es válido, mostramos errores en consola para depurar
-            logger.warning(f"Errores de formulario: {form.errors}")
-            messages.error(request, "Por favor corrige los errores en el formulario.")
+            # --- LÓGICA DE INVITACIÓN ---
+            if posted_token:
+                # Guardamos el token en la "mochila" (sesión) del usuario
+                request.session['pending_invite'] = posted_token
+                return redirect('accept_invite') # VAMOS A LA NUEVA PÁGINA
+            
+            return redirect('dashboard')
     else:
+        # Pre-seleccionar rol
         initial_data = {}
         if inviting_salon:
             initial_data = {'role': 'EMPLOYEE'}
@@ -113,17 +74,68 @@ def register(request):
     })
 
 @login_required
+def accept_invite_view(request):
+    """
+    PASO 2: PANTALLA INTERMEDIA DE ACEPTACIÓN
+    """
+    # Recuperar token de la sesión
+    token = request.session.get('pending_invite')
+    
+    if not token:
+        return redirect('dashboard') # Si no hay invitación, para la casa
+
+    salon = None
+    try:
+        uuid_obj = uuid.UUID(str(token))
+        salon = Salon.objects.filter(invite_token=uuid_obj).first()
+    except:
+        pass
+
+    if not salon:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # --- EL EMPLEADO DIJO "SI" ---
+        try:
+            # Crear perfil
+            Employee.objects.get_or_create(
+                user=request.user,
+                salon=salon,
+                defaults={
+                    'name': f"{request.user.first_name} {request.user.last_name}" or request.user.username,
+                    'phone': getattr(request.user, 'phone', '')
+                }
+            )
+            # Asegurar rol
+            request.user.role = 'EMPLOYEE'
+            request.user.save()
+            
+            # Limpiar sesión
+            if 'pending_invite' in request.session:
+                del request.session['pending_invite']
+                
+            messages.success(request, f"¡Ahora eres parte de {salon.name}!")
+            return redirect('employee_settings') # AL PANEL POR FIN
+            
+        except Exception as e:
+            logger.error(f"Error aceptando invitación: {e}")
+            messages.error(request, "Ocurrió un error al unirsite.")
+            return redirect('dashboard')
+
+    return render(request, 'registration/accept_invite.html', {'salon': salon})
+
+@login_required
 def dashboard_view(request):
     user = request.user
     role = getattr(user, 'role', 'CUSTOMER') 
 
-    # --- ROL EMPLEADO ---
+    # --- EMPLEADO ---
     if role == 'EMPLOYEE':
         if hasattr(user, 'employee'):
             return redirect('employee_settings')
         return redirect('employee_join')
 
-    # --- ROL DUEÑO ---
+    # --- DUEÑO ---
     elif role in ['ADMIN', 'OWNER'] or getattr(user, 'is_business_owner', False):
         try:
             salon = Salon.objects.filter(owner=user).first()
@@ -133,7 +145,7 @@ def dashboard_view(request):
         except:
             return redirect('create_salon')
 
-    # --- ROL CLIENTE ---
+    # --- CLIENTE ---
     else:
         bookings = []
         try:
@@ -144,21 +156,6 @@ def dashboard_view(request):
 
 @login_required
 def employee_join_view(request):
-    """
-    Vista de respaldo: Si cayeron aquí, pueden pegar el código manual.
-    """
-    if request.method == 'POST':
-        token = request.POST.get('invite_token')
-        try:
-            uuid_obj = uuid.UUID(str(token))
-            salon = Salon.objects.filter(invite_token=uuid_obj).first()
-            if salon:
-                return vincular_empleado_y_redirigir(request, request.user, salon)
-            else:
-                messages.error(request, "Código no encontrado.")
-        except:
-            messages.error(request, "Código inválido.")
-            
     return render(request, 'registration/employee_join.html')
 
 @login_required
