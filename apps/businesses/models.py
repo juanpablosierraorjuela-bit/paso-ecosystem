@@ -62,6 +62,9 @@ class Salon(models.Model):
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100)
+    # --- CAMPO QUE FALTABA ---
+    description = models.TextField(blank=True, verbose_name="Descripción") 
+    # -------------------------
     duration_minutes = models.PositiveIntegerField(default=30)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
