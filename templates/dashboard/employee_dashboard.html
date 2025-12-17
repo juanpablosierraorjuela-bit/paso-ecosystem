@@ -1,104 +1,60 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card shadow border-0">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="mb-0 fw-bold">💇‍♂️ Panel de Profesional</h4>
-                        <p class="mb-0 small text-white-50">Hola, {{ employee.name }}</p>
-                    </div>
-                    <span class="badge bg-light text-primary">{{ employee.salon.name }}</span>
+<div style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="font-weight: 800; margin-bottom: 10px;">Panel Profesional</h1>
+        <p style="color: var(--secondary);">Hola, {{ employee.name }}. Configura tu disponibilidad.</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="glass-panel" style="padding: 30px; margin-bottom: 30px;">
+            <h3 style="font-weight: 800; margin-bottom: 20px;">Configuración General</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.9rem;">Inicio Almuerzo</label>
+                    {{ settings_form.lunch_start }}
                 </div>
-                
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="row g-4">
-                            <div class="col-md-5 border-end">
-                                <h5 class="text-primary mb-3">⚙️ Configuración Personal</h5>
-                                
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold">Horario de Almuerzo</label>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">Inicio</span>
-                                        {{ settings_form.lunch_start }}
-                                    </div>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Fin</span>
-                                        {{ settings_form.lunch_end }}
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold text-info">
-                                        <i class="bi bi-telegram"></i> Integración Telegram
-                                    </label>
-                                    <p class="small text-muted">Recibe notificaciones en tu celular cuando un cliente te elija.</p>
-                                    
-                                    <div class="mb-2">
-                                        <label class="small text-muted">Bot Token</label>
-                                        {{ settings_form.telegram_bot_token }}
-                                    </div>
-                                    <div>
-                                        <label class="small text-muted">Chat ID</label>
-                                        {{ settings_form.telegram_chat_id }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-7">
-                                <h5 class="text-primary mb-3">📅 Tu Horario Semanal</h5>
-                                <p class="small text-muted mb-3">Define cuándo estás disponible para recibir citas.</p>
-                                
-                                {{ schedule_formset.management_form }}
-                                
-                                <div class="table-responsive">
-                                    <table class="table table-sm align-middle">
-                                        <thead>
-                                            <tr class="text-muted small">
-                                                <th>Día</th>
-                                                <th>Entrada</th>
-                                                <th>Salida</th>
-                                                <th>Descanso</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for form in schedule_formset %}
-                                                <tr>
-                                                    {{ form.id }}
-                                                    <td class="fw-bold">
-                                                        {{ form.instance.get_weekday_display }}
-                                                        <div class="d-none">{{ form.weekday }}</div>
-                                                    </td>
-                                                    <td>{{ form.from_hour }}</td>
-                                                    <td>{{ form.to_hour }}</td>
-                                                    <td>
-                                                        <div class="form-check form-switch">
-                                                            {{ form.is_closed }}
-                                                            <label class="form-check-label small">No trabajo</label>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-grid mt-4 pt-3 border-top">
-                            <button type="submit" class="btn btn-success btn-lg rounded-pill">
-                                Guardar Mi Configuración
-                            </button>
-                        </div>
-                    </form>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.9rem;">Fin Almuerzo</label>
+                    {{ settings_form.lunch_end }}
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="salon-card">
+            <h3 style="font-weight: 800; margin-bottom: 20px;">Horario Semanal</h3>
+            <p style="color: var(--secondary); font-size: 0.9rem; margin-bottom: 20px;">Define tus horas de trabajo para que los clientes te reserven.</p>
+            
+            {{ schedule_formset.management_form }}
+            <div style="display: grid; gap: 15px;">
+                {% for form in schedule_formset %}
+                    <div style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        {{ form.id }}
+                        <div style="font-weight: 700; width: 100px;">
+                            {% if forloop.counter0 == 0 %}Lunes{% endif %}
+                            {% if forloop.counter0 == 1 %}Martes{% endif %}
+                            {% if forloop.counter0 == 2 %}Miércoles{% endif %}
+                            {% if forloop.counter0 == 3 %}Jueves{% endif %}
+                            {% if forloop.counter0 == 4 %}Viernes{% endif %}
+                            {% if forloop.counter0 == 5 %}Sábado{% endif %}
+                            {% if forloop.counter0 == 6 %}Domingo{% endif %}
+                        </div>
+                        <div style="flex: 1;">{{ form.from_hour }}</div>
+                        <div style="flex: 1;">{{ form.to_hour }}</div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            {{ form.is_closed }} <span style="font-size: 0.8rem;">Cerrado</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <button type="submit" class="btn-access" style="padding: 15px 40px; font-size: 1.1rem;">Guardar Cambios</button>
+        </div>
+    </form>
 </div>
 {% endblock %}
