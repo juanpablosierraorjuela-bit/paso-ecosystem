@@ -1,217 +1,111 @@
 /* =========================================
-   🎨 ESTILO MARKETPLACE "PASO LUXURY"
-   Moderno | Minimalista | Gradientes | Glassmorphism
+   ESTILO ORIGINAL "PASO LEGACY" (EL QUE TE GUSTA)
    ========================================= */
-
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
-:root {
-    --bg-base: #f8fafc;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --primary-gradient: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-    --accent-gradient: linear-gradient(to right, #ec4899, #8b5cf6); /* Rosa a Violeta */
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.5);
+:root { 
+    --font-main: 'Plus Jakarta Sans', sans-serif; 
+    --primary: #0f172a; 
+    --secondary: #64748b; 
+    --accent: #ec4899; 
+    --bg-body: #f8fafc; 
     --card-radius: 28px;
-    --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.08);
 }
 
-body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: var(--bg-base);
-    color: var(--text-main);
-    overflow-x: hidden;
-    position: relative;
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body { 
+    font-family: var(--font-main); 
+    background-color: var(--bg-body); 
+    color: var(--primary); 
+    min-height: 100vh; 
+    margin: 0; 
+    padding: 0; 
+    overflow-x: hidden; 
 }
 
-/* --- 1. FONDO AMBIENTAL CON BLOBS ANIMADOS --- */
-.ambient-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-    overflow: hidden;
-    background: radial-gradient(circle at 50% 50%, #fff, #f1f5f9);
-}
+/* --- FONDO AMBIENTAL (Tus blobs) --- */
+.ambient-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); overflow: hidden; pointer-events: none; }
+.blob { position: absolute; filter: blur(80px); opacity: 0.6; animation: float 10s infinite alternate ease-in-out; }
+.blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #fce7f3; }
+.blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #e0e7ff; animation-delay: -5s; }
+.blob-3 { top: 40%; left: 40%; width: 300px; height: 300px; background: #fae8ff; animation-delay: -2s; }
+@keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
 
-.blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.6;
-    animation: float 10s infinite ease-in-out;
-}
+/* --- NAVBAR --- */
+.navbar { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; }
+.navbar.scrolled { background: rgba(255,255,255,0.9); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.brand-pill { text-decoration: none; font-weight: 800; color: var(--primary); font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
 
-.blob-1 { width: 600px; height: 600px; background: #fce7f3; top: -10%; left: -10%; animation-delay: 0s; }
-.blob-2 { width: 500px; height: 500px; background: #ede9fe; bottom: -10%; right: -5%; animation-delay: 2s; }
-.blob-3 { width: 300px; height: 300px; background: #dbeafe; top: 40%; left: 30%; animation-delay: 4s; }
+/* --- BOTONES --- */
+.btn-access { text-decoration: none; background: var(--primary); color: white; padding: 10px 24px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2); border: none; cursor: pointer; }
+.btn-access:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3); background: #1e293b; color: #fff; }
 
-@keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-}
+.btn-secondary-custom { background: white; color: var(--primary); border: 1px solid #e2e8f0; }
+.btn-secondary-custom:hover { background: #f1f5f9; }
 
-/* --- 2. NAVBAR --- */
-.navbar {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-    padding: 1rem 0;
-}
+/* --- HERO & HOME --- */
+header.hero-header { text-align: center; padding: 100px 20px 60px; max-width: 900px; margin: 0 auto; }
+.hero-title { font-size: 4.5rem; font-weight: 800; margin: 0 0 15px; line-height: 1.05; letter-spacing: -2px; background: linear-gradient(180deg, #0f172a 20%, #475569 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: fadeUp 0.8s ease-out forwards; }
+.hero-title span { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-subtitle { font-size: 1.25rem; color: var(--secondary); margin-bottom: 30px; animation: fadeUp 0.8s ease-out 0.2s forwards; }
 
-.navbar.scrolled {
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
+.btn-legado { display: inline-flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.6); padding: 12px 28px; border-radius: 50px; text-decoration: none; color: #475569; font-weight: 600; transition: all 0.3s ease; backdrop-filter: blur(10px); margin-bottom: 50px; animation: fadeUp 0.8s ease-out 0.3s forwards; }
+.btn-legado:hover { background: white; border-color: #d4af37; color: #d4af37; transform: translateY(-3px); }
 
-.navbar-brand { font-weight: 800; font-size: 1.5rem; color: var(--text-main) !important; letter-spacing: -0.5px; }
-.navbar-brand i { color: #ec4899; }
-.nav-link { font-weight: 600; color: var(--text-main) !important; font-size: 0.95rem; }
+/* --- SEARCH --- */
+.search-container { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); padding: 8px; border-radius: 50px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); border: 1px solid white; width: fit-content; margin: 0 auto 60px; animation: fadeUp 0.8s ease-out 0.4s forwards; transition: transform 0.3s; }
+.search-container:hover { transform: translateY(-5px); }
+.city-select { border: none; background: transparent; padding: 12px 20px; font-family: var(--font-main); font-size: 1rem; color: var(--primary); font-weight: 600; outline: none; cursor: pointer; min-width: 200px; }
+.btn-geo { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--primary); color: white; font-size: 1.2rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+.btn-geo:hover { background: var(--accent); transform: rotate(15deg); }
 
-.btn-nav-action {
-    background-color: var(--text-main);
-    color: #fff !important;
-    border-radius: 50px;
-    padding: 8px 24px;
-    font-weight: 600;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-    transition: all 0.3s ease;
-}
-.btn-nav-action:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(15, 23, 42, 0.3); }
+/* --- TARJETAS (SALONES) --- */
+.grid-wrapper { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; max-width: 1100px; margin: 0 auto; padding: 0 20px 100px; }
+.salon-card { background: white; border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03); text-decoration: none; color: inherit; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid rgba(255,255,255,0.8); position: relative; overflow: hidden; display: block; animation: fadeUp 0.6s ease-out forwards; }
+.salon-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 50px -10px rgba(0,0,0,0.08); z-index: 10; }
+.card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+.salon-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--primary); font-size: 1.8rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #fff; }
+.salon-info h3 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+.salon-info span { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
+.address { font-size: 0.95rem; color: var(--secondary); margin-bottom: 12px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* --- 3. HERO SECTION --- */
-.hero-section { padding: 100px 0 60px; text-align: center; position: relative; z-index: 1; }
-.hero-title {
-    font-size: 4.5rem;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -2px;
-    margin-bottom: 1.5rem;
-    background: linear-gradient(to right, #0f172a 40%, #475569);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: fadeUp 0.8s ease-out;
-}
-.hero-title span {
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.hero-subtitle {
-    font-size: 1.25rem; color: var(--text-muted); font-weight: 500; max-width: 600px; margin: 0 auto 3rem; animation: fadeUp 1s ease-out;
-}
+/* --- STATUS PILL --- */
+.status-pill { font-size: 0.75rem; font-weight: 800; padding: 8px 16px; border-radius: 30px; display: inline-flex; align-items: center; gap: 8px; }
+.status-pill.open { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.status-pill.open::before { content:''; width:8px; height:8px; background:#16a34a; border-radius:50%; }
+.status-pill.closed { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.status-pill.closed::before { content:''; width:8px; height:8px; background:#991b1b; border-radius:50%; }
 
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* --- SOCIAL ICONS --- */
+.social-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.social-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--secondary); font-size: 0.95rem; transition: 0.2s; text-decoration: none; border: 1px solid #e2e8f0; }
+.social-icon:hover { background: var(--primary); color: white; transform: translateY(-3px); }
 
-/* --- 4. BARRA DE BÚSQUEDA --- */
-.search-container {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(20px);
-    border: 1px solid #fff;
-    border-radius: 50px;
-    padding: 8px 15px;
-    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 750px;
-    margin: 0 auto 4rem;
-    animation: fadeUp 1.2s ease-out;
+/* --- ESTILOS EXTRA PARA DETALLES (VITRINA) --- */
+.glass-panel {
+    background: white; border-radius: 28px; padding: 40px; 
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); 
+    border: 1px solid rgba(255,255,255,0.8);
+    max-width: 900px; margin: 40px auto;
 }
-.search-input { border: none; background: transparent; padding: 12px 15px; font-size: 1rem; color: var(--text-main); width: 100%; }
-.search-input:focus { outline: none; }
+.service-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px; border-bottom: 1px solid #f1f5f9; transition: 0.3s;
+}
+.service-item:last-child { border-bottom: none; }
+.service-item:hover { background: #f8fafc; border-radius: 12px; transform: scale(1.01); }
+.price-tag { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
 
-/* BOTÓN GPS (Pin Radar) */
-.btn-location-pulse {
-    background: #fff;
-    color: #ec4899;
-    border: 2px solid #ec4899;
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem; cursor: pointer;
-    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative; overflow: visible; flex-shrink: 0;
+/* Formularios al estilo del cliente */
+.form-control, .form-select {
+    border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 15px;
+    font-family: var(--font-main); background: #f8fafc; color: var(--primary);
+    width: 100%; margin-bottom: 15px; display: block;
 }
-.btn-location-pulse::before {
-    content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 100%; height: 100%; border-radius: 50%; background-color: rgba(236, 72, 153, 0.2); z-index: -1; animation: radar-wave 2s infinite;
-}
-.btn-location-pulse:hover {
-    background: var(--accent-gradient); color: #fff; border-color: transparent; transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
-}
-.btn-location-pulse:hover::before { animation: none; }
+.form-control:focus { outline: none; border-color: var(--primary); background: white; }
 
-@keyframes radar-wave {
-    0% { width: 100%; height: 100%; opacity: 0.8; }
-    100% { width: 180%; height: 180%; opacity: 0; }
-}
-
-/* --- 5. TARJETAS --- */
-.salon-card {
-    background: #fff; border-radius: var(--card-radius); border: 1px solid rgba(255,255,255,0.8);
-    box-shadow: var(--shadow-soft); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    overflow: hidden; height: 100%; position: relative; text-decoration: none !important; display: block;
-}
-.salon-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 20px 50px -10px rgba(0,0,0,0.15); z-index: 2; }
-.card-img-top { height: 200px; object-fit: cover; width: 100%; border-bottom: 1px solid #f1f5f9; }
-.card-body { padding: 1.5rem; }
-
-.salon-avatar {
-    width: 48px; height: 48px; background: linear-gradient(135deg, #e2e8f0, #cbd5e1); border-radius: 14px;
-    display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); font-size: 1.2rem; margin-right: 15px;
-}
-
-/* PILL DE ESTADO */
-.status-pill {
-    font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
-    display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px;
-}
-.status-open { background-color: #dcfce7; color: #166534; }
-.status-open::before { content: ''; display: block; width: 6px; height: 6px; background-color: #166534; border-radius: 50%; }
-.status-closed { background-color: #fee2e2; color: #991b1b; }
-.status-closed::before { content: ''; display: block; width: 6px; height: 6px; background-color: #991b1b; border-radius: 50%; }
-
-.card-title { font-weight: 700; color: var(--text-main); font-size: 1.1rem; margin-bottom: 0.2rem; }
-.card-location { color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
-
-/* NUEVO: BOTÓN AGENDA 24/7 DE LUJO */
-.btn-agenda-247 {
-    background: transparent;
-    border: 1px solid #ec4899;
-    color: #ec4899;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.btn-agenda-247:hover {
-    background: var(--accent-gradient);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3);
-}
-
-footer { background-color: #fff; border-top: 1px solid #f1f5f9; color: var(--text-muted); }
-
-@media (max-width: 768px) {
-    .hero-title { font-size: 2.8rem; }
-    .search-container { flex-direction: column; padding: 15px; border-radius: 28px; }
-    .btn-location-pulse { width: 100%; border-radius: 14px; margin-top: 10px; }
-}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 768px) { .hero-title { font-size: 3rem; } .search-container { width: 100%; } .city-select { width: 100%; } .navbar { padding: 15px 20px; } }
