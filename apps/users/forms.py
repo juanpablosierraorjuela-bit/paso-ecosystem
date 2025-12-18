@@ -5,22 +5,23 @@ from .models import User
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = User
-        # ¡AQUÍ ESTÁ LA CLAVE! Agregamos 'role' para que se guarde lo que el usuario elige
-        fields = ('email', 'username', 'role') 
+        # IMPORTANTE: Aquí incluimos 'role' para que se guarde la selección
+        fields = ('email', 'username', 'role')
         
         widgets = {
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'nombre@ejemplo.com'}),
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario único'}),
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Elige un usuario'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacemos que el Email sea obligatorio
         self.fields['email'].required = True
-        self.fields['role'].label = "¿Cómo quieres usar PASO?"
+        self.fields['role'].label = "¿Cómo quieres usar la plataforma?"
+        # Ayuda visual para el campo rol
+        self.fields['role'].help_text = "Selecciona 'Dueño' si vas a registrar tu negocio."
 
 class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = User
-        fields = ('email', 'username', 'role')
+        fields = ('email', 'username', 'role', 'phone')

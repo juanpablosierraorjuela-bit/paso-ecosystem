@@ -4,19 +4,22 @@ from django.contrib.auth import login
 from django.db import transaction
 from django.contrib import messages
 
+# Importamos modelos necesarios
 from apps.businesses.models import Salon, Booking
 from apps.businesses.forms import SalonCreateForm
 from .forms import CustomUserCreationForm
 
 def home(request):
+    """Página de inicio pública"""
     salons = Salon.objects.all().order_by('-id')
     return render(request, 'home.html', {'salons': salons})
 
 def register(request):
     """
-    REGISTRO INTELIGENTE:
-    Detecta qué eligió el usuario y lo manda a su lugar correcto.
+    Vista de Registro Inteligente.
+    Guarda el usuario y lo redirige según el rol que eligió.
     """
+    # Si ya está logueado, lo mandamos al dashboard para que el dashboard decida
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -24,19 +27,20 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Iniciamos sesión automáticamente tras el registro
             login(request, user)
             
-            # --- CEREBRO DE DIRECCIONAMIENTO ---
+            # --- LÓGICA DE DIRECCIONAMIENTO ---
             if user.role == 'OWNER':
-                # Es dueño, pero... ¿ya creó su negocio? (Al registrarse obvio que no)
+                # Si se registró como DUEÑO, lo mandamos a crear su salón
                 return redirect('create_salon')
             
             elif user.role == 'EMPLOYEE':
-                # Es empleado, va a configurar su horario
+                # Si es EMPLEADO, a su configuración
                 return redirect('employee_settings')
             
             else:
-                # Es cliente (CLIENT), va al inicio a buscar peluquerías
+                # Si es CLIENTE, al inicio
                 return redirect('home')
     else:
         form = CustomUserCreationForm()
@@ -46,34 +50,35 @@ def register(request):
 @login_required
 def dashboard_view(request):
     """
-    PANEL INTELIGENTE:
-    Si entra un dueño, ve métricas. Si entra cliente, ve citas.
+    Panel de Control Central (Traffic Controller).
+    Cada vez que alguien hace clic en "Panel" o "Mi Cuenta", pasa por aquí.
     """
     user = request.user
 
-    # 1. CASO DUEÑO
+    # CASO 1: DUEÑO
     if user.role == 'OWNER':
-        # Verificamos si ya creó el salón
         if hasattr(user, 'salon'):
+            # Si ya tiene salón, mostramos su panel de métricas
             return render(request, 'dashboard/index.html', {'salon': user.salon})
         else:
-            # Si es dueño pero no tiene salón, lo obligamos a crearlo
+            # Si es dueño pero NO tiene salón, lo obligamos a crearlo
             return redirect('create_salon')
 
-    # 2. CASO EMPLEADO
+    # CASO 2: EMPLEADO
     if user.role == 'EMPLOYEE':
         return redirect('employee_settings')
 
-    # 3. CASO CLIENTE (Por defecto)
+    # CASO 3: CLIENTE (Por defecto)
+    # Mostramos sus citas futuras
     bookings = Booking.objects.filter(customer=user).order_by('-start_time')
     return render(request, 'dashboard/client_dashboard.html', {'bookings': bookings})
 
 @login_required
 def create_salon_view(request):
     """
-    Solo para dueños que aún no tienen salón.
+    Vista para crear el negocio (Solo para Dueños nuevos)
     """
-    # Si ya tiene salón, lo sacamos de aquí
+    # Si ya tiene salón, no debería estar aquí
     if hasattr(request.user, 'salon'):
         return redirect('dashboard')
 
@@ -85,17 +90,21 @@ def create_salon_view(request):
                 salon.owner = request.user
                 salon.save()
                 
-                # Re-confirmamos que sea dueño
+                # Reaseguramos que el rol sea OWNER
                 request.user.role = 'OWNER'
                 request.user.save()
 
-            messages.success(request, "¡Negocio creado! Ahora configura tus servicios.")
+            messages.success(request, "¡Negocio creado exitosamente!")
+            # Al terminar, lo mandamos a agregar servicios
             return redirect('manage_services')
     else:
         form = SalonCreateForm()
         
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
-# Vistas auxiliares
-def accept_invite_view(request): return redirect('dashboard')
-def employee_join_view(request): return redirect('dashboard')
+# Vistas de soporte (necesarias para evitar errores de importación)
+def accept_invite_view(request):
+    return redirect('dashboard')
+
+def employee_join_view(request):
+    return redirect('dashboard')

@@ -2,6 +2,12 @@
 from django.db import models
 
 class User(AbstractUser):
+    """
+    Usuario personalizado que soporta roles:
+    - CLIENT: Usuario normal que busca citas.
+    - EMPLOYEE: Estilista que gestiona su agenda.
+    - OWNER: Dueño que crea el negocio.
+    """
     ROLE_CHOICES = (
         ('CLIENT', 'Cliente / Usuario'),
         ('EMPLOYEE', 'Colaborador / Estilista'),
@@ -9,8 +15,6 @@ class User(AbstractUser):
     )
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='CLIENT')
-    
-    # Campos opcionales extra
     phone = models.CharField(max_length=20, blank=True, null=True)
     
     def __str__(self):
