@@ -1,19 +1,26 @@
 #!/bin/bash
 
-# Detener el script si hay algún error
-set -e
+# Salir si ocurre algún error
+set -o errexit
+set -o pipefail
+set -o nounset
 
-echo "--- 0. Reparando Migraciones ---"
-# Forzamos la creación de migraciones para las apps específicas
-python manage.py makemigrations users businesses --noinput
-python manage.py makemigrations --noinput
+echo "🚀 Iniciando Deployment en Render..."
 
-echo "--- 1. Aplicando Migraciones (Falso positivo permitido) ---"
-# Intentamos aplicar todo. Si hay error de 'ya existe', continuamos.
-python manage.py migrate --noinput || echo "Advertencia: Migración parcial, continuando..."
+# 1. Aplicar migraciones a la Base de Datos
+echo "📦 Aplicando migraciones de base de datos..."
+python manage.py migrate --noinput
 
-echo "--- 2. Recolectando Archivos Estáticos ---"
+# 2. Recolectar archivos estáticos (CSS, JS, Imágenes)
+echo "🎨 Recolectando archivos estáticos..."
 python manage.py collectstatic --noinput
 
-echo "--- 3. Iniciando Servidor Gunicorn ---"
-exec gunicorn config.wsgi:application --bind 0.0.0.0:8000
+# 3. Crear superusuario si no existe (Opcional, requiere variables de entorno)
+# python manage.py createsuperuser --noinput || true
+
+# 4. Iniciar Gunicorn (Servidor de Producción)
+echo "🔥 Iniciando servidor Gunicorn..."
+exec gunicorn config.wsgi:application \
+    --bind 0.0.0.0:$PORT \
+    --workers 4 \
+    --log-level info

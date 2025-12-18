@@ -2,19 +2,29 @@
 
 {% block content %}
 <header class="hero-header">
-    <h1 class="hero-title">Tu estilo,<br><span>tu tiempo.</span></h1>
-    <p class="hero-subtitle">Reserva en los mejores salones y barberías cerca de ti.<br>Sin llamadas, sin esperas.</p>
-    
-    <a href="#" class="btn-legado">📖 Conoce nuestro legado</a>
-    
-    <div class="search-container">
-        <select id="city-selector" class="city-select">
-            <option value="">🌎 Ver todas las ciudades</option>
-            {% for s in salons %}
-                <option value="{{ s.city }}">📍 {{ s.city }}</option>
-            {% endfor %}
-        </select>
-        <button class="btn-geo" title="Buscar cerca de mí">📍</button>
+    <div class="hero-content">
+        <h1 class="hero-title">Tu estilo,<br><span class="highlight">tu tiempo.</span></h1>
+        <p class="hero-subtitle">Descubre los mejores salones y barberías cerca de ti.<br>Reserva al instante, sin llamadas.</p>
+        
+        <a href="#" class="btn-legado"><i class="fas fa-book-open"></i> Nuestra Historia</a>
+        
+        <div class="search-container">
+            <div class="input-wrapper">
+                <i class="fas fa-map-marker-alt input-icon"></i>
+                <select id="city-selector" class="city-select">
+                    <option value="">🌎 Ver todas las ciudades</option>
+                    {% for s in salons %}
+                        <option value="{{ s.city }}">{{ s.city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="btn-geo" title="Buscar locales a menos de 600m">
+                <div class="pulse-ring"></div>
+                <i class="fas fa-location-arrow"></i>
+                <span>Cerca de mí</span>
+            </button>
+        </div>
     </div>
 </header>
 
@@ -58,4 +68,19 @@
         </div>
     {% endfor %}
 </div>
+
+<script>
+    // Script simple para simular la búsqueda por geolocalización (funcionalidad visual)
+    document.querySelector('.btn-geo').addEventListener('click', function() {
+        this.classList.add('searching');
+        this.querySelector('span').textContent = "Buscando...";
+        
+        // Aquí iría tu lógica real de filtrado por 600m
+        setTimeout(() => {
+            this.classList.remove('searching');
+            this.querySelector('span').textContent = "Cerca de mí";
+            alert("Buscando negocios a 600m a la redonda...");
+        }, 1500);
+    });
+</script>
 {% endblock %}

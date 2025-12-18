@@ -7,7 +7,8 @@
     --font-main: 'Plus Jakarta Sans', sans-serif; 
     --primary: #0f172a; 
     --secondary: #64748b; 
-    --accent: #ec4899; 
+    --accent: #ec4899;      /* Color principal del pulso/botón */
+    --accent-glow: rgba(236, 72, 153, 0.4);
     --bg-body: #f8fafc; 
     --card-radius: 28px;
     --nav-height: 70px;
@@ -67,30 +68,166 @@ body {
 .status-pill.open { background: #dcfce7; color: #15803d; }
 .status-pill.closed { background: #fee2e2; color: #991b1b; }
 
+.social-row { display: flex; gap: 10px; margin-top: 15px; }
+.social-icon { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; color: var(--primary); transition: 0.2s; text-decoration: none; }
+.social-icon:hover { transform: translateY(-2px); }
+.social-icon.instagram:hover { color: #d62976; border-color: #fce7f3; background: #fff1f2; }
+.social-icon.facebook:hover { color: #1877f2; border-color: #dbeafe; background: #eff6ff; }
+
 /* --- FORMULARIOS --- */
 .form-control, .form-select { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #f8fafc; font-family: var(--font-main); width: 100%; transition: 0.2s; }
 .form-control:focus { outline: none; border-color: var(--primary); background: white; }
+
+/* =======================================================
+   HERO & HOME STYLES (LO QUE SE HABÍA BORRADO)
+   ======================================================= */
+.hero-header {
+    text-align: center;
+    padding: 80px 20px 60px;
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 0 0 20px;
+    letter-spacing: -1px;
+}
+
+.hero-title span.highlight {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    color: var(--secondary);
+    margin: 0 0 40px;
+    line-height: 1.6;
+}
+
+.btn-legado {
+    display: inline-block;
+    margin-bottom: 40px;
+    font-size: 0.9rem;
+    color: var(--secondary);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--secondary);
+    padding-bottom: 2px;
+}
+
+/* --- CONTENEDOR DE BÚSQUEDA FLOTANTE --- */
+.search-container {
+    background: white;
+    padding: 10px;
+    border-radius: 20px; /* Bordes muy redondeados */
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid rgba(255,255,255,0.5);
+}
+
+.input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 15px;
+    color: var(--secondary);
+    pointer-events: none;
+}
+
+.city-select {
+    width: 100%;
+    border: none;
+    background: #f8fafc;
+    padding: 15px 15px 15px 45px; /* Espacio para el icono */
+    border-radius: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    appearance: none; /* Quita estilo por defecto del navegador */
+}
+.city-select:focus { outline: none; background: #f1f5f9; }
+
+/* --- EL NUEVO BOTÓN DE UBICACIÓN (ADIÓS COLOMBINA) --- */
+.btn-geo {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-geo i { font-size: 1.1rem; }
+
+/* Animación de "Respiración" suave */
+@keyframes softPulse {
+    0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+    70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+}
+
+.btn-geo {
+    animation: softPulse 2s infinite;
+}
+
+.btn-geo:hover {
+    background: #db2777;
+    transform: translateY(-2px);
+}
+
+.btn-geo:active {
+    transform: scale(0.95);
+}
+
+/* Estado de búsqueda activa (JavaScript) */
+.btn-geo.searching {
+    background: var(--secondary);
+    animation: none;
+    cursor: wait;
+}
 
 /* =========================================
    📱 MODO MÓVIL (APP NATIVA)
    ========================================= */
 @media (max-width: 768px) {
-    /* 1. OCULTAR NAVBAR ESCRITORIO */
     .desktop-nav { display: none !important; }
 
-    /* 2. MOSTRAR HEADER MÓVIL (SIMPLE) */
     .mobile-header {
         display: flex; justify-content: space-between; align-items: center;
         padding: 15px 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
         position: sticky; top: 0; z-index: 999; border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
-    /* 3. MOSTRAR BARRA INFERIOR (BOTTOM NAV) */
     .mobile-bottom-nav {
         display: flex; justify-content: space-around; align-items: center;
         position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
         background: white; border-top: 1px solid #f1f5f9; box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
-        z-index: 1000; padding-bottom: 10px; /* Safe area para iPhone */
+        z-index: 1000; padding-bottom: 10px;
     }
 
     .nav-item {
@@ -102,7 +239,6 @@ body {
     .nav-item i { font-size: 1.4rem; margin-bottom: 4px; }
     .nav-item.active { color: var(--primary); }
 
-    /* Botón central flotante (Opcional, estilo Instagram/crear) */
     .nav-btn-central {
         background: var(--primary); color: white; width: 50px; height: 50px;
         border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -110,17 +246,21 @@ body {
     }
     .nav-item.active .nav-btn-central { background: var(--accent); }
 
-    /* 4. AJUSTES DE GRID Y TEXTO MÓVIL */
-    .grid-wrapper { grid-template-columns: 1fr; padding: 0 20px 80px; } /* 1 columna */
-    .hero-title { font-size: 2.8rem !important; }
+    .grid-wrapper { grid-template-columns: 1fr; padding: 0 20px 80px; }
+    
+    /* Ajustes específicos del Hero en Móvil */
+    .hero-title { font-size: 2.2rem !important; }
+    .hero-header { padding: 40px 20px; }
+    .search-container { flex-direction: column; padding: 15px; }
+    .btn-geo { width: 100%; justify-content: center; }
+    
     .glass-panel { padding: 25px; border-radius: 20px; }
     
-    /* Forzar que las columnas se apilen */
     .row, div[style*="display: grid"], div[style*="display: flex"] {
         flex-direction: column; grid-template-columns: 1fr !important;
     }
-    /* Excepciones (cosas que sí queremos en fila en móvil) */
-    .mobile-bottom-nav, .mobile-header, .social-row, .status-row { 
+    /* Excepciones */
+    .mobile-bottom-nav, .mobile-header, .social-row, .status-row, .search-container .input-wrapper { 
         flex-direction: row !important; 
     }
 }
