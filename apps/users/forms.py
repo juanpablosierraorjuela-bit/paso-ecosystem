@@ -1,36 +1,26 @@
 ﻿from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import User
 
 class CustomUserCreationForm(UserCreationForm):
-    # Opciones de Rol
-    ROLE_CHOICES = [
-        ('CUSTOMER', 'Soy Cliente (Quiero reservar citas) 👤'),
-        ('ADMIN', 'Soy Dueño (Tengo un negocio) 💼'),
-        ('EMPLOYEE', 'Soy Colaborador (Trabajo en un salón) ✂️'),
-    ]
-    
-    role = forms.ChoiceField(
-        choices=ROLE_CHOICES, 
-        label="¿Cuál es tu perfil?",
-        widget=forms.RadioSelect(attrs={'class': 'list-unstyled gap-2 mb-3'}),
-        help_text="Selecciona 'Colaborador' si tienes una invitación."
-    )
-
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'role')
+        # ¡AQUÍ ESTÁ LA CLAVE! Agregamos 'role' para que se guarde lo que el usuario elige
+        fields = ('email', 'username', 'role') 
+        
         widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'nombre@ejemplo.com'}),
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario único'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Correo electrónico'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu Nombre'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu Apellido'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Celular / WhatsApp'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.role = self.cleaned_data['role']
-        if commit:
-            user.save()
-        return user
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hacemos que el Email sea obligatorio
+        self.fields['email'].required = True
+        self.fields['role'].label = "¿Cómo quieres usar PASO?"
+
+class CustomUserChangeForm(UserChangeForm):
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'role')
