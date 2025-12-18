@@ -1,12 +1,14 @@
 ﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login
 from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import login
-from apps.users.forms import CustomUserCreationForm
 import datetime
+
+# Importamos formulario de usuario (Asegúrate de tener este form en apps/users/forms.py)
+from apps.users.forms import CustomUserCreationForm
 
 from apps.businesses.models import (
     Salon, Service, Booking, Employee, OpeningHours, EmployeeSchedule
@@ -17,17 +19,22 @@ from apps.businesses.forms import (
 )
 
 def home(request):
-    salones = Salon.objects.all()
+    # Recuperamos todos los salones
+    salons = Salon.objects.all()
+    
+    # Obtenemos ciudades únicas para el filtro (si lo usas en el futuro)
     ciudades = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
+    
+    # --- CORRECCIÓN AQUÍ ---
+    # Enviamos 'salons' (inglés) para que coincida con tu home.html
     return render(request, 'home.html', {
-        'salones': salones,
+        'salons': salons,
         'ciudades': ciudades
     })
 
 def register(request):
     if request.user.is_authenticated:
-        next_url = request.GET.get('next')
-        if next_url: return redirect(next_url)
+        # Redirección inteligente si ya está logueado
         if request.user.role == 'ADMIN': return redirect('dashboard')
         if request.user.role == 'EMPLOYEE': return redirect('employee_dashboard')
         return redirect('home')
@@ -39,9 +46,7 @@ def register(request):
             login(request, user)
             messages.success(request, f'¡Bienvenido {user.first_name}!')
             
-            next_url = request.GET.get('next')
-            if next_url: return redirect(next_url)
-            
+            # Redirección según rol
             if user.role == 'ADMIN': return redirect('dashboard')
             else: return redirect('home')
     else:
@@ -52,41 +57,50 @@ def register(request):
 def salon_detail(request, slug):
     salon = get_object_or_404(Salon, slug=slug)
     services = salon.services.all()
-    is_open = salon.is_open()
+    
+    # Usamos la propiedad segura del modelo
+    is_open = salon.is_open
+    
     context = {'salon': salon, 'services': services, 'is_open': is_open}
     return render(request, 'salon_detail.html', context)
 
 @login_required
 def dashboard(request):
-    if request.user.role in ['EMPLOYEE', 'CUSTOMER'] and not hasattr(request.user, 'salon'):
+    # Evitar que empleados o clientes entren al panel de dueños
+    if hasattr(request.user, 'role') and request.user.role in ['EMPLOYEE', 'CUSTOMER'] and not hasattr(request.user, 'salon'):
         if hasattr(request.user, 'employee'): return redirect('employee_dashboard')
         return redirect('home')
 
     try:
         salon = request.user.salon
     except Salon.DoesNotExist:
+        # Lógica para crear salón si no existe
         if request.method == 'POST':
             form = SalonForm(request.POST)
             if form.is_valid():
                 salon = form.save(commit=False)
                 salon.owner = request.user
                 salon.save()
+                # Crear horarios por defecto (Lunes a Sábado)
                 for i in range(6): 
                     OpeningHours.objects.create(salon=salon, weekday=i, from_hour=datetime.time(8,0), to_hour=datetime.time(20,0))
+                # Domingo cerrado por defecto
                 OpeningHours.objects.create(salon=salon, weekday=6, from_hour=datetime.time(9,0), to_hour=datetime.time(15,0), is_closed=True)
+                
                 messages.success(request, '¡Negocio registrado exitosamente!')
                 return redirect('dashboard')
         else:
             form = SalonForm()
         return render(request, 'dashboard/create_salon.html', {'form': form})
 
+    # Datos para el dashboard existente
     domain = request.get_host() 
     invite_link = f"http://{domain}/unete/{salon.invite_token}/"
     webhook_url = f"http://{domain}/api/webhooks/bold/"
 
     if request.method == 'POST':
         if 'update_settings' in request.POST:
-            form = SalonForm(request.POST, instance=salon)
+            form = SalonForm(request.POST, request.FILES, instance=salon)
             if form.is_valid():
                 form.save()
                 messages.success(request, 'Información actualizada.')
@@ -105,7 +119,11 @@ def dashboard(request):
                 day = h_form.cleaned_data['weekday']
                 OpeningHours.objects.update_or_create(
                     salon=salon, weekday=day,
-                    defaults={'from_hour': h_form.cleaned_data['from_hour'], 'to_hour': h_form.cleaned_data['to_hour'], 'is_closed': h_form.cleaned_data['is_closed']}
+                    defaults={
+                        'from_hour': h_form.cleaned_data['from_hour'], 
+                        'to_hour': h_form.cleaned_data['to_hour'], 
+                        'is_closed': h_form.cleaned_data['is_closed']
+                    }
                 )
                 messages.success(request, 'Horario actualizado.')
                 return redirect('dashboard')
@@ -119,7 +137,11 @@ def dashboard(request):
     employees = salon.employees.all()
     hours = salon.opening_hours.all().order_by('weekday')
 
-    context = {'salon': salon, 'form': form, 's_form': s_form, 'h_form': h_form, 'services': services, 'bookings': bookings, 'employees': employees, 'hours': hours, 'invite_link': invite_link, 'webhook_url': webhook_url}
+    context = {
+        'salon': salon, 'form': form, 's_form': s_form, 'h_form': h_form, 
+        'services': services, 'bookings': bookings, 'employees': employees, 
+        'hours': hours, 'invite_link': invite_link, 'webhook_url': webhook_url
+    }
     return render(request, 'dashboard/index.html', context)
 
 @login_required
@@ -133,6 +155,7 @@ def employee_join(request, token):
         employee = Employee.objects.create(user=request.user, salon=salon)
         request.user.role = 'EMPLOYEE'
         request.user.save()
+        # Horario base empleado
         for i in range(5): 
             EmployeeSchedule.objects.create(employee=employee, weekday=i, from_hour=datetime.time(9,0), to_hour=datetime.time(18,0))
         messages.success(request, f'¡Bienvenido al equipo de {salon.name}!')
@@ -150,7 +173,6 @@ def employee_dashboard(request):
     settings_form = EmployeeSettingsForm(instance=employee)
     schedule_form = EmployeeScheduleForm()
     
-    # URL del Webhook para mostrarla en el instructivo
     domain = request.get_host()
     webhook_url = f"http://{domain}/api/webhooks/bold/"
 
