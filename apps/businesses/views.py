@@ -1,67 +1,151 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Salon, Service
-from math import radians, cos, sin, asin, sqrt # <--- IMPORTANTE: Agrega esto al inicio
+import json
+from datetime import datetime
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.forms import modelformset_factory
+from django.contrib import messages
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from django.db import transaction
 
-# Función para calcular distancia (Haversine)
-def haversine(lon1, lat1, lon2, lat2):
-    """
-    Calcula la distancia en kilómetros entre dos puntos geográficos
-    """
-    # Convertir grados decimales a radianes
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+from .models import Salon, OpeningHours, EmployeeSchedule, Employee, Service, Booking
+from .forms import (
+    SalonCreateForm, OpeningHoursForm, BookingForm, 
+    EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm,
+    ServiceForm
+)
+from .services import create_booking_service, get_day_slots
+from .utils import notify_new_booking
 
-    # Fórmula de haversine
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a)) 
-    r = 6371 # Radio de la Tierra en km
-    return c * r
+User = get_user_model()
 
-def home(request):
-    salons = Salon.objects.all()
-    
-    # Obtener lista de ciudades únicas para el filtro
-    all_cities = Salon.objects.values_list('city', flat=True).distinct()
+# --- API DE DISPONIBILIDAD ---
+def get_available_slots_api(request, salon_slug):
+    if request.method != 'GET': return JsonResponse({'error': 'Método no permitido'}, status=405)
+    date_str = request.GET.get('date')
+    employee_id = request.GET.get('employee')
+    service_id = request.GET.get('service')
+    if not date_str or not employee_id: return JsonResponse({'slots': []})
+    salon = get_object_or_404(Salon, slug=salon_slug)
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        employee = Employee.objects.get(id=employee_id, salon=salon)
+        service = Service.objects.get(id=service_id) if service_id else None
+        duration = service.duration_minutes if service else 30
+        slots = get_day_slots(salon, employee, target_date, duration)
+        return JsonResponse({'slots': slots})
+    except Exception as e: return JsonResponse({'error': str(e)}, status=400)
 
-    # 1. Filtro por Ciudad (si se selecciona en el menú)
-    city_param = request.GET.get('city')
-    if city_param:
-        salons = salons.filter(city=city_param)
+# --- VISTA PÚBLICA / VITRINA ---
+def salon_detail(request, slug):
+    salon = get_object_or_404(Salon, slug=slug)
+    service_id = request.POST.get('service') or request.GET.get('service')
+    service = None
+    if service_id:
+        try: service = Service.objects.get(id=service_id, salon=salon)
+        except: pass
 
-    # 2. Filtro por Geolocalización (600 metros)
-    lat_param = request.GET.get('lat')
-    lon_param = request.GET.get('lon')
-    nearby_search = False # Bandera para saber si estamos buscando por cercanía
+    if request.method == 'POST':
+        data = request.POST.copy()
+        if data.get('date_picked') and data.get('time_picked'):
+            data['start_time'] = f"{data.get('date_picked')} {data.get('time_picked')}"
+        
+        form = BookingForm(data, service=service)
+        if form.is_valid():
+            try:
+                booking = create_booking_service(salon, service, request.user, form.cleaned_data)
+                notify_new_booking(booking)
+                messages.success(request, f"¡Reserva confirmada! Te esperamos el {booking.start_time.strftime('%d/%m a las %H:%M')}")
+                return redirect('salon_detail', slug=slug)
+            except ValueError as e: messages.error(request, str(e))
+            except Exception: messages.error(request, "Error inesperado.")
+        else: messages.error(request, "Verifica los datos.")
+    else: form = BookingForm(service=service)
 
-    if lat_param and lon_param:
-        nearby_search = True
-        try:
-            user_lat = float(lat_param)
-            user_lon = float(lon_param)
-            
-            nearby_salons = []
-            for salon in salons:
-                # Solo calcular si el salón tiene coordenadas guardadas
-                if salon.latitude and salon.longitude:
-                    # Ojo: Asegúrate de que en tu modelo latitude/longitude sean FloatField o DecimalField
-                    # Si son CharField, conviértelos: float(salon.latitude)
-                    dist = haversine(user_lon, user_lat, float(salon.longitude), float(salon.latitude))
-                    
-                    # 0.6 km = 600 metros
-                    if dist <= 0.6:
-                        nearby_salons.append(salon)
-            
-            salons = nearby_salons # Reemplazamos la lista con los cercanos
-            
-        except (ValueError, TypeError):
-            pass # Si las coordenadas fallan, mostramos todo por defecto
+    return render(request, 'salon_detail.html', {'salon': salon, 'form': form, 'selected_service': service})
 
-    context = {
-        'salons': salons,
-        'all_cities': all_cities,
-        'nearby_search': nearby_search
-    }
-    return render(request, 'home.html', context)
+# --- GESTIÓN DE SERVICIOS ---
+@login_required
+def manage_services_view(request):
+    try: salon = request.user.salon
+    except: return redirect('dashboard')
+    services = salon.services.all()
+    return render(request, 'dashboard/services.html', {'salon': salon, 'services': services})
 
-# ... (El resto de tus vistas: salon_detail, booking, etc. déjalas igual)
+@login_required
+def add_service_view(request):
+    try: salon = request.user.salon
+    except: return redirect('dashboard')
+    if request.method == 'POST':
+        form = ServiceForm(request.POST)
+        if form.is_valid():
+            s = form.save(commit=False)
+            s.salon = salon
+            s.save()
+            messages.success(request, "Servicio creado.")
+            return redirect('manage_services')
+    else: form = ServiceForm()
+    return render(request, 'dashboard/service_form.html', {'form': form, 'title': 'Crear Servicio'})
+
+@login_required
+def edit_service_view(request, service_id):
+    try: salon = request.user.salon; service = get_object_or_404(Service, id=service_id, salon=salon)
+    except: return redirect('dashboard')
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, instance=service)
+        if form.is_valid(): form.save(); messages.success(request, "Actualizado."); return redirect('manage_services')
+    else: form = ServiceForm(instance=service)
+    return render(request, 'dashboard/service_form.html', {'form': form, 'title': 'Editar Servicio'})
+
+@login_required
+def delete_service_view(request, service_id):
+    try: salon = request.user.salon; get_object_or_404(Service, id=service_id, salon=salon).delete(); messages.success(request, "Eliminado.")
+    except: pass
+    return redirect('manage_services')
+
+# --- EMPLEADOS Y AJUSTES (AQUÍ ESTABA EL ERROR, ESTO FALTABA) ---
+@login_required
+def create_employee_view(request):
+    try: salon = request.user.salon
+    except: return redirect('dashboard')
+    if request.method == 'POST':
+        form = EmployeeCreationForm(request.POST)
+        if form.is_valid():
+            d = form.cleaned_data
+            if User.objects.filter(email=d['email']).exists(): messages.error(request, "Email ya registrado.")
+            else:
+                with transaction.atomic():
+                    u = User.objects.create_user(username=d['email'], email=d['email'], password=d['password'], role='EMPLOYEE')
+                    Employee.objects.create(salon=salon, user=u, name=d['name'], phone=d['phone'])
+                messages.success(request, "Empleado creado.")
+                return redirect('dashboard')
+    else: form = EmployeeCreationForm()
+    return render(request, 'dashboard/create_employee.html', {'form': form, 'salon': salon})
+
+@login_required
+def salon_settings_view(request):
+    salon = get_object_or_404(Salon, owner=request.user)
+    if salon.opening_hours.count() < 7:
+        for i in range(7): OpeningHours.objects.get_or_create(salon=salon, weekday=i, defaults={'from_hour': '09:00', 'to_hour': '18:00'})
+    HoursFormSet = modelformset_factory(OpeningHours, form=OpeningHoursForm, extra=0)
+    if request.method == 'POST':
+        f = SalonCreateForm(request.POST, request.FILES, instance=salon)
+        h = HoursFormSet(request.POST, queryset=salon.opening_hours.all())
+        if f.is_valid() and h.is_valid(): f.save(); h.save(); messages.success(request, "Guardado."); return redirect('dashboard')
+    else: f = SalonCreateForm(instance=salon); h = HoursFormSet(queryset=salon.opening_hours.all())
+    return render(request, 'dashboard/settings.html', {'salon_form': f, 'hours_formset': h, 'salon': salon})
+
+@login_required
+def employee_settings_view(request):
+    try: emp = request.user.employee
+    except: return redirect('home')
+    if emp.schedules.count() < 7:
+        for i in range(7): EmployeeSchedule.objects.get_or_create(employee=emp, weekday=i, defaults={'from_hour':'09:00','to_hour':'18:00'})
+    ScheduleFormSet = modelformset_factory(EmployeeSchedule, form=EmployeeScheduleForm, extra=0)
+    if request.method == 'POST':
+        f = EmployeeSettingsForm(request.POST, instance=emp)
+        s = ScheduleFormSet(request.POST, queryset=emp.schedules.all())
+        if f.is_valid() and s.is_valid(): f.save(); s.save(); messages.success(request, "Guardado."); return redirect('dashboard')
+    else: f = EmployeeSettingsForm(instance=emp); s = ScheduleFormSet(queryset=emp.schedules.all())
+    return render(request, 'dashboard/employee_dashboard.html', {'settings_form': f, 'schedule_formset': s, 'employee': emp})
