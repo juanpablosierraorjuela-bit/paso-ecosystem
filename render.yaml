@@ -5,11 +5,11 @@ services:
     env: docker
     plan: free
     region: oregon
-    buildCommand: "./build.sh"
-    startCommand: "./start.sh"
+    # ELIMINAMOS buildCommand y startCommand DE AQUÍ
+    # Render usará automáticamente las instrucciones de tu Dockerfile
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.10.0
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -28,4 +28,4 @@ databases:
     user: paso_user
     plan: free
     region: oregon
-    ipAllowList: [] # Permite acceso solo desde servicios internos (seguridad)
+    ipAllowList: []
