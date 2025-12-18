@@ -1,278 +1,57 @@
-/* --- 1. RESET Y BASE --- */
-:root {
-    --primary: #4A148C;
-    --accent: #E040FB;
-    --secondary: #64748b;
-    --bg-light: #f8fafc;
-    --white: #ffffff;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
+/* --- ESTILOS MODERNOS (COMPLEMENTO BOOTSTRAP) --- */
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+:root {
+    --bs-primary: #4A148C;      /* Morado oscuro elegante */
+    --bs-primary-rgb: 74, 20, 140;
+    --bs-body-font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 body {
-    background-color: var(--bg-light);
-    color: #1e293b;
-    /* Espacio abajo para el menú móvil */
-    padding-bottom: 80px; 
+    font-family: var(--bs-body-font-family);
+    background-color: #f8fafc !important; /* Fondo gris muy suave */
 }
 
-a { text-decoration: none; color: inherit; }
-ul { list-style: none; }
-
-/* --- 2. NAVBAR SUPERIOR (PC y MÓVIL) --- */
-/* Barra PC: Se oculta en móvil */
-.desktop-nav {
-    display: none; /* Por defecto oculto en móvil */
-    background: var(--white);
-    padding: 15px 40px;
-    box-shadow: var(--shadow);
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+/* Personalizar botones primarios para que sean del color de tu marca */
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+.btn-primary:hover {
+    background-color: #380d6b;
+    border-color: #380d6b;
 }
 
-.brand-pill {
-    font-weight: 800;
-    font-size: 1.5rem;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.text-primary {
+    color: var(--bs-primary) !important;
 }
 
-.dot {
-    width: 10px;
-    height: 10px;
-    background: var(--accent);
-    border-radius: 50%;
+/* Tarjetas flotantes y limpias */
+.card {
+    border-radius: 16px;
+    overflow: hidden; 
 }
 
-/* Barra Móvil Superior: Se oculta en PC */
-.mobile-header {
-    display: flex; /* Visible en móvil */
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: var(--white);
-    position: sticky;
-    top: 0;
-    z-index: 99;
-    box-shadow: var(--shadow);
+/* Navbar limpio */
+.navbar {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* --- 3. MENÚ INFERIOR (Solo MÓVIL) --- */
-.mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: var(--white);
-    border-top: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-around;
-    padding: 12px 0;
-    z-index: 1000;
+/* Links de navegación */
+.nav-link {
+    font-size: 0.95rem;
+    color: #475569;
+    transition: color 0.2s;
+}
+.nav-link:hover {
+    color: var(--bs-primary);
 }
 
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 0.75rem;
-    color: #94a3b8;
-    gap: 4px;
-}
-
-.nav-item.active { color: var(--primary); font-weight: 700; }
-.nav-item i { font-size: 1.2rem; }
-
-/* Botón central destacado en menú móvil */
-.nav-btn-central {
-    background: var(--primary);
-    color: white;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: -25px;
-    box-shadow: 0 4px 10px rgba(74, 20, 140, 0.4);
-}
-
-/* --- 4. HERO SECTION (La portada) --- */
-.hero-header {
-    background: linear-gradient(135deg, #4A148C 0%, #7B1FA2 100%);
-    color: white;
-    padding: 40px 20px 60px; /* Padding extra abajo para superponer */
-    border-radius: 0 0 30px 30px;
-    text-align: center;
-    margin-bottom: -40px; /* Efecto superpuesto */
-}
-
-.hero-title {
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 10px;
-}
-
-.hero-subtitle {
-    font-size: 0.9rem;
-    opacity: 0.9;
-    margin-bottom: 20px;
-}
-
-/* Buscador Flotante */
-.search-container {
-    background: white;
-    padding: 10px;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 500px;
-    margin: 0 auto;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-}
-
-.city-select {
-    border: none;
-    background: transparent;
-    font-weight: 700;
-    color: #333;
-    outline: none;
-    flex: 1;
-    padding: 5px;
-}
-
-/* --- 5. GRID DE SALONES (Donde van las tarjetas) --- */
-.grid-wrapper {
-    display: grid;
-    grid-template-columns: 1fr; /* 1 columna en Móvil */
-    gap: 20px;
-    padding: 60px 20px 20px; /* Padding arriba para compensar el Hero negativo */
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* Tarjeta de Salón */
-.salon-card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: var(--shadow);
-    transition: transform 0.2s;
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #f1f5f9;
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.salon-avatar {
-    width: 60px;
-    height: 60px;
-    background: #f1f5f9;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    color: var(--primary);
-    font-size: 1.5rem;
-    overflow: hidden;
-}
-
-.salon-info h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
-.salon-info span { font-size: 0.85rem; color: var(--secondary); }
-
-.address {
-    font-size: 0.85rem;
-    color: var(--secondary);
-    background: #f8fafc;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-}
-
-.status-pill {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-.status-pill.open { background: #dcfce7; color: #166534; }
-.status-pill.closed { background: #fee2e2; color: #991b1b; }
-
-/* Botones */
-.btn-access {
-    background: var(--primary);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    text-align: center;
-    display: inline-block;
-}
-
-/* --- 6. MEDIA QUERIES (Aquí ocurre la magia PC vs MÓVIL) --- */
-@media (min-width: 768px) {
-    /* MODO PC / TABLET */
-    
-    body { padding-bottom: 0; } /* Quitar espacio del menú inferior */
-
-    .desktop-nav { display: flex; } /* Mostrar barra PC */
-    .mobile-header { display: none; } /* Ocultar barra Móvil */
-    .mobile-bottom-nav { display: none; } /* Ocultar menú inferior */
-
-    .grid-wrapper {
-        grid-template-columns: repeat(3, 1fr); /* 3 Columnas en PC */
-        padding-top: 50px;
-    }
-
-    .hero-header {
-        text-align: left;
-        padding: 80px 40px;
-        margin-bottom: 0;
-        border-radius: 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .hero-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .hero-title { font-size: 3.5rem; }
-    
-    .search-container { margin: 0; } /* Alinear a la izquierda en PC */
-    
-    .salon-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+/* Ajustes para móviles */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
     }
 }
