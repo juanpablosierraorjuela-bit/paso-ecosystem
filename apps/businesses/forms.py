@@ -19,7 +19,8 @@ class EmployeeCreationForm(forms.Form):
     phone = forms.CharField(label="Teléfono", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
-class SalonCreateForm(forms.ModelForm):
+# --- CORRECCIÓN: Renombrado de SalonCreateForm a SalonForm ---
+class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
         fields = [
@@ -47,8 +48,11 @@ class SalonCreateForm(forms.ModelForm):
         }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for f in self.fields: 
-            if f not in ['name', 'city', 'address', 'phone']: self.fields[f].required = False
+        # Hacer opcionales los campos que no sean esenciales
+        required_fields = ['name', 'city', 'address', 'phone']
+        for field in self.fields: 
+            if field not in required_fields:
+                self.fields[field].required = False
 
 class OpeningHoursForm(forms.ModelForm):
     class Meta:
