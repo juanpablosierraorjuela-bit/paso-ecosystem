@@ -3,35 +3,34 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
-from apps.users import views as user_views
-from apps.businesses import views as biz_views
+from config import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', user_views.home, name='home'),
-    path('register/', user_views.register, name='register'),
+    
+    # --- VISTAS PRINCIPALES ---
+    path('', views.home, name='home'),
+    path('salon/<slug:slug>/', views.salon_detail, name='salon_detail'),
+    
+    # --- SISTEMA DE USUARIOS (Corregido) ---
+    path('register/', views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+
+    # --- DASHBOARD & NEGOCIOS ---
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/empleado/', views.employee_dashboard, name='employee_dashboard'),
     
-    # DASHBOARD
-    path('dashboard/', user_views.dashboard_view, name='dashboard'),
-    path('dashboard/create-salon/', user_views.create_salon_view, name='create_salon'),
-    path('dashboard/create-employee/', biz_views.create_employee_view, name='create_employee'),
+    # --- CITAS & EMPLEADOS ---
+    path('unete/<uuid:token>/', views.employee_join, name='employee_join'),
+    path('reservar/<int:service_id>/', views.booking_create, name='booking_create'),
+    path('reservar/exito/', views.booking_success, name='booking_success'),
     
-    # SERVICIOS
-    path('dashboard/services/', biz_views.manage_services_view, name='manage_services'),
-    path('dashboard/services/add/', biz_views.add_service_view, name='add_service'),
-    path('dashboard/services/edit/<int:service_id>/', biz_views.edit_service_view, name='edit_service'),
-    path('dashboard/services/delete/<int:service_id>/', biz_views.delete_service_view, name='delete_service'),
-    
-    # SETTINGS
-    path('dashboard/settings/', biz_views.salon_settings_view, name='salon_settings'),
-    path('dashboard/employee/settings/', biz_views.employee_settings_view, name='employee_settings'),
-    
-    # VITRINA Y RESERVAS
-    path('salon/<slug:slug>/', biz_views.salon_detail, name='salon_detail'),
-    
-    # --- API INTELIGENTE ---
-    path('api/slots/<slug:salon_slug>/', biz_views.get_available_slots_api, name='get_available_slots'),
-    
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # --- WEBHOOKS & API ---
+    path('api/availability/', views.api_get_availability, name='api_availability'),
+    path('api/webhooks/bold/', views.bold_webhook, name='bold_webhook'),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

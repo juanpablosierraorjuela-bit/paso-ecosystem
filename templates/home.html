@@ -16,176 +16,166 @@
             reserva <span>tu tiempo</span>.
         </h1>
         <p class="hero-subtitle">
-            Explora los mejores salones, spas y barberías cerca de ti. Reserva en segundos.
+            Explora los mejores salones y barberías.
         </p>
 
         <div class="search-container">
             <div class="d-flex align-items-center flex-grow-1 px-2 border-end">
                 <i class="bi bi-geo-alt text-muted fs-5"></i>
-                <select id="ciudadSelect" class="search-input" onchange="filtrarCiudad()">
+                <select id="ciudadSelect" class="search-input" onchange="filtrarNegocios()">
                     <option value="todas">Todas las ciudades</option>
                     {% for city in ciudades %}
                         <option value="{{ city }}">{{ city }}</option>
                     {% endfor %}
                 </select>
             </div>
+            
             <div class="d-flex align-items-center flex-grow-1 px-2">
                 <i class="bi bi-search text-muted fs-5"></i>
-                <input type="text" id="nombreBusqueda" class="search-input" placeholder="¿Qué buscas hoy?" onkeyup="filtrarNombre()">
+                <input type="text" id="nombreBusqueda" class="search-input" placeholder="Buscar salón..." onkeyup="filtrarNegocios()">
             </div>
             
-            <button class="btn-location-pulse" onclick="usarUbicacion()" title="Ver negocios cercanos (20km)" data-bs-toggle="tooltip">
-                <i class="bi bi-geo-alt-fill"></i>
+            <button class="btn-location-pulse" onclick="usarUbicacion()" title="Cerca de mí (600m)" data-bs-toggle="tooltip">
+                <i class="bi bi-crosshair"></i>
             </button>
         </div>
     </div>
 </header>
 
-<section class="container mb-5">
+<section class="container pb-5">
     <div class="row g-4" id="salonGrid">
         {% for salon in salons %}
         <div class="col-md-6 col-lg-4 salon-item" 
              data-city="{{ salon.city|default:'' }}" 
+             data-name="{{ salon.name|lower }}"
              data-lat="{{ salon.latitude|default:0 }}" 
              data-lng="{{ salon.longitude|default:0 }}">
             
             <a href="{% url 'salon_detail' salon.slug %}" class="salon-card">
-                {% if salon.banner %}
-                    <img src="{{ salon.banner.url }}" class="card-img-top" alt="{{ salon.name }}">
-                {% else %}
-                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light text-muted">
-                        <i class="bi bi-image fs-1 opacity-25"></i>
-                    </div>
-                {% endif %}
+                <div class="card-img-wrapper" style="height: 180px; overflow: hidden; background: #f8f9fa;">
+                    {% if salon.banner %}
+                        <img src="{{ salon.banner.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100 text-muted opacity-25">
+                            <i class="bi bi-card-image fs-1"></i>
+                        </div>
+                    {% endif %}
+                </div>
 
                 <div class="card-body">
                     <div class="d-flex align-items-start mb-3">
-                        <div class="salon-avatar flex-shrink-0">
+                        <div class="salon-avatar me-3" style="width: 50px; height: 50px; border-radius: 12px; background: #fff; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                             {% if salon.logo %}
-                                <img src="{{ salon.logo.url }}" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
+                                <img src="{{ salon.logo.url }}" style="width: 100%; height: 100%; object-fit: cover;">
                             {% else %}
-                                {{ salon.name|slice:":1"|upper }}
+                                <span class="fw-bold text-primary fs-4">{{ salon.name|slice:":1"|upper }}</span>
                             {% endif %}
                         </div>
                         
-                        <div class="flex-grow-1 ms-3">
-                            <h5 class="card-title">{{ salon.name }}</h5>
-                            <div class="card-location mb-2">
-                                <i class="bi bi-geo-alt-fill text-danger small"></i> {{ salon.city|default:"Ubicación" }}
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-1 text-dark">{{ salon.name }}</h5>
+                            <div class="small text-muted mb-2">
+                                <i class="bi bi-geo-alt-fill text-danger"></i> {{ salon.city|default:"Ubicación" }}
                             </div>
-
-                            <div class="d-flex align-items-center flex-wrap gap-2">
-                                {% if salon.is_open %}
-                                    <span class="status-pill status-open">
-                                        ABIERTO
-                                    </span>
-                                {% else %}
-                                    <span class="status-pill status-closed">
-                                        CERRADO
-                                    </span>
-                                {% endif %}
-                            </div>
+                            
+                            {% if salon.is_open %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Abierto</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Cerrado</span>
+                            {% endif %}
                         </div>
                     </div>
-                    
-                    <p class="text-muted small mb-0 text-truncate">
-                        {{ salon.description|default:"Sin descripción disponible." }}
-                    </p>
                 </div>
             </a>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <h3 class="text-muted fw-light">Aún no hay negocios registrados.</h3>
-            <p>¡Sé el primero en unirte a PASO!</p>
-            <a href="{% url 'register' %}" class="btn btn-nav-action mt-3">Registrar mi Negocio</a>
+            <h3 class="text-muted fw-light">No hay negocios registrados aún.</h3>
         </div>
         {% endfor %}
     </div>
 </section>
 
 <script>
+    // Inicializar Tooltips
     document.addEventListener("DOMContentLoaded", function(){
-        // Inicializar Tooltips de Bootstrap
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+        var tooltipList = tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
     });
 
-    // Filtro por Ciudad
-    function filtrarCiudad() {
+    // Filtro combinado (Ciudad + Nombre)
+    function filtrarNegocios() {
         let ciudad = document.getElementById('ciudadSelect').value;
-        let items = document.querySelectorAll('.salon-item');
-        items.forEach(item => {
-            // dataset.city viene del HTML data-city
-            let itemCity = item.dataset.city; 
-            item.style.display = (ciudad === 'todas' || itemCity === ciudad) ? 'block' : 'none';
-        });
-    }
-
-    // Filtro por Nombre
-    function filtrarNombre() {
         let texto = document.getElementById('nombreBusqueda').value.toLowerCase();
         let items = document.querySelectorAll('.salon-item');
+
         items.forEach(item => {
-            let nombre = item.querySelector('.card-title').innerText.toLowerCase();
-            item.style.display = nombre.includes(texto) ? 'block' : 'none';
+            let itemCity = item.dataset.city;
+            let itemName = item.dataset.name;
+            let matchCiudad = (ciudad === 'todas' || itemCity === ciudad);
+            let matchNombre = itemName.includes(texto);
+            item.style.display = (matchCiudad && matchNombre) ? 'block' : 'none';
         });
     }
 
-    // Lógica Geolocation
+    // Lógica GPS (600 METROS EXACTOS)
     function usarUbicacion() {
-        if (navigator.geolocation) {
-            const btn = document.querySelector('.btn-location-pulse');
-            const icon = btn.querySelector('i');
-            const originalIconClass = icon.className;
-            icon.className = 'spinner-border spinner-border-sm'; // Icono de carga
+        if (!navigator.geolocation) {
+            alert("Tu navegador no soporta geolocalización.");
+            return;
+        }
 
-            navigator.geolocation.getCurrentPosition(position => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-                let items = document.querySelectorAll('.salon-item');
-                let encontrados = 0;
+        const btn = document.querySelector('.btn-location-pulse');
+        const icon = btn.querySelector('i');
+        icon.className = 'spinner-border spinner-border-sm'; // Icono cargando
 
-                items.forEach(item => {
-                    let lat = parseFloat(item.dataset.lat);
-                    let lng = parseFloat(item.dataset.lng);
-                    // Distancia en KM
-                    let dist = getDistance(userLat, userLng, lat, lng);
-                    
-                    // He aumentado el radio a 20KM para que sea más fácil probar
-                    if (dist <= 20) { 
-                        item.style.display = 'block';
-                        encontrados++;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
+        navigator.geolocation.getCurrentPosition(position => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            let items = document.querySelectorAll('.salon-item');
+            let encontrados = 0;
 
-                icon.className = originalIconClass; // Restaurar icono
-
-                if (encontrados > 0) {
-                    document.getElementById('salonGrid').scrollIntoView({behavior: 'smooth'});
-                } else {
-                    alert("No encontramos negocios cercanos en un radio de 20km.");
-                    // Restaurar vista si no hay nada
-                    items.forEach(item => item.style.display = 'block');
+            items.forEach(item => {
+                let lat = parseFloat(item.dataset.lat);
+                let lng = parseFloat(item.dataset.lng);
+                
+                // Si el negocio no tiene coordenadas, lo ocultamos en modo GPS
+                if (lat === 0 || lng === 0) {
+                    item.style.display = 'none';
+                    return;
                 }
 
-            }, error => {
-                icon.className = originalIconClass;
-                alert("Necesitamos permiso de ubicación para buscar.");
+                let dist = getDistance(userLat, userLng, lat, lng);
+                
+                // *** AQUÍ ESTÁ EL CAMBIO: 0.6 KM = 600 METROS ***
+                if (dist <= 0.6) { 
+                    item.style.display = 'block';
+                    encontrados++;
+                } else {
+                    item.style.display = 'none';
+                }
             });
-        } else {
-            alert("Geolocalización no soportada.");
-        }
+
+            icon.className = 'bi bi-crosshair'; // Restaurar icono
+
+            if (encontrados > 0) {
+                // Hacemos scroll hacia los resultados
+                document.getElementById('salonGrid').scrollIntoView({behavior: 'smooth'});
+            } else {
+                alert("No encontramos negocios a menos de 600 metros de tu ubicación actual.");
+                // Opcional: Mostrar todos de nuevo si no encuentra nada
+                // filtrarNegocios(); 
+            }
+
+        }, error => {
+            icon.className = 'bi bi-crosshair';
+            alert("No pudimos obtener tu ubicación. Verifica los permisos.");
+        });
     }
 
-    // Fórmula Haversine para distancia en KM
+    // Fórmula Haversine (Devuelve Km)
     function getDistance(lat1, lon1, lat2, lon2) {
-        if(lat2 == 0 || lon2 == 0) return 99999; 
-        var R = 6371; 
+        var R = 6371; // Radio tierra km
         var dLat = (lat2-lat1) * (Math.PI/180);
         var dLon = (lon2-lon1) * (Math.PI/180); 
         var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -193,16 +183,6 @@
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
         return R * c; 
     }
-
-    // Efecto Navbar Glass al hacer scroll
-    window.addEventListener('scroll', function() {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
 </script>
 
 {% endblock %}

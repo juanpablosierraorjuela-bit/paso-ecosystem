@@ -1,73 +1,63 @@
 ﻿{% extends 'base.html' %}
 
 {% block content %}
-<div style="max-width: 500px; margin: 0 auto; padding: 60px 20px;">
-    
-    <div class="glass-panel" style="padding: 40px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <h2 style="font-weight: 800; margin: 0;">Crear Cuenta</h2>
-            <p style="color: var(--secondary); margin-top: 5px;">Únete a PASO Ecosystem</p>
-        </div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-primary">Crea tu cuenta</h2>
+                        <p class="text-muted">Únete a la comunidad PASO</p>
+                    </div>
 
-        {% if inviting_salon %}
-            <div style="background: #dcfce7; color: #166534; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 25px; border: 1px solid #bbf7d0; font-size: 0.9rem;">
-                <i class="fas fa-ticket-alt"></i>
-                Estás aceptando la invitación de <br><strong>{{ inviting_salon.name }}</strong>
-            </div>
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-
-            {% if invite_token %}
-                <input type="hidden" name="invite_token" value="{{ invite_token }}">
-            {% endif %}
-
-            {% for field in form %}
-                <div style="margin-bottom: 20px;">
-                    <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--primary);">
-                        {{ field.label }}
-                    </label>
-                    
-                    {% if field.name == 'role' and inviting_salon %}
-                        <div style="opacity: 0.8;">
-                            <select name="{{ field.name }}" class="form-select" readonly style="pointer-events: none; background-color: #f1f5f9; cursor: not-allowed;">
-                                <option value="EMPLOYEE" selected>Empleado / Estilista</option>
-                            </select>
-                            <div style="font-size: 0.8rem; color: var(--secondary); margin-top: 5px;">
-                                <i class="fas fa-info-circle"></i> Rol asignado por invitación.
-                            </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                            {% endif %}
+                            {% if field.help_text %}
+                                <div class="form-text small text-muted">{{ field.help_text }}</div>
+                            {% endif %}
                         </div>
-                    {% else %}
-                        {{ field }}
-                    {% endif %}
+                        {% endfor %}
 
-                    {% if field.errors %}
-                        <div style="color: #ef4444; font-size: 0.85rem; margin-top: 5px; font-weight: 500;">
-                            {{ field.errors.0 }}
+                        <style>
+                            /* Estilo rápido para inputs generados por Django */
+                            input[type="text"], input[type="email"], input[type="password"], select {
+                                width: 100%;
+                                padding: 0.75rem 1rem;
+                                font-size: 1rem;
+                                border-radius: 0.5rem;
+                                border: 1px solid #e2e8f0;
+                                background-color: #f8fafc;
+                            }
+                            input:focus, select:focus {
+                                outline: none;
+                                border-color: #4A148C;
+                                box-shadow: 0 0 0 3px rgba(74, 20, 140, 0.1);
+                            }
+                        </style>
+
+                        <div class="d-grid mt-4 mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
+                                Registrarse
+                            </button>
                         </div>
-                    {% endif %}
+
+                        <div class="text-center">
+                            <a href="{% url 'login' %}" class="text-decoration-none small text-muted">
+                                ¿Ya tienes cuenta? <span class="text-primary fw-bold">Inicia Sesión</span>
+                            </a>
+                        </div>
+                    </form>
                 </div>
-            {% endfor %}
-
-            <div style="margin-top: 30px;">
-                <button type="submit" class="btn-access" style="width: 100%; padding: 15px; font-size: 1rem;">
-                    {% if inviting_salon %}
-                        Registrarse y Unirse
-                    {% else %}
-                        Crear Cuenta
-                    {% endif %}
-                </button>
             </div>
-        </form>
-
-        <div style="text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 25px;">
-            <p style="color: var(--secondary); font-size: 0.9rem; margin: 0;">
-                ¿Ya tienes cuenta? 
-                <a href="{% url 'login' %}{% if invite_token %}?invite={{ invite_token }}{% endif %}" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 5px;">
-                    Inicia sesión aquí
-                </a>
-            </p>
         </div>
     </div>
 </div>
