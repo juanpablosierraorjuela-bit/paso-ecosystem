@@ -1,109 +1,69 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
+
 <header class="hero-header">
     <div class="hero-content">
-        <h1 class="hero-title">Tu estilo,<br><span class="highlight">tu tiempo.</span></h1>
-        <p class="hero-subtitle">Descubre los mejores salones y barberías cerca de ti.<br>Reserva al instante.</p>
+        <div>
+            <h1 class="hero-title">Tu estilo,<br>tu tiempo.</h1>
+            <p class="hero-subtitle">Reserva en los mejores salones de belleza y barberías.</p>
+        </div>
         
         <div class="search-container">
-            <div class="input-wrapper">
-                <i class="fas fa-map-marker-alt input-icon"></i>
-                <select id="city-selector" class="city-select" onchange="location = this.value ? '?city=' + this.value : '/';">
-                    <option value="">🌎 Ver todas las ciudades</option>
-                    {% for s in all_cities %} <option value="{{ s }}" {% if request.GET.city == s %}selected{% endif %}>{{ s }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <button class="btn-geo-round" onclick="filterByLocation()" title="Buscar negocios a menos de 600m">
-                <i class="fas fa-location-arrow"></i>
-            </button>
+            <i class="fas fa-map-marker-alt" style="color: var(--primary); padding-left: 15px;"></i>
+            <select id="city-selector" class="city-select" onchange="location = this.value ? '?city=' + this.value : '/';">
+                <option value="">🌎 Todas las ciudades</option>
+                {% for s in ciudades %} 
+                    <option value="{{ s }}" {% if request.GET.city == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn-access" style="border-radius: 50px; margin: 5px;">Buscar</button>
         </div>
     </div>
 </header>
 
 <div class="grid-wrapper">
-    {% if nearby_search and not salons %}
-        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b;">
-            <div style="font-size: 4rem; margin-bottom: 20px;">📍</div>
-            <h3 style="font-size: 1.5rem; margin-bottom: 10px;">No hay negocios en esta zona</h3>
-            <p>No encontramos salones a menos de 600 metros de tu ubicación actual.<br>Intenta buscar por ciudad o ver todos.</p>
-            <a href="{% url 'home' %}" class="btn-access" style="margin-top:20px; display:inline-block;">Ver todos los negocios</a>
-        </div>
-    {% else %}
-        {% for salon in salons %}
-            <a href="{% url 'salon_detail' salon.slug %}" class="salon-card">
-                <div class="card-header">
-                    <div class="salon-avatar">
-                        {% if salon.logo %}
-                            <img src="{{ salon.logo.url }}" style="width:100%; height:100%; border-radius:18px; object-fit:cover;">
-                        {% else %}
-                            {{ salon.name|slice:":1"|upper }}
-                        {% endif %}
-                    </div>
-                    <div class="salon-info">
-                        <h3>{{ salon.name }}</h3>
-                        <span>{{ salon.city }}</span>
-                    </div>
-                </div>
-                
-                <p class="address"><i class="fas fa-map-marker-alt"></i> {{ salon.address }}</p>
-                
-                {% if salon.instagram or salon.facebook %}
-                <div class="social-row" onclick="event.stopPropagation();"> 
-                    {% if salon.instagram %} <object><a href="{{ salon.instagram }}" target="_blank" class="social-icon instagram"><i class="fab fa-instagram"></i></a></object> {% endif %}
-                    {% if salon.facebook %} <object><a href="{{ salon.facebook }}" target="_blank" class="social-icon facebook"><i class="fab fa-facebook-f"></i></a></object> {% endif %}
-                </div>
-                {% endif %}
 
-                <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                    <div class="status-pill {% if salon.is_open %}open{% else %}closed{% endif %}">
-                        {% if salon.is_open %}ABIERTO{% else %}CERRADO{% endif %}
-                    </div>
-                    <span style="font-size:1.2rem; color:#cbd5e1;">→</span>
-                </div>
-            </a>
-        {% empty %}
-            {% if not nearby_search %}
-            <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #94a3b8;">
-                <div style="font-size: 3rem; margin-bottom: 20px;">☕</div>
-                <p>No hay salones registrados aún en la plataforma.</p>
-            </div>
-            {% endif %}
-        {% endfor %}
+    {% if not salones %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b;">
+            <i class="fas fa-store-slash" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.5;"></i>
+            <h3>No encontramos negocios</h3>
+            <p>Intenta seleccionar otra ciudad o ver todos.</p>
+            <a href="{% url 'home' %}" class="btn-access" style="margin-top: 15px;">Ver todos</a>
+        </div>
     {% endif %}
+
+    {% for salon in salones %}
+        <a href="{% url 'salon_detail' salon.slug %}" class="salon-card">
+            
+            <div class="card-header">
+                <div class="salon-avatar">
+                    {% if salon.logo %}
+                        <img src="{{ salon.logo.url }}" style="width:100%; height:100%; object-fit:cover;">
+                    {% else %}
+                        {{ salon.name|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+                
+                <div class="salon-info">
+                    <h3>{{ salon.name }}</h3>
+                    <span>{{ salon.city }}</span>
+                </div>
+            </div>
+            
+            <div class="address">
+                <i class="fas fa-map-pin"></i> {{ salon.address|default:"Ubicación no especificada" }}
+            </div>
+            
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                <div class="status-pill {% if salon.is_open %}open{% else %}closed{% endif %}">
+                    {% if salon.is_open %}ABIERTO{% else %}CERRADO{% endif %}
+                </div>
+                <i class="fas fa-chevron-right" style="color: #cbd5e1;"></i>
+            </div>
+        </a>
+    {% endfor %}
 </div>
 
-<script>
-function filterByLocation() {
-    if (!navigator.geolocation) {
-        alert("Tu navegador no soporta geolocalización.");
-        return;
-    }
-    
-    const btn = document.querySelector('.btn-geo-round');
-    const icon = btn.querySelector('i');
-    
-    // Efecto visual de carga
-    btn.classList.add('loading');
-    icon.classList.remove('fa-location-arrow');
-    icon.classList.add('fa-spinner');
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            // Redirigir con las coordenadas para que Django filtre
-            window.location.href = `/?lat=${lat}&lon=${lon}`;
-        },
-        (error) => {
-            alert("No pudimos obtener tu ubicación. Por favor, permite el acceso a la ubicación.");
-            btn.classList.remove('loading');
-            icon.classList.remove('fa-spinner');
-            icon.classList.add('fa-location-arrow');
-        }
-    );
-}
-</script>
 {% endblock %}
