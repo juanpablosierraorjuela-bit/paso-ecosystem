@@ -19,7 +19,6 @@ class EmployeeCreationForm(forms.Form):
     phone = forms.CharField(label="Teléfono", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
-# --- CORRECCIÓN: Renombrado de SalonCreateForm a SalonForm ---
 class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
@@ -48,7 +47,7 @@ class SalonForm(forms.ModelForm):
         }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacer opcionales los campos que no sean esenciales
+        # Hacer opcionales los campos que no sean esenciales para el registro inicial
         required_fields = ['name', 'city', 'address', 'phone']
         for field in self.fields: 
             if field not in required_fields:

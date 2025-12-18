@@ -1,6 +1,6 @@
 /* =========================================
    🎨 ESTILO MARKETPLACE "PASO LUXURY"
-   Moderno | Minimalista | Gradientes | Glassmorphism
+   Completo y Corregido
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -31,20 +31,14 @@ body {
 /* --- 1. FONDO AMBIENTAL CON BLOBS ANIMADOS --- */
 .ambient-bg {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-    overflow: hidden;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: -1; overflow: hidden;
     background: radial-gradient(circle at 50% 50%, #fff, #f1f5f9);
 }
 
 .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.6;
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); opacity: 0.6;
     animation: float 10s infinite ease-in-out;
 }
 
@@ -92,20 +86,13 @@ body {
 /* --- 3. HERO SECTION --- */
 .hero-section { padding: 100px 0 60px; text-align: center; position: relative; z-index: 1; }
 .hero-title {
-    font-size: 4.5rem;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -2px;
-    margin-bottom: 1.5rem;
+    font-size: 4.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -2px; margin-bottom: 1.5rem;
     background: linear-gradient(to right, #0f172a 40%, #475569);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     animation: fadeUp 0.8s ease-out;
 }
 .hero-title span {
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .hero-subtitle {
     font-size: 1.25rem; color: var(--text-muted); font-weight: 500; max-width: 600px; margin: 0 auto 3rem; animation: fadeUp 1s ease-out;
@@ -120,45 +107,33 @@ body {
 .search-container {
     background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(20px);
-    border: 1px solid #fff;
-    border-radius: 50px;
+    border: 1px solid #fff; border-radius: 50px;
     padding: 8px 15px;
     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 750px;
-    margin: 0 auto 4rem;
+    display: flex; align-items: center; gap: 10px;
+    max-width: 750px; margin: 0 auto 4rem;
     animation: fadeUp 1.2s ease-out;
 }
 .search-input { border: none; background: transparent; padding: 12px 15px; font-size: 1rem; color: var(--text-main); width: 100%; outline: none; }
 .search-input:focus { outline: none; }
 
-/* BOTÓN GPS (Pin Radar) */
+/* BOTÓN GPS (CORREGIDO PARA VISIBILIDAD) */
 .btn-location-pulse {
-    background: #fff;
-    color: #ec4899;
+    background: #ffffff; /* Fondo blanco */
+    color: #ec4899;      /* Icono rosa */
     border: 2px solid #ec4899;
     width: 48px; height: 48px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem; cursor: pointer;
+    font-size: 1.3rem; /* Icono visible */
+    cursor: pointer;
     box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative; overflow: visible; flex-shrink: 0;
 }
-.btn-location-pulse::before {
-    content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 100%; height: 100%; border-radius: 50%; background-color: rgba(236, 72, 153, 0.2); z-index: -1; animation: radar-wave 2s infinite;
-}
 .btn-location-pulse:hover {
-    background: var(--accent-gradient); color: #fff; border-color: transparent; transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
-}
-.btn-location-pulse:hover::before { animation: none; }
-
-@keyframes radar-wave {
-    0% { width: 100%; height: 100%; opacity: 0.8; }
-    100% { width: 180%; height: 180%; opacity: 0; }
+    background: var(--accent-gradient); color: #fff; border-color: transparent;
+    transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
 }
 
 /* --- 5. TARJETAS --- */
@@ -176,7 +151,6 @@ body {
     display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-main); font-size: 1.2rem; margin-right: 15px;
 }
 
-/* PILL DE ESTADO */
 .status-pill {
     font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
     display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px;
@@ -188,29 +162,6 @@ body {
 
 .card-title { font-weight: 700; color: var(--text-main); font-size: 1.1rem; margin-bottom: 0.2rem; }
 .card-location { color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
-
-/* NUEVO: BOTÓN AGENDA 24/7 DE LUJO */
-.btn-agenda-247 {
-    background: transparent;
-    border: 1px solid #ec4899;
-    color: #ec4899;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.btn-agenda-247:hover {
-    background: var(--accent-gradient);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3);
-}
 
 footer { background-color: #fff; border-top: 1px solid #f1f5f9; color: var(--text-muted); }
 

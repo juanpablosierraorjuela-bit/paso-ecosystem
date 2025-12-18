@@ -4,10 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PASO Beauty Marketplace{% endblock %}</title>
+    <title>{% block title %}PASO Beauty Ecosystem{% endblock %}</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -17,75 +19,58 @@
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="bi bi-stars"></i> PASO <span class="fw-light">Beauty</span>
             </a>
+            
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto align-items-center gap-3">
                     <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Inicio</a></li>
-                </ul>
-
-                <ul class="navbar-nav align-items-center gap-2">
+                    
                     {% if user.is_authenticated %}
                         {% if user.role == 'ADMIN' %}
-                            <li class="nav-item">
-                                <a class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" href="{% url 'dashboard' %}">
-                                    <i class="bi bi-grid-fill me-1"></i> Mi Panel
-                                </a>
-                            </li>
+                            <li class="nav-item"><a class="btn btn-primary btn-sm rounded-pill px-3" href="{% url 'dashboard' %}">Mi Negocio</a></li>
                         {% elif user.role == 'EMPLOYEE' %}
-                            <li class="nav-item">
-                                <a class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" href="{% url 'employee_dashboard' %}">
-                                    <i class="bi bi-calendar-check me-1"></i> Mi Agenda
-                                </a>
-                            </li>
+                            <li class="nav-item"><a class="btn btn-primary btn-sm rounded-pill px-3" href="{% url 'employee_dashboard' %}">Mi Agenda</a></li>
                         {% endif %}
                         
                         <li class="nav-item">
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 border-0">
-                                    Salir
-                                </button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill border-0">Salir</button>
                             </form>
                         </li>
                     {% else %}
-                        <li class="nav-item"><a class="btn-nav-login nav-link" href="{% url 'login' %}">Ingresar</a></li>
-                        <li class="nav-item">
-                            <a class="btn btn-nav-action" href="{% url 'register' %}">Crear Cuenta</a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Entrar</a></li>
+                        <li class="nav-item"><a class="btn btn-nav-action" href="{% url 'register' %}">Crear Cuenta</a></li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <main class="flex-grow-1">
-        <div class="container mt-4 position-absolute start-0 end-0" style="z-index: 999; pointer-events: none;">
-            {% if messages %}
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0" style="pointer-events: auto;" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    </div>
+    <div class="container mt-3 position-absolute start-0 end-0" style="z-index: 2000; pointer-events: none;">
+        {% if messages %}
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" style="pointer-events: auto;">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
+    </div>
 
+    <main class="flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="text-center py-4 mt-auto">
-        <div class="container">
-            <p class="mb-0 small">
-                &copy; 2025 <strong>PASO Beauty</strong>. Conectando belleza.
-            </p>
-        </div>
+    <footer class="text-center py-4 mt-auto border-top bg-white">
+        <small class="text-muted">&copy; 2025 PASO Beauty.</small>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
