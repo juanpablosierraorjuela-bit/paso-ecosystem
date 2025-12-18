@@ -1,65 +1,73 @@
 ﻿{% extends 'base.html' %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow border-0">
-            <div class="card-body p-5">
-                <h3 class="text-center fw-bold mb-4">Crear Cuenta</h3>
+<div style="max-width: 500px; margin: 0 auto; padding: 60px 20px;">
+    
+    <div class="glass-panel" style="padding: 40px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="font-weight: 800; margin: 0;">Crear Cuenta</h2>
+            <p style="color: var(--secondary); margin-top: 5px;">Únete a PASO Ecosystem</p>
+        </div>
 
-                {% if inviting_salon %}
-                    <div class="alert alert-success text-center mb-4">
-                        <i class="bi bi-ticket-perforated-fill"></i>
-                        Estás aceptando la invitación de <strong>{{ inviting_salon.name }}</strong>
-                    </div>
-                {% endif %}
+        {% if inviting_salon %}
+            <div style="background: #dcfce7; color: #166534; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 25px; border: 1px solid #bbf7d0; font-size: 0.9rem;">
+                <i class="fas fa-ticket-alt"></i>
+                Estás aceptando la invitación de <br><strong>{{ inviting_salon.name }}</strong>
+            </div>
+        {% endif %}
 
-                <form method="post">
-                    {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
 
-                    {% if invite_token %}
-                        <input type="hidden" name="invite_token" value="{{ invite_token }}">
+            {% if invite_token %}
+                <input type="hidden" name="invite_token" value="{{ invite_token }}">
+            {% endif %}
+
+            {% for field in form %}
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: block; color: var(--primary);">
+                        {{ field.label }}
+                    </label>
+                    
+                    {% if field.name == 'role' and inviting_salon %}
+                        <div style="opacity: 0.8;">
+                            <select name="{{ field.name }}" class="form-select" readonly style="pointer-events: none; background-color: #f1f5f9; cursor: not-allowed;">
+                                <option value="EMPLOYEE" selected>Empleado / Estilista</option>
+                            </select>
+                            <div style="font-size: 0.8rem; color: var(--secondary); margin-top: 5px;">
+                                <i class="fas fa-info-circle"></i> Rol asignado por invitación.
+                            </div>
+                        </div>
+                    {% else %}
+                        {{ field }}
                     {% endif %}
 
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">{{ field.label }}</label>
-                            
-                            {% if field.name == 'role' and inviting_salon %}
-                                <select name="{{ field.name }}" class="form-select" readonly style="pointer-events: none; background-color: #e9ecef;">
-                                    <option value="EMPLOYEE" selected>Empleado / Estilista</option>
-                                </select>
-                                <div class="form-text text-muted">Tu rol ha sido preseleccionado por la invitación.</div>
-                            {% else %}
-                                {{ field }}
-                            {% endif %}
-
-                            {% if field.errors %}
-                                <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
-                            {% endif %}
+                    {% if field.errors %}
+                        <div style="color: #ef4444; font-size: 0.85rem; margin-top: 5px; font-weight: 500;">
+                            {{ field.errors.0 }}
                         </div>
-                    {% endfor %}
-
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            {% if inviting_salon %}
-                                Registrarse y Unirse
-                            {% else %}
-                                Crear Cuenta
-                            {% endif %}
-                        </button>
-                    </div>
-                </form>
-
-                <div class="text-center mt-3">
-                    <p class="small text-muted">
-                        ¿Ya tienes cuenta? 
-                        <a href="{% url 'login' %}{% if invite_token %}?invite={{ invite_token }}{% endif %}" class="text-decoration-none">
-                            Inicia sesión aquí
-                        </a>
-                    </p>
+                    {% endif %}
                 </div>
+            {% endfor %}
+
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn-access" style="width: 100%; padding: 15px; font-size: 1rem;">
+                    {% if inviting_salon %}
+                        Registrarse y Unirse
+                    {% else %}
+                        Crear Cuenta
+                    {% endif %}
+                </button>
             </div>
+        </form>
+
+        <div style="text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 25px;">
+            <p style="color: var(--secondary); font-size: 0.9rem; margin: 0;">
+                ¿Ya tienes cuenta? 
+                <a href="{% url 'login' %}{% if invite_token %}?invite={{ invite_token }}{% endif %}" style="color: var(--primary); font-weight: 700; text-decoration: none; margin-left: 5px;">
+                    Inicia sesión aquí
+                </a>
+            </p>
         </div>
     </div>
 </div>
