@@ -9,7 +9,8 @@ from django.db import transaction
 # Modelos
 from .models import Salon, OpeningHours, EmployeeSchedule, Employee
 # Forms
-from .forms import SalonCreateForm, OpeningHoursForm, BookingForm, EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm
+# CORRECCIÓN: Importamos SalonForm en lugar de SalonCreateForm
+from .forms import SalonForm, OpeningHoursForm, BookingForm, EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm
 # Servicios
 from .services import create_booking_service
 from .utils import notify_new_booking
@@ -68,8 +69,6 @@ def create_employee_view(request):
 
     return render(request, 'dashboard/create_employee.html', {'form': form, 'salon': salon})
 
-# --- (El resto de vistas se mantiene: settings, salon_detail, etc) ---
-
 @login_required
 def salon_settings_view(request):
     salon = get_object_or_404(Salon, owner=request.user)
@@ -80,7 +79,8 @@ def salon_settings_view(request):
     HoursFormSet = modelformset_factory(OpeningHours, form=OpeningHoursForm, extra=0)
     
     if request.method == 'POST':
-        salon_form = SalonCreateForm(request.POST, request.FILES, instance=salon)
+        # CORRECCIÓN: Usamos SalonForm aquí
+        salon_form = SalonForm(request.POST, request.FILES, instance=salon)
         hours_formset = HoursFormSet(request.POST, queryset=salon.opening_hours.all())
         
         if salon_form.is_valid() and hours_formset.is_valid():
@@ -89,7 +89,8 @@ def salon_settings_view(request):
             messages.success(request, "Configuración guardada.")
             return redirect('dashboard')
     else:
-        salon_form = SalonCreateForm(instance=salon)
+        # CORRECCIÓN: Y aquí también
+        salon_form = SalonForm(instance=salon)
         hours_formset = HoursFormSet(queryset=salon.opening_hours.all())
         
     return render(request, 'dashboard/settings.html', {'salon_form': salon_form, 'hours_formset': hours_formset, 'salon': salon})
