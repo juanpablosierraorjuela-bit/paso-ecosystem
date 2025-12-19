@@ -19,7 +19,7 @@ class EmployeeCreationForm(forms.Form):
     phone = forms.CharField(label="Teléfono", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
-# --- CLASE CORRECTA PARA EVITAR ERROR DE IMPORTACIÓN ---
+# --- CORRECCIÓN CLAVE: El nombre ahora es SalonForm ---
 class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
