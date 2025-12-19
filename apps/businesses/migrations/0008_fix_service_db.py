@@ -3,7 +3,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('businesses', '0007_alter_employeeschedule_options_and_more'),
+        ('businesses', '0006_employee_telegram_bot_token_and_more'),
     ]
 
     operations = [

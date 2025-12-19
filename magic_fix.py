@@ -2,17 +2,17 @@ import os
 import subprocess
 import sys
 
-def create_migration_file():
-    # Ruta exacta donde debe ir la migración
+def fix_migration_dependency():
+    # Ruta del archivo que dio problema
     migration_path = os.path.join('apps', 'businesses', 'migrations', '0008_fix_service_db.py')
     
-    # El contenido que soluciona el error 500 eliminando la columna 'description'
+    # El contenido CORREGIDO: Depende de la 0006 (que sí existe) en vez de la 0007 fantasma
     content = """from django.db import migrations
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('businesses', '0007_alter_employeeschedule_options_and_more'),
+        ('businesses', '0006_employee_telegram_bot_token_and_more'),
     ]
 
     operations = [
@@ -23,47 +23,42 @@ class Migration(migrations.Migration):
     ]
 """
     
-    print(f"✨ Creando archivo de curación en: {migration_path}...")
+    print(f"🔧 Reparando dependencia en: {migration_path}...")
     try:
         with open(migration_path, 'w') as f:
             f.write(content)
-        print("✅ Archivo creado exitosamente.")
+        print("✅ Archivo corregido.")
     except Exception as e:
-        print(f"❌ Error creando el archivo: {e}")
+        print(f"❌ Error escribiendo el archivo: {e}")
         sys.exit(1)
 
 def git_push_changes():
-    print("\n🚀 Iniciando secuencia de despegue a GitHub...")
+    print("\n🚀 Enviando corrección a GitHub...")
     
     commands = [
         ['git', 'add', '.'],
-        ['git', 'commit', '-m', 'Magic Fix: Reparacion automatica de base de datos en Render'],
+        ['git', 'commit', '-m', 'Fix: Corregir dependencia de migracion 0008 apuntando a 0006'],
     ]
     
-    # 1. Añadir y Commitear
     for cmd in commands:
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError:
-            print("⚠️  No hubo cambios nuevos para commitear o hubo un error leve. Continuando...")
+            print("⚠️  Paso omitido (sin cambios nuevos o error leve).")
 
-    # 2. Intentar Push (detectando rama main o master)
-    print("☁️  Subiendo a la nube...")
+    print("☁️  Subiendo cambios...")
     try:
         subprocess.run(['git', 'push', 'origin', 'main'], check=True)
-        print("\n✨ ¡Éxito! Subido a la rama 'main'.")
-    except subprocess.CalledProcessError:
-        print("⚠️  Falló 'main', intentando con 'master'...")
+        print("\n✨ ¡Éxito! Subido a 'main'.")
+    except:
         try:
             subprocess.run(['git', 'push', 'origin', 'master'], check=True)
-            print("\n✨ ¡Éxito! Subido a la rama 'master'.")
-        except subprocess.CalledProcessError:
-            print("\n❌ Error crítico: No se pudo subir a GitHub. Verifica tu conexión o credenciales.")
-            sys.exit(1)
+            print("\n✨ ¡Éxito! Subido a 'master'.")
+        except:
+            print("\n❌ No se pudo subir. Verifica tu conexión.")
 
 if __name__ == "__main__":
-    print("🧙‍♂️ --- INICIANDO PROTOCOLO DE REPARACIÓN PASO ECOSYSTEM ---")
-    create_migration_file()
+    print("🚑 --- MAGIC FIX v2: REPARANDO LA REPARACIÓN ---")
+    fix_migration_dependency()
     git_push_changes()
-    print("\n✅ Tarea completada. Render detectará el cambio y arreglará la base de datos en unos minutos.")
-    print("⏳ Espera a que termine el despliegue en Render y prueba tu Dashboard de nuevo.")
+    print("\n✅ Listo. Render intentará desplegar de nuevo.")
