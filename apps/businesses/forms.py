@@ -96,3 +96,14 @@ class EmployeeScheduleForm(forms.ModelForm):
             'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+# --- AGREGADO: FORMULARIO DE SERVICIOS ---
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'duration_minutes', 'price']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Corte de Cabello'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '25000'}),
+        }
