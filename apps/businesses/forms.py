@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from django.utils import timezone
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
@@ -19,10 +19,16 @@ class EmployeeCreationForm(forms.Form):
     phone = forms.CharField(label="Teléfono", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
+# --- CORRECCIÓN REALIZADA: Se renombró la clase a SalonForm ---
 class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
-        fields = ['name', 'slug', 'description', 'city', 'address', 'phone', 'latitude', 'longitude', 'logo', 'banner', 'instagram', 'facebook', 'tiktok', 'bold_api_key', 'bold_signing_key', 'telegram_bot_token', 'telegram_chat_id']
+        fields = [
+            'name', 'slug', 'description', 'city', 'address', 'phone', 
+            'latitude', 'longitude', 'logo', 'banner',
+            'instagram', 'facebook', 'tiktok',
+            'bold_api_key', 'bold_signing_key', 'telegram_bot_token', 'telegram_chat_id'
+        ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'slug': forms.TextInput(attrs={'class': 'form-control'}),
@@ -42,22 +48,33 @@ class SalonForm(forms.ModelForm):
         }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Hacer opcionales los campos no esenciales para el primer registro
         required_fields = ['name', 'city', 'address', 'phone']
         for field in self.fields: 
-            if field not in required_fields: self.fields[field].required = False
+            if field not in required_fields:
+                self.fields[field].required = False
 
 class OpeningHoursForm(forms.ModelForm):
     class Meta:
         model = OpeningHours
         fields = ['weekday', 'from_hour', 'to_hour', 'is_closed']
-        widgets = {'weekday': forms.Select(attrs={'class': 'form-select'}), 'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}), 'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}), 'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'})}
+        widgets = {
+            'weekday': forms.Select(attrs={'class': 'form-select'}),
+            'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
 class BookingForm(forms.ModelForm):
     employee = forms.ModelChoiceField(queryset=Employee.objects.none(), required=False, empty_label="Cualquiera", widget=forms.Select(attrs={'class': 'form-select'}))
     class Meta:
         model = Booking
         fields = ['employee', 'customer_name', 'customer_phone', 'start_time']
-        widgets = {'customer_name': forms.TextInput(attrs={'class': 'form-control'}), 'customer_phone': forms.TextInput(attrs={'class': 'form-control'}), 'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})}
+        widgets = {
+            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'customer_phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+        }
     def __init__(self, *args, **kwargs):
         service = kwargs.pop('service', None)
         super().__init__(*args, **kwargs)
@@ -71,10 +88,22 @@ class EmployeeSettingsForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = ['lunch_start', 'lunch_end', 'bold_api_key', 'bold_signing_key', 'telegram_bot_token', 'telegram_chat_id']
-        widgets = {'lunch_start': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}), 'lunch_end': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}), 'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}), 'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}), 'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}), 'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'})}
+        widgets = {
+            'lunch_start': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'lunch_end': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 class EmployeeScheduleForm(forms.ModelForm):
     class Meta:
         model = EmployeeSchedule
         fields = ['weekday', 'from_hour', 'to_hour', 'is_closed']
-        widgets = {'weekday': forms.Select(attrs={'class': 'form-select', 'disabled': 'disabled'}), 'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}), 'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}), 'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'})}
+        widgets = {
+            'weekday': forms.Select(attrs={'class': 'form-select', 'disabled': 'disabled'}),
+            'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
