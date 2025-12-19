@@ -5,7 +5,8 @@ from django.db import transaction
 from django.contrib import messages
 
 from apps.businesses.models import Salon, Booking
-from apps.businesses.forms import SalonCreateForm
+# CORRECCIÓN: Importamos SalonForm en lugar de SalonCreateForm
+from apps.businesses.forms import SalonForm
 from .forms import CustomUserCreationForm
 
 def home(request):
@@ -50,7 +51,8 @@ def create_salon_view(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = SalonCreateForm(request.POST, request.FILES)
+        # CORRECCIÓN: Usamos SalonForm aquí
+        form = SalonForm(request.POST, request.FILES)
         if form.is_valid():
             with transaction.atomic():
                 salon = form.save(commit=False)
@@ -62,11 +64,12 @@ def create_salon_view(request):
 
             return redirect('dashboard')
     else:
-        form = SalonCreateForm()
+        # CORRECCIÓN: Y aquí también
+        form = SalonForm()
         
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
-# Views obsoletas (puedes dejarlas vacías o eliminarlas)
+# Views obsoletas
 def accept_invite_view(request):
     return redirect('dashboard')
 
