@@ -38,12 +38,7 @@
                         <div class="table-responsive">
                             <table class="table align-middle">
                                 <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Servicio</th>
-                                        <th>Fecha/Hora</th>
-                                        <th>Estado</th>
-                                    </tr>
+                                    <tr><th>Cliente</th><th>Servicio</th><th>Fecha</th><th>Estado</th></tr>
                                 </thead>
                                 <tbody>
                                     {% for b in bookings %}
@@ -76,7 +71,7 @@
                             <form method="post">
                                 {% csrf_token %}
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted">Nombre del Servicio</label>
+                                    <label class="form-label small text-muted">Nombre</label>
                                     {{ s_form.name }}
                                 </div>
                                 <div class="mb-3">
@@ -93,8 +88,8 @@
                                         {{ s_form.duration_minutes }}
                                     </div>
                                 </div>
-                                <button type="submit" name="create_service" class="btn btn-primary w-100 rounded-pill fw-bold">
-                                    Agregar Servicio
+                                <button type="submit" name="create_service" class="btn btn-primary w-100 rounded-pill">
+                                    Agregar
                                 </button>
                             </form>
                         </div>
@@ -135,43 +130,20 @@
                         {% csrf_token %}
                         <h5 class="fw-bold mb-3">Datos del Negocio</h5>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label>Nombre</label>
-                                {{ form.name }}
-                            </div>
-                            <div class="col-md-6">
-                                <label>Ciudad</label>
-                                {{ form.city }}
-                            </div>
-                            <div class="col-12">
-                                <label>Descripción</label>
-                                {{ form.description }}
-                            </div>
-                            <div class="col-md-6">
-                                <label>Dirección</label>
-                                {{ form.address }}
-                            </div>
-                            <div class="col-md-6">
-                                <label>Teléfono</label>
-                                {{ form.phone }}
-                            </div>
-                            <div class="col-md-6">
-                                <label>Logo</label>
-                                {{ form.logo }}
-                            </div>
-                            <div class="col-md-6">
-                                <label>Banner</label>
-                                {{ form.banner }}
-                            </div>
+                            <div class="col-md-6"><label>Nombre</label>{{ form.name }}</div>
+                            <div class="col-md-6"><label>Ciudad</label>{{ form.city }}</div>
+                            <div class="col-12"><label>Descripción</label>{{ form.description }}</div>
+                            <div class="col-md-6"><label>Dirección</label>{{ form.address }}</div>
+                            <div class="col-md-6"><label>Teléfono</label>{{ form.phone }}</div>
+                            <div class="col-md-6"><label>Logo</label>{{ form.logo }}</div>
+                            <div class="col-md-6"><label>Banner</label>{{ form.banner }}</div>
                         </div>
-                        <button type="submit" name="update_settings" class="btn btn-primary mt-4 rounded-pill px-4">
+                        <button type="submit" name="update_settings" class="btn btn-primary mt-4 rounded-pill">
                             Guardar Cambios
                         </button>
                     </form>
-                    
                     <hr class="my-5">
-                    
-                    <h5 class="fw-bold mb-3">Enlace de Invitación para Empleados</h5>
+                    <h5 class="fw-bold mb-3">Invitación Empleados</h5>
                     <div class="input-group">
                         <input type="text" class="form-control" value="{{ invite_link }}" readonly>
                         <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ invite_link }}')">Copiar</button>

@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 import datetime
 import uuid
 
+# Importaciones Correctas
 from apps.users.forms import CustomUserCreationForm
 from apps.businesses.models import (
     Salon, Service, Booking, Employee, OpeningHours, EmployeeSchedule
@@ -19,7 +20,7 @@ from apps.businesses.forms import (
 
 def home(request):
     salons = Salon.objects.all()
-    ciudades = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
+    ciudades = sorted(list(set(Salon.objects.values_list('city', flat=True))))
     return render(request, 'home.html', {'salons': salons, 'ciudades': ciudades})
 
 def register(request):
@@ -41,23 +42,22 @@ def register(request):
 
 def salon_detail(request, slug):
     salon = get_object_or_404(Salon, slug=slug)
-    return render(request, 'salon_detail.html', {
-        'salon': salon,
-        'services': salon.services.all(),
-        'is_open': salon.is_open
-    })
+    services = salon.services.all()
+    is_open = getattr(salon, 'is_open', False)
+    return render(request, 'salon_detail.html', {'salon': salon, 'services': services, 'is_open': is_open})
 
 @login_required
 def dashboard(request):
-    # Seguridad
+    # 1. Seguridad
     if getattr(request.user, 'role', '') != 'ADMIN':
         if getattr(request.user, 'role', '') == 'EMPLOYEE': return redirect('employee_dashboard')
         return redirect('home')
 
+    # 2. Obtener Salón
     try:
         salon = request.user.salon
     except Exception:
-        # Crear salón si no existe
+        # Crear si no existe
         if request.method == 'POST':
             form = SalonForm(request.POST, request.FILES)
             if form.is_valid():
@@ -66,25 +66,27 @@ def dashboard(request):
                 salon.save()
                 for i in range(6): OpeningHours.objects.create(salon=salon, weekday=i, from_hour=datetime.time(8,0), to_hour=datetime.time(20,0))
                 OpeningHours.objects.create(salon=salon, weekday=6, from_hour=datetime.time(9,0), to_hour=datetime.time(15,0), is_closed=True)
-                messages.success(request, '¡Negocio creado!')
                 return redirect('dashboard')
         else:
             form = SalonForm()
         return render(request, 'dashboard/create_salon.html', {'form': form})
 
-    # Inicializar Forms
+    # 3. Inicializar Formularios
     form = SalonForm(instance=salon)
     s_form = ServiceForm()
     h_form = OpeningHoursForm()
 
+    # 4. Procesar Formularios
     if request.method == 'POST':
+        # Actualizar Negocio
         if 'update_settings' in request.POST:
             form = SalonForm(request.POST, request.FILES, instance=salon)
             if form.is_valid():
                 form.save()
-                messages.success(request, 'Configuración actualizada.')
+                messages.success(request, 'Información actualizada.')
                 return redirect('dashboard')
         
+        # --- CREAR SERVICIO (NUEVO) ---
         elif 'create_service' in request.POST:
             s_form = ServiceForm(request.POST)
             if s_form.is_valid():
@@ -94,6 +96,7 @@ def dashboard(request):
                 messages.success(request, 'Servicio agregado.')
                 return redirect('dashboard')
         
+        # Actualizar Horario
         elif 'update_hours' in request.POST:
             h_form = OpeningHoursForm(request.POST)
             if h_form.is_valid():
@@ -109,14 +112,12 @@ def dashboard(request):
                 messages.success(request, 'Horario actualizado.')
                 return redirect('dashboard')
 
-    # Token y Links
+    # Token y Contexto
     try:
         token = getattr(salon, 'invite_token', 'no-token')
         invite_link = f"http://{request.get_host()}/unete/{token}/"
     except:
-        invite_link = "#error-db"
-
-    webhook_url = f"http://{request.get_host()}/api/webhooks/bold/"
+        invite_link = "#"
 
     context = {
         'salon': salon,
@@ -125,7 +126,8 @@ def dashboard(request):
         'bookings': salon.bookings.all().order_by('-start_time'),
         'employees': salon.employees.all(),
         'hours': salon.opening_hours.all().order_by('weekday'),
-        'invite_link': invite_link, 'webhook_url': webhook_url
+        'invite_link': invite_link,
+        'webhook_url': f"http://{request.get_host()}/api/webhooks/bold/"
     }
     return render(request, 'dashboard/index.html', context)
 
@@ -140,7 +142,6 @@ def employee_join(request, token):
         request.user.role = 'EMPLOYEE'
         request.user.save()
         for i in range(5): EmployeeSchedule.objects.create(employee=employee, weekday=i, from_hour=datetime.time(9,0), to_hour=datetime.time(18,0))
-        messages.success(request, '¡Bienvenido!')
         return redirect('employee_dashboard')
     return render(request, 'registration/employee_join.html', {'salon': salon})
 
@@ -157,17 +158,14 @@ def employee_dashboard(request):
             settings_form = EmployeeSettingsForm(request.POST, instance=employee)
             if settings_form.is_valid():
                 settings_form.save()
-                messages.success(request, 'Guardado.')
                 return redirect('employee_dashboard')
         elif 'update_schedule' in request.POST:
             schedule_form = EmployeeScheduleForm(request.POST)
             if schedule_form.is_valid():
-                day = schedule_form.cleaned_data['weekday']
                 EmployeeSchedule.objects.update_or_create(
-                    employee=employee, weekday=day,
+                    employee=employee, weekday=schedule_form.cleaned_data['weekday'],
                     defaults={'from_hour': schedule_form.cleaned_data['from_hour'], 'to_hour': schedule_form.cleaned_data['to_hour'], 'is_closed': schedule_form.cleaned_data['is_closed']}
                 )
-                messages.success(request, 'Horario actualizado.')
                 return redirect('employee_dashboard')
 
     return render(request, 'dashboard/employee_dashboard.html', {

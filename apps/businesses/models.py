@@ -26,7 +26,7 @@ class Salon(models.Model):
     logo = models.ImageField(upload_to='salons/logos/', blank=True, null=True)
     banner = models.ImageField(upload_to='salons/banners/', blank=True, null=True)
 
-    # Redes
+    # Redes Sociales
     instagram = models.URLField(blank=True)
     facebook = models.URLField(blank=True)
     tiktok = models.URLField(blank=True)
@@ -62,7 +62,7 @@ class Salon(models.Model):
     def __str__(self):
         return self.name
 
-# --- MODELO SERVICIOS (Aquí guardamos tus servicios) ---
+# --- MODELO SERVICIOS (Con el campo descripción) ---
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100, verbose_name="Nombre del Servicio")
@@ -82,7 +82,6 @@ class Employee(models.Model):
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
     
-    # Integraciones empleado
     bold_api_key = models.CharField(max_length=255, blank=True)
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
