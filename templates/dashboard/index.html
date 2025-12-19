@@ -27,13 +27,26 @@
             </div>
         </div>
 
+        <div class="card shadow-sm border-0 mt-3 bg-white border-start border-4 border-primary">
+            <div class="card-body">
+                <h6 class="fw-bold text-primary"><i class="bi bi-scissors"></i> Mis Servicios</h6>
+                <p class="small text-muted mb-3">Agrega cortes, precios y duración.</p>
+                
+                <div class="d-grid">
+                    <a href="{% url 'services_settings' %}" class="btn btn-primary text-white fw-bold">
+                        <i class="bi bi-list-ul"></i> Gestionar Servicios
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm border-0 mt-3 bg-light">
             <div class="card-body">
-                <h6 class="fw-bold text-primary"><i class="bi bi-people-fill"></i> Mi Equipo</h6>
+                <h6 class="fw-bold text-dark"><i class="bi bi-people-fill"></i> Mi Equipo</h6>
                 <p class="small text-muted mb-3">Registra manualmente a tus colaboradores.</p>
                 
                 <div class="d-grid">
-                    <a href="{% url 'create_employee' %}" class="btn btn-success text-white">
+                    <a href="{% url 'create_employee' %}" class="btn btn-outline-success">
                         <i class="bi bi-person-plus"></i> Crear Empleado
                     </a>
                 </div>
