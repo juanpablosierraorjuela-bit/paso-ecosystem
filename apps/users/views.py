@@ -4,9 +4,8 @@ from django.contrib.auth import login
 from django.db import transaction
 from django.contrib import messages
 
-# Importamos los modelos y formularios necesarios
-from apps.businesses.models import Salon, Booking, Service
-from apps.businesses.forms import SalonCreateForm, ServiceForm
+from apps.businesses.models import Salon, Booking
+from apps.businesses.forms import SalonCreateForm
 from .forms import CustomUserCreationForm
 
 def home(request):
@@ -33,34 +32,9 @@ def register(request):
 def dashboard_view(request):
     user = request.user
 
-    # 1. LOGICA PARA EL DUEÑO (Aquí estaba faltando el formulario)
+    # 1. DUEÑO
     if hasattr(user, 'salon'):
-        salon = user.salon
-        
-        # Inicializamos el formulario de servicios
-        s_form = ServiceForm()
-        
-        # Procesamos si se está creando un servicio
-        if request.method == 'POST' and 'create_service' in request.POST:
-            s_form = ServiceForm(request.POST)
-            if s_form.is_valid():
-                service = s_form.save(commit=False)
-                service.salon = salon
-                service.save()
-                messages.success(request, "¡Nuevo servicio agregado con éxito!")
-                return redirect('dashboard')
-            else:
-                messages.error(request, "Error al crear el servicio. Revisa los campos.")
-
-        # Obtenemos la lista de servicios para mostrar en la tabla
-        services = salon.services.all()
-
-        context = {
-            'salon': salon,
-            's_form': s_form,     # <--- ¡ESTO FALTABA!
-            'services': services, # <--- Y ESTO TAMBIÉN
-        }
-        return render(request, 'dashboard/index.html', context)
+        return render(request, 'dashboard/index.html', {'salon': user.salon})
 
     # 2. EMPLEADO
     if hasattr(user, 'employee'):
@@ -92,7 +66,7 @@ def create_salon_view(request):
         
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
-# Views de compatibilidad
+# Views obsoletas (puedes dejarlas vacías o eliminarlas)
 def accept_invite_view(request):
     return redirect('dashboard')
 
