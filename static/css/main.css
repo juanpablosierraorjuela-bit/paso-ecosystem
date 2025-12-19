@@ -1,6 +1,6 @@
 /* =========================================
    🎨 ESTILO MARKETPLACE "PASO LUXURY"
-   Completo y Corregido
+   Versión Final y Corregida
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -28,10 +28,9 @@ body {
     min-height: 100vh;
 }
 
-/* --- 1. FONDO AMBIENTAL CON BLOBS ANIMADOS --- */
+/* --- 1. FONDO AMBIENTAL --- */
 .ambient-bg {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     z-index: -1; overflow: hidden;
     background: radial-gradient(circle at 50% 50%, #fff, #f1f5f9);
 }
@@ -41,7 +40,6 @@ body {
     filter: blur(80px); opacity: 0.6;
     animation: float 10s infinite ease-in-out;
 }
-
 .blob-1 { width: 600px; height: 600px; background: #fce7f3; top: -10%; left: -10%; animation-delay: 0s; }
 .blob-2 { width: 500px; height: 500px; background: #ede9fe; bottom: -10%; right: -5%; animation-delay: 2s; }
 .blob-3 { width: 300px; height: 300px; background: #dbeafe; top: 40%; left: 30%; animation-delay: 4s; }
@@ -58,28 +56,16 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-    padding: 1rem 0;
+    transition: all 0.3s ease; padding: 1rem 0;
 }
-
-.navbar.scrolled {
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
 .navbar-brand { font-weight: 800; font-size: 1.5rem; color: var(--text-main) !important; letter-spacing: -0.5px; }
 .navbar-brand i { color: #ec4899; }
 .nav-link { font-weight: 600; color: var(--text-main) !important; font-size: 0.95rem; }
 
 .btn-nav-action {
-    background-color: var(--text-main);
-    color: #fff !important;
-    border-radius: 50px;
-    padding: 8px 24px;
-    font-weight: 600;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
-    transition: all 0.3s ease;
+    background-color: var(--text-main); color: #fff !important;
+    border-radius: 50px; padding: 8px 24px; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2); transition: all 0.3s ease;
 }
 .btn-nav-action:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(15, 23, 42, 0.3); }
 
@@ -117,30 +103,25 @@ body {
 .search-input { border: none; background: transparent; padding: 12px 15px; font-size: 1rem; color: var(--text-main); width: 100%; outline: none; }
 .search-input:focus { outline: none; }
 
-/* --- BOTÓN GPS (ARREGLADO PARA QUE SE VEA EL ÍCONO) --- */
+/* 🔥 BOTÓN GPS (ARREGLADO DEFINITIVAMENTE) 🔥 */
 .btn-location-pulse {
-    background: #ffffff; /* Fondo blanco */
-    color: #ec4899;      /* Icono Rosa Fuerte - NO BLANCO */
+    background: #ffffff !important; /* Fondo blanco forzado */
+    color: #ec4899 !important;      /* Icono rosa forzado */
     border: 2px solid #ec4899;
     width: 50px; 
     height: 50px;
     border-radius: 50%;
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     font-size: 1.5rem; /* Icono grande */
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative; 
-    overflow: visible; 
-    flex-shrink: 0;
-    z-index: 10;
+    position: relative; overflow: visible; flex-shrink: 0;
+    z-index: 99; /* Por encima de todo */
 }
-
 .btn-location-pulse:hover {
-    background: var(--accent-gradient); 
-    color: #fff; /* Icono se vuelve blanco solo al pasar el mouse */
+    background: var(--accent-gradient) !important; 
+    color: #fff !important; /* Blanco al hover */
     border-color: transparent;
     transform: translateY(-2px) scale(1.1); 
     box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
