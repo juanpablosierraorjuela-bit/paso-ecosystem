@@ -2,14 +2,13 @@
 from django.utils import timezone
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
-# --- NUEVO FORMULARIO PARA CREAR EMPLEADOS ---
+# --- FORMULARIO PARA CREAR EMPLEADOS ---
 class EmployeeCreationForm(forms.Form):
     name = forms.CharField(label="Nombre Completo", max_length=100, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Juan Pérez'}))
     email = forms.EmailField(label="Correo Electrónico (Será su usuario)", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'empleado@salon.com'}))
     phone = forms.CharField(label="Teléfono", max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña de Acceso", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
-# --- (El resto de tus formularios se mantienen igual) ---
 class SalonCreateForm(forms.ModelForm):
     class Meta:
         model = Salon
@@ -24,7 +23,20 @@ class SalonCreateForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            # ... resto de widgets
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control'}),
+            'banner': forms.FileInput(attrs={'class': 'form-control'}),
+            'instagram': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/...'}),
+            'facebook': forms.URLInput(attrs={'class': 'form-control'}),
+            'tiktok': forms.URLInput(attrs={'class': 'form-control'}),
+            'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -97,7 +109,7 @@ class EmployeeScheduleForm(forms.ModelForm):
             'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-# --- AGREGADO: FORMULARIO DE SERVICIOS ---
+# --- FORMULARIO DE SERVICIOS (ASEGURATE DE TENER ESTO AL FINAL) ---
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
