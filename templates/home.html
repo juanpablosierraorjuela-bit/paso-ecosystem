@@ -12,126 +12,189 @@
 <header class="hero-section">
     <div class="container">
         <h1 class="hero-title">
-            Tu estilo, <br> <span>tu tiempo</span>.
+            Encuentra tu estilo,<br>
+            reserva <span>tu tiempo</span>.
         </h1>
-        <p class="hero-subtitle">Reserva en los mejores salones cerca de ti.</p>
+        <p class="hero-subtitle">
+            Explora los mejores salones, spas y barberías cerca de ti. Reserva en segundos.
+        </p>
 
         <div class="search-container">
             <div class="d-flex align-items-center flex-grow-1 px-2 border-end">
                 <i class="bi bi-geo-alt text-muted fs-5"></i>
-                <select id="ciudadSelect" class="search-input" onchange="filtrarNegocios()">
+                <select id="ciudadSelect" class="search-input" onchange="filtrarCiudad()">
                     <option value="todas">Todas las ciudades</option>
-                    {% for city in ciudades %}
-                        <option value="{{ city }}">{{ city }}</option>
-                    {% endfor %}
+                    <option value="Tunja">Tunja</option>
+                    <option value="Bogota">Bogotá</option>
+                    <option value="Medellin">Medellín</option>
                 </select>
             </div>
-            
             <div class="d-flex align-items-center flex-grow-1 px-2">
                 <i class="bi bi-search text-muted fs-5"></i>
-                <input type="text" id="nombreBusqueda" class="search-input" placeholder="Buscar salón..." onkeyup="filtrarNegocios()">
+                <input type="text" id="nombreBusqueda" class="search-input" placeholder="¿Qué buscas hoy?" onkeyup="filtrarNombre()">
             </div>
             
-            <button class="btn-location-pulse" onclick="usarUbicacion()" title="Cerca de mí (600m)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8.5.5a.5.5 0 0 0-1 0v.518A7.001 7.001 0 0 0 1.018 7.5H.5a.5.5 0 0 0 0 1h.518A7.001 7.001 0 0 0 7.5 14.982v.518a.5.5 0 0 0 1 0v-.518A7.001 7.001 0 0 0 14.982 8.5h.518a.5.5 0 0 0 0-1h-.518A7.001 7.001 0 0 0 8.5 1.018V.5Zm-7.468 7.468A6.001 6.001 0 0 1 8 2a6.001 6.001 0 0 1 6.968 5.968h-.938A5.001 5.001 0 0 0 8 3a5.001 5.001 0 0 0-5.03 4.968H1.032Zm6.936-6a5.001 5.001 0 0 0-4.968 4.968h.938A4.001 4.001 0 0 1 8 4a4.001 4.001 0 0 1 3.968 3.968h.938A5.001 5.001 0 0 0 8 1.968Zm0 12.064A5.001 5.001 0 0 0 13.032 9.032h-.938A4.001 4.001 0 0 1 8 12a4.001 4.001 0 0 1-3.968-3.968h-.938a5.001 5.001 0 0 0 5.968 5.968Zm-6.936-6h.938A4.001 4.001 0 0 1 8 4.032v-.938A5.001 5.001 0 0 0 1.968 8.032ZM8 12.032v.938a5.001 5.001 0 0 0 5.032-5.032h-.938A4.001 4.001 0 0 1 8 11.968Z"/>
-                    <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/>
-                </svg>
+            <button class="btn-location-pulse" onclick="usarUbicacion()" title="Ver negocios cercanos (600m)" data-bs-toggle="tooltip">
+                <i class="bi bi-geo-alt-fill"></i>
             </button>
         </div>
     </div>
 </header>
 
-<section class="container pb-5">
+<section class="container mb-5">
     <div class="row g-4" id="salonGrid">
         {% for salon in salons %}
         <div class="col-md-6 col-lg-4 salon-item" 
-             data-city="{{ salon.city|default:'' }}" 
-             data-name="{{ salon.name|lower }}"
+             data-city="{{ salon.city }}" 
              data-lat="{{ salon.latitude|default:0 }}" 
              data-lng="{{ salon.longitude|default:0 }}">
             
             <a href="{% url 'salon_detail' salon.slug %}" class="salon-card">
-                <div class="card-img-wrapper">
-                    {% if salon.banner %}
-                        <img src="{{ salon.banner.url }}" style="width:100%; height:100%; object-fit:cover;">
-                    {% else %}
-                        <div class="text-muted opacity-25"><i class="bi bi-card-image fs-1"></i></div>
-                    {% endif %}
-                </div>
+                {% if salon.banner %}
+                    <img src="{{ salon.banner.url }}" class="card-img-top" alt="{{ salon.name }}">
+                {% else %}
+                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light text-muted">
+                        <i class="bi bi-image fs-1 opacity-25"></i>
+                    </div>
+                {% endif %}
+
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="salon-avatar me-3">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="salon-avatar flex-shrink-0">
                             {% if salon.logo %}
-                                <img src="{{ salon.logo.url }}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">
+                                <img src="{{ salon.logo.url }}" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
                             {% else %}
-                                {{ salon.name|slice:":1"|upper }}
+                                {{ salon.name|slice:":1" }}
                             {% endif %}
                         </div>
-                        <div>
-                            <h5 class="fw-bold mb-0 text-dark">{{ salon.name }}</h5>
-                            <small class="text-muted">{{ salon.city }}</small>
+                        
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title">{{ salon.name }}</h5>
+                            <div class="card-location mb-2">
+                                <i class="bi bi-geo-alt-fill text-danger small"></i> {{ salon.city }}
+                            </div>
+
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                {% if salon.is_open %}
+                                    <span class="status-pill status-open">
+                                        ABIERTO
+                                    </span>
+                                {% else %}
+                                    <span class="status-pill status-closed">
+                                        CERRADO
+                                    </span>
+                                    <button class="btn-agenda-247">
+                                        <i class="bi bi-calendar-check-fill me-1"></i> Agenda 24/7
+                                    </button>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
+                    
+                    <p class="text-muted small mb-0 text-truncate">
+                        {{ salon.description|default:"Sin descripción disponible." }}
+                    </p>
                 </div>
             </a>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <h3>No hay negocios registrados.</h3>
+            <h3 class="text-muted fw-light">Aún no hay negocios registrados.</h3>
+            <p>¡Sé el primero en unirte a PASO!</p>
+            <a href="{% url 'register' %}" class="btn btn-nav-action mt-3">Registrar mi Negocio</a>
         </div>
         {% endfor %}
     </div>
 </section>
 
 <script>
-    function usarUbicacion() {
-        if (!navigator.geolocation) { alert("GPS no activo"); return; }
-        const btn = document.querySelector('.btn-location-pulse');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; // Loading
-
-        navigator.geolocation.getCurrentPosition(pos => {
-            const uLat = pos.coords.latitude;
-            const uLng = pos.coords.longitude;
-            let count = 0;
-
-            document.querySelectorAll('.salon-item').forEach(item => {
-                let lat = parseFloat(item.dataset.lat);
-                let lng = parseFloat(item.dataset.lng);
-                
-                // Distancia aproximada en KM
-                let dist = Math.sqrt(Math.pow(lat-uLat, 2) + Math.pow(lng-uLng, 2)) * 111; 
-                
-                // 0.6 km = 600 metros
-                if (dist <= 0.6) { 
-                    item.style.display = 'block'; 
-                    count++; 
-                } else { 
-                    item.style.display = 'none'; 
-                }
-            });
-
-            // Restaurar icono
-            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5.5a.5.5 0 0 0-1 0v.518A7.001 7.001 0 0 0 1.018 7.5H.5a.5.5 0 0 0 0 1h.518A7.001 7.001 0 0 0 7.5 14.982v.518a.5.5 0 0 0 1 0v-.518A7.001 7.001 0 0 0 14.982 8.5h.518a.5.5 0 0 0 0-1h-.518A7.001 7.001 0 0 0 8.5 1.018V.5Zm-7.468 7.468A6.001 6.001 0 0 1 8 2a6.001 6.001 0 0 1 6.968 5.968h-.938A5.001 5.001 0 0 0 8 3a5.001 5.001 0 0 0-5.03 4.968H1.032Zm6.936-6a5.001 5.001 0 0 0-4.968 4.968h.938A4.001 4.001 0 0 1 8 4a4.001 4.001 0 0 1 3.968 3.968h.938A5.001 5.001 0 0 0 8 1.968Zm0 12.064A5.001 5.001 0 0 0 13.032 9.032h-.938A4.001 4.001 0 0 1 8 12a4.001 4.001 0 0 1-3.968-3.968h-.938a5.001 5.001 0 0 0 5.968 5.968Zm-6.936-6h.938A4.001 4.001 0 0 1 8 4.032v-.938A5.001 5.001 0 0 0 1.968 8.032ZM8 12.032v.938a5.001 5.001 0 0 0 5.032-5.032h-.938A4.001 4.001 0 0 1 8 11.968Z"/><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>';
-            
-            if(count === 0) alert("No hay negocios a 600 metros de tu ubicación.");
-
-        }, err => {
-            alert("Necesitas dar permiso de ubicación.");
-            btn.innerHTML = '<i class="bi bi-geo-alt"></i>';
+    document.addEventListener("DOMContentLoaded", function(){
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-    }
+    });
 
-    function filtrarNegocios() {
+    function filtrarCiudad() {
         let ciudad = document.getElementById('ciudadSelect').value;
-        let txt = document.getElementById('nombreBusqueda').value.toLowerCase();
-        document.querySelectorAll('.salon-item').forEach(item => {
-            let itemCity = item.dataset.city;
-            let itemLat = parseFloat(item.dataset.lat);
-            let showCity = (ciudad === 'todas' || itemCity === ciudad);
-            let showName = item.dataset.name.includes(txt);
-            item.style.display = (showCity && showName) ? 'block' : 'none';
+        let items = document.querySelectorAll('.salon-item');
+        items.forEach(item => {
+            item.style.display = (ciudad === 'todas' || item.dataset.city === ciudad) ? 'block' : 'none';
         });
     }
+
+    function filtrarNombre() {
+        let texto = document.getElementById('nombreBusqueda').value.toLowerCase();
+        let items = document.querySelectorAll('.salon-item');
+        items.forEach(item => {
+            let nombre = item.querySelector('.card-title').innerText.toLowerCase();
+            item.style.display = nombre.includes(texto) ? 'block' : 'none';
+        });
+    }
+
+    function usarUbicacion() {
+        if (navigator.geolocation) {
+            const btn = document.querySelector('.btn-location-pulse');
+            const icon = btn.querySelector('i');
+            const originalIconClass = icon.className;
+            icon.className = 'spinner-border spinner-border-sm';
+
+            navigator.geolocation.getCurrentPosition(position => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                let items = document.querySelectorAll('.salon-item');
+                let encontrados = 0;
+
+                items.forEach(item => {
+                    let lat = parseFloat(item.dataset.lat);
+                    let lng = parseFloat(item.dataset.lng);
+                    let dist = getDistance(userLat, userLng, lat, lng);
+                    
+                    if (dist <= 0.6) { 
+                        item.style.display = 'block';
+                        encontrados++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                icon.className = originalIconClass;
+
+                if (encontrados > 0) {
+                    document.getElementById('salonGrid').scrollIntoView({behavior: 'smooth'});
+                } else {
+                    alert("No encontramos negocios a menos de 600m. 📍");
+                    items.forEach(item => item.style.display = 'block');
+                }
+
+            }, error => {
+                icon.className = originalIconClass;
+                alert("Necesitamos permiso de ubicación.");
+            });
+        } else {
+            alert("Geolocalización no soportada.");
+        }
+    }
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+        if(lat2 == 0 || lon2 == 0) return 99999; 
+        var R = 6371; 
+        var dLat = (lat2-lat1) * (Math.PI/180);
+        var dLon = (lon2-lon1) * (Math.PI/180); 
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        return R * c; 
+    }
+
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
 </script>
+
 {% endblock %}
