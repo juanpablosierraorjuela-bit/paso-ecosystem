@@ -23,7 +23,10 @@ urlpatterns = [
     path('dashboard/settings/', biz_views.salon_settings_view, name='salon_settings'),
     path('dashboard/employee/settings/', biz_views.employee_settings_view, name='employee_settings'),
     
-    # --- NUEVA RUTA: CREAR EMPLEADO ---
+    # --- NUEVA RUTA: GESTIÓN DE SERVICIOS ---
+    path('dashboard/services/', biz_views.services_settings_view, name='services_settings'),
+    
+    # --- RUTA: CREAR EMPLEADO ---
     path('dashboard/create-employee/', biz_views.create_employee_view, name='create_employee'),
 
     # PERFIL PÚBLICO

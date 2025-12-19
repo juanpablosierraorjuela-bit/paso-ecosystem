@@ -9,7 +9,6 @@ class EmployeeCreationForm(forms.Form):
     phone = forms.CharField(label="Teléfono", max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña de Acceso", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
-# --- (El resto de tus formularios se mantienen igual) ---
 class SalonCreateForm(forms.ModelForm):
     class Meta:
         model = Salon
@@ -24,7 +23,6 @@ class SalonCreateForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            # ... resto de widgets
         }
     
     def __init__(self, *args, **kwargs):
@@ -95,4 +93,20 @@ class EmployeeScheduleForm(forms.ModelForm):
             'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+# --- NUEVO: FORMULARIO DE SERVICIOS ---
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'price', 'duration_minutes']
+        labels = {
+            'name': 'Nombre del Servicio',
+            'price': 'Precio ($)',
+            'duration_minutes': 'Duración (minutos)'
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Corte de Cabello'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 25000'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
         }

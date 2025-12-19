@@ -6,10 +6,14 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-# Modelos
-from .models import Salon, OpeningHours, EmployeeSchedule, Employee
-# Forms
-from .forms import SalonCreateForm, OpeningHoursForm, BookingForm, EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm
+# Modelos (Asegúrate de importar Service aquí)
+from .models import Salon, OpeningHours, EmployeeSchedule, Employee, Service
+# Forms (Asegúrate de importar ServiceForm aquí)
+from .forms import (
+    SalonCreateForm, OpeningHoursForm, BookingForm, 
+    EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm, 
+    ServiceForm
+)
 # Servicios
 from .services import create_booking_service
 from .utils import notify_new_booking
@@ -68,7 +72,6 @@ def create_employee_view(request):
 
     return render(request, 'dashboard/create_employee.html', {'form': form, 'salon': salon})
 
-# --- (El resto de vistas se mantiene: settings, salon_detail, etc) ---
 
 @login_required
 def salon_settings_view(request):
@@ -130,12 +133,50 @@ def employee_settings_view(request):
         'employee': employee
     })
 
+# --- NUEVA VISTA: GESTIÓN DE SERVICIOS ---
+@login_required
+def services_settings_view(request):
+    try:
+        salon = request.user.salon
+    except:
+        messages.error(request, "No tienes un salón registrado.")
+        return redirect('dashboard')
+
+    # Procesar formulario para CREAR o ELIMINAR servicio
+    if request.method == 'POST':
+        if 'create_service' in request.POST:
+            form = ServiceForm(request.POST)
+            if form.is_valid():
+                service = form.save(commit=False)
+                service.salon = salon
+                service.save()
+                messages.success(request, "¡Servicio agregado exitosamente!")
+                return redirect('services_settings')
+        
+        elif 'delete_service' in request.POST:
+            service_id = request.POST.get('service_id')
+            # Usamos get_object_or_404 para seguridad (solo borrar si pertenece al salón)
+            service = get_object_or_404(Service, id=service_id, salon=salon)
+            service.delete()
+            messages.success(request, "Servicio eliminado.")
+            return redirect('services_settings')
+
+    else:
+        form = ServiceForm()
+
+    services = salon.services.all() # Obtener todos los servicios del salón
+
+    return render(request, 'dashboard/services.html', {
+        'salon': salon,
+        'form': form,
+        'services': services
+    })
+
 def salon_detail(request, slug):
     salon = get_object_or_404(Salon, slug=slug)
     service_id = request.POST.get('service') or request.GET.get('service')
     service = None
     if service_id:
-        from .models import Service
         try:
             service = Service.objects.get(id=service_id, salon=salon)
         except Service.DoesNotExist:
