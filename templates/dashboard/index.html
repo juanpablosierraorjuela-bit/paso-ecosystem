@@ -128,18 +128,16 @@
                 {% endif %}
             </div>
         </div>
-
     </div>
 </div>
 
-<div class="modal fade" id="createServiceModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+<div class="modal fade" id="createServiceModal" aria-hidden="true" style="z-index: 99999;">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title fw-bold">✨ Nuevo Servicio</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
             <form method="post">
                 <div class="modal-body p-4">
                     {% csrf_token %}
@@ -169,7 +167,6 @@
                     <button type="submit" class="btn btn-primary px-4">Guardar Servicio</button>
                 </div>
             </form>
-
         </div>
     </div>
 </div>
