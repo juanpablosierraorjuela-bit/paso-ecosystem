@@ -18,13 +18,16 @@ urlpatterns = [
     # DASHBOARD
     path('dashboard/', user_views.dashboard_view, name='dashboard'),
     path('dashboard/create-salon/', user_views.create_salon_view, name='create_salon'),
+    
+    # GESTIÓN DEL NEGOCIO
     path('dashboard/settings/', biz_views.salon_settings_view, name='salon_settings'),
     path('dashboard/employee/settings/', biz_views.employee_settings_view, name='employee_settings'),
+    
+    # --- NUEVA RUTA: GESTIÓN DE SERVICIOS ---
     path('dashboard/services/', biz_views.services_settings_view, name='services_settings'),
+    
+    # --- RUTA: CREAR EMPLEADO ---
     path('dashboard/create-employee/', biz_views.create_employee_view, name='create_employee'),
-
-    # API AJAX (NUEVO) - Esta es la linea clave
-    path('api/get-available-slots/', biz_views.get_available_slots, name='get_available_slots'),
 
     # PERFIL PÚBLICO
     path('salon/<slug:slug>/', biz_views.salon_detail, name='salon_detail'),

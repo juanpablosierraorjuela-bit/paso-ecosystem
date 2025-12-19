@@ -13,16 +13,26 @@
                             {{ salon.name|slice:":1"|upper }}
                         </div>
                     {% endif %}
+
                     <h2 class="fw-bold mb-1">{{ salon.name }}</h2>
                     <p class="text-muted mb-3"><i class="bi bi-geo-alt-fill"></i> {{ salon.city }}</p>
+
                     <div class="mb-4">
                         {% if is_open %}
-                            <span class="badge bg-success fs-6 px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill"></i> Abierto Ahora</span>
+                            <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
+                                <i class="bi bi-check-circle-fill"></i> Abierto Ahora
+                            </span>
                         {% else %}
-                            <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill"><i class="bi bi-slash-circle-fill"></i> Cerrado Ahora</span>
+                            <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill">
+                                <i class="bi bi-slash-circle-fill"></i> Cerrado Ahora
+                            </span>
                         {% endif %}
                     </div>
+
                     <div class="d-grid gap-2">
+                        {% if salon.instagram %}
+                            <a href="{{ salon.instagram }}" class="btn btn-outline-danger btn-sm" target="_blank"><i class="bi bi-instagram"></i> Instagram</a>
+                        {% endif %}
                         <a href="https://wa.me/{{ salon.phone }}" class="btn btn-success btn-sm" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a>
                     </div>
                 </div>
@@ -41,13 +51,21 @@
                                 <h5 class="fw-bold text-dark">{{ service.name }}</h5>
                                 <span class="badge bg-light text-dark border">${{ service.price }}</span>
                             </div>
-                            <p class="text-muted small mb-3 flex-grow-1"><i class="bi bi-clock"></i> {{ service.duration_minutes }} min</p>
-                            <a href="?service={{ service.id }}#booking-section" class="btn btn-primary w-100 fw-bold">Reservar</a>
+                            <p class="text-muted small mb-3 flex-grow-1">
+                                <i class="bi bi-clock"></i> Duración aprox: {{ service.duration_minutes }} min
+                            </p>
+                            <a href="?service={{ service.id }}" class="btn btn-primary w-100 fw-bold">
+                                Reservar Cita
+                            </a>
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="col-12"><div class="alert alert-info">Sin servicios publicados aún.</div></div>
+                <div class="col-12">
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <i class="bi bi-info-circle-fill me-2"></i> Este salón aún no ha publicado sus servicios.
+                    </div>
+                </div>
                 {% endfor %}
             </div>
 
@@ -55,30 +73,16 @@
             <div id="booking-section" class="card border-0 shadow mt-5 border-start border-5 border-primary">
                 <div class="card-body p-4">
                     <h4 class="fw-bold mb-3">Reservar: <span class="text-primary">{{ selected_service.name }}</span></h4>
-                    
-                    <form method="post" id="bookingForm">
+                    <form method="post">
                         {% csrf_token %}
-                        <input type="hidden" name="service" value="{{ selected_service.id }}" id="serviceId">
+                        <input type="hidden" name="service" value="{{ selected_service.id }}">
                         
                         <div class="mb-3">
-                            <label class="form-label fw-bold">1. ¿Con quién?</label>
+                            <label class="form-label fw-bold">Elige un Profesional</label>
                             {{ form.employee }}
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">2. ¿Qué día?</label>
-                            <input type="date" id="datePicker" class="form-control" min="{{ 'now'|date:'Y-m-d' }}">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">3. Horas Disponibles</label>
-                            <div id="slotsContainer" class="d-flex flex-wrap gap-2">
-                                <span class="text-muted small fst-italic">Selecciona empleado y fecha primero...</span>
-                            </div>
-                            {{ form.start_time.as_hidden }} 
-                        </div>
-
-                        <div class="row border-top pt-3 mt-3">
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Tu Nombre</label>
                                 {{ form.customer_name }}
@@ -89,65 +93,16 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold fs-5" id="submitBtn" disabled>Confirmar Cita</button>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fecha y Hora</label>
+                            {{ form.start_time }}
+                            <div class="form-text">Horario de atención: {{ salon.opening_hours.first.from_hour }} - {{ salon.opening_hours.first.to_hour }}</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold fs-5">Confirmar Reserva</button>
                     </form>
                 </div>
             </div>
-
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const employeeSelect = document.getElementById('id_employee');
-                    const datePicker = document.getElementById('datePicker');
-                    const slotsContainer = document.getElementById('slotsContainer');
-                    const realInput = document.getElementById('id_start_time');
-                    const serviceId = document.getElementById('serviceId').value;
-                    const submitBtn = document.getElementById('submitBtn');
-
-                    function fetchSlots() {
-                        const employeeId = employeeSelect.value;
-                        const dateVal = datePicker.value;
-
-                        if (!employeeId || !dateVal) return;
-
-                        slotsContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"></div> Buscando horas...';
-
-                        fetch(`/api/get-available-slots/?employee_id=${employeeId}&date=${dateVal}&service_id=${serviceId}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                slotsContainer.innerHTML = '';
-                                if (data.slots && data.slots.length > 0) {
-                                    data.slots.forEach(time => {
-                                        const btn = document.createElement('button');
-                                        btn.type = 'button';
-                                        btn.className = 'btn btn-outline-primary btn-sm slot-btn';
-                                        btn.innerText = time;
-                                        btn.onclick = function() {
-                                            // Al hacer click, guardamos la fecha+hora en el input oculto
-                                            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
-                                            document.querySelectorAll('.slot-btn').forEach(b => b.classList.add('btn-outline-primary'));
-                                            this.classList.remove('btn-outline-primary');
-                                            this.classList.add('btn-primary', 'active');
-                                            
-                                            // Formato ISO para Django: YYYY-MM-DDTHH:MM
-                                            realInput.value = `${dateVal}T${time}`;
-                                            submitBtn.disabled = false;
-                                        };
-                                        slotsContainer.appendChild(btn);
-                                    });
-                                } else {
-                                    slotsContainer.innerHTML = '<span class="text-danger small"><i class="bi bi-x-circle"></i> No hay horas disponibles este día. Prueba otra fecha.</span>';
-                                }
-                            })
-                            .catch(err => {
-                                console.error(err);
-                                slotsContainer.innerHTML = '<span class="text-danger">Error cargando horarios.</span>';
-                            });
-                    }
-
-                    employeeSelect.addEventListener('change', fetchSlots);
-                    datePicker.addEventListener('change', fetchSlots);
-                });
-            </script>
             {% endif %}
         </div>
     </div>
