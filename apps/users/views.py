@@ -4,10 +4,8 @@ from django.contrib.auth import login
 from django.db import transaction
 from django.contrib import messages
 
-# Modelos
-from apps.businesses.models import Salon, Booking, Service
-# Formularios (Asegúrate de que ServiceForm existe en forms.py)
-from apps.businesses.forms import SalonForm, ServiceForm
+from apps.businesses.models import Salon, Booking
+from apps.businesses.forms import SalonCreateForm
 from .forms import CustomUserCreationForm
 
 def home(request):
@@ -34,38 +32,15 @@ def register(request):
 def dashboard_view(request):
     user = request.user
 
-    # 1. LÓGICA PARA EL DUEÑO (Aquí es donde estaba el fallo)
+    # 1. DUEÑO
     if hasattr(user, 'salon'):
-        salon = user.salon
-        
-        # A. PROCESAR FORMULARIO DE NUEVO SERVICIO (POST)
-        if request.method == 'POST' and 'create_service' in request.POST:
-            s_form = ServiceForm(request.POST)
-            if s_form.is_valid():
-                service = s_form.save(commit=False)
-                service.salon = salon
-                service.save()
-                messages.success(request, '¡Servicio creado exitosamente!')
-                return redirect('dashboard') # Recargar para limpiar datos
-            else:
-                messages.error(request, 'Error al crear servicio. Verifica los datos.')
-        
-        # B. PREPARAR DATOS PARA LA PANTALLA (GET)
-        services = salon.services.all().order_by('name') # Lista de servicios
-        s_form = ServiceForm() # Formulario vacío para el Modal
+        return render(request, 'dashboard/index.html', {'salon': user.salon})
 
-        context = {
-            'salon': salon,
-            'services': services, 
-            's_form': s_form
-        }
-        return render(request, 'dashboard/index.html', context)
-
-    # 2. LÓGICA PARA EL EMPLEADO
+    # 2. EMPLEADO
     if hasattr(user, 'employee'):
         return redirect('employee_settings')
 
-    # 3. LÓGICA PARA EL CLIENTE
+    # 3. CLIENTE
     bookings = Booking.objects.filter(customer=user).order_by('-start_time')
     return render(request, 'dashboard/client_dashboard.html', {'bookings': bookings})
 
@@ -75,7 +50,7 @@ def create_salon_view(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = SalonForm(request.POST, request.FILES)
+        form = SalonCreateForm(request.POST, request.FILES)
         if form.is_valid():
             with transaction.atomic():
                 salon = form.save(commit=False)
@@ -87,11 +62,11 @@ def create_salon_view(request):
 
             return redirect('dashboard')
     else:
-        form = SalonForm()
+        form = SalonCreateForm()
         
     return render(request, 'dashboard/create_salon.html', {'form': form})
 
-# Views obsoletas
+# Views obsoletas (puedes dejarlas vacías o eliminarlas)
 def accept_invite_view(request):
     return redirect('dashboard')
 

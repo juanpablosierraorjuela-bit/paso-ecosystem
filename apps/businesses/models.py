@@ -61,10 +61,9 @@ class Salon(models.Model):
 # --- MODELO SERVICIOS ---
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
-    name = models.CharField(max_length=100, verbose_name="Nombre del Servicio")
-    description = models.TextField(blank=True, verbose_name="Descripción")
-    duration_minutes = models.PositiveIntegerField(default=30, verbose_name="Duración (min)")
-    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio")
+    name = models.CharField(max_length=100)
+    duration_minutes = models.PositiveIntegerField(default=30)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return f"{self.name} - ${self.price}"
