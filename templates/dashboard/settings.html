@@ -1,134 +1,88 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 0 auto; padding: 40px 20px;">
-    
-    <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-weight: 800; margin: 0;">Configuración</h1>
-        <p style="color: var(--secondary);">Personaliza tu negocio y horarios.</p>
-    </div>
-
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="glass-panel" style="padding: 30px; margin-bottom: 30px;">
-            <h3 style="font-weight: 800; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-                🏢 Información del Negocio
-            </h3>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div>
-                    <label class="form-label">Nombre del Salón</label>
-                    {{ salon_form.name }}
-                </div>
-                <div>
-                    <label class="form-label">Slug (URL)</label>
-                    {{ salon_form.slug }}
-                </div>
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">⚙️ Configuración del Negocio</h4>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light">Volver al Panel</a>
             </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button">Información Básica</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="hours-tab" data-bs-toggle="tab" data-bs-target="#hours" type="button">⏰ Horarios de Atención</button>
+                        </li>
+                    </ul>
 
-            <div style="margin-bottom: 20px;">
-                <label class="form-label">Descripción</label>
-                {{ salon_form.description }}
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>
-                    <label class="form-label">Ciudad</label>
-                    {{ salon_form.city }}
-                </div>
-                <div>
-                    <label class="form-label">Teléfono</label>
-                    {{ salon_form.phone }}
-                </div>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <label class="form-label">Dirección Exacta</label>
-                {{ salon_form.address }}
-            </div>
-        </div>
-
-        <div class="glass-panel" style="padding: 30px; margin-bottom: 30px;">
-            <h3 style="font-weight: 800; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-                🔔 Notificaciones (Telegram)
-            </h3>
-            <p style="font-size: 0.85rem; color: var(--secondary); margin-bottom: 20px;">
-                Configura tu bot para recibir alertas de reservas al instante.
-            </p>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>
-                    <label class="form-label">Bot Token</label>
-                    {{ salon_form.telegram_bot_token }}
-                </div>
-                <div>
-                    <label class="form-label">Chat ID</label>
-                    {{ salon_form.telegram_chat_id }}
-                </div>
-            </div>
-        </div>
-
-        <div class="salon-card" style="padding: 30px;">
-            <h3 style="font-weight: 800; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-                🕒 Horarios de Atención
-            </h3>
-            
-            {{ hours_formset.management_form }}
-            
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                {% for form in hours_formset %}
-                    <div style="display: flex; align-items: center; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                        {{ form.id }}
+                    <div class="tab-content" id="myTabContent">
                         
-                        <div style="font-weight: 800; width: 100px; text-transform: uppercase; font-size: 0.8rem; color: var(--secondary);">
-                            {% if forloop.counter0 == 0 %}Lunes{% endif %}
-                            {% if forloop.counter0 == 1 %}Martes{% endif %}
-                            {% if forloop.counter0 == 2 %}Miércoles{% endif %}
-                            {% if forloop.counter0 == 3 %}Jueves{% endif %}
-                            {% if forloop.counter0 == 4 %}Viernes{% endif %}
-                            {% if forloop.counter0 == 5 %}Sábado{% endif %}
-                            {% if forloop.counter0 == 6 %}Domingo{% endif %}
+                        <div class="tab-pane fade show active" id="info" role="tabpanel">
+                            <h5 class="mb-3">Datos del Salón</h5>
+                            {% for field in salon_form %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        <div class="text-danger small">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
                         </div>
 
-                        <div style="flex: 1;">
-                            {{ form.from_hour }}
-                        </div>
-                        <div style="flex: 1;">
-                            {{ form.to_hour }}
+                        <div class="tab-pane fade" id="hours" role="tabpanel">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Define tu horario de apertura y cierre para cada día. Marca "Cerrado" si no trabajas ese día.
+                            </div>
+                            
+                            {{ hours_formset.management_form }}
+                            
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Día</th>
+                                            <th>Abre a las</th>
+                                            <th>Cierra a las</th>
+                                            <th>¿Cerrado?</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for form in hours_formset %}
+                                            <tr>
+                                                {{ form.id }}
+                                                
+                                                <td class="fw-bold">
+                                                    {{ form.instance.get_weekday_display }}
+                                                    <div class="d-none">{{ form.weekday }}</div> </td>
+                                                <td>{{ form.from_hour }}</td>
+                                                <td>{{ form.to_hour }}</td>
+                                                <td>
+                                                    <div class="form-check form-switch">
+                                                        {{ form.is_closed }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            {{ form.is_closed }} 
-                            <span style="font-size: 0.8rem; font-weight: 600;">Cerrado</span>
-                        </div>
                     </div>
-                {% endfor %}
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">Guardar Cambios</button>
+                    </div>
+                </form>
             </div>
         </div>
-
-        <div style="text-align: center; margin-top: 40px; margin-bottom: 60px;">
-            <button type="submit" class="btn-access" style="padding: 15px 50px; font-size: 1.1rem;">
-                Guardar Cambios
-            </button>
-            <br>
-            <a href="{% url 'dashboard' %}" style="display: inline-block; margin-top: 20px; color: var(--secondary); text-decoration: none;">Cancelar</a>
-        </div>
-
-    </form>
+    </div>
 </div>
-
-<style>
-    .form-label { font-weight: 700; font-size: 0.85rem; color: var(--primary); margin-bottom: 5px; display: block; }
-    .form-control, .form-select, input[type="text"], input[type="time"], input[type="url"], textarea {
-        width: 100%;
-        padding: 10px 15px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background: #fff;
-        font-family: var(--font-main);
-        transition: 0.2s;
-    }
-    .form-control:focus { border-color: var(--primary); outline: none; }
-</style>
 {% endblock %}

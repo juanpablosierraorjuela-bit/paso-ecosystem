@@ -1,182 +1,74 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="max-width: 1000px; margin: 0 auto; padding: 40px 20px;">
+<div class="container py-5">
     
-    <div class="glass-panel" style="margin-top: 0; display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
-        <div class="salon-avatar" style="width: 100px; height: 100px; font-size: 2.5rem;">
-            {% if salon.logo %}
-                <img src="{{ salon.logo.url }}" style="width:100%; height:100%; border-radius:18px; object-fit:cover;">
-            {% else %}
-                {{ salon.name|slice:":1"|upper }}
-            {% endif %}
-        </div>
-        <div style="flex: 1;">
-            <h1 style="font-weight: 800; font-size: 2.5rem; margin: 0 0 10px;">{{ salon.name }}</h1>
-            <p style="color: var(--secondary); font-size: 1.1rem; margin: 0;">
-                <i class="fas fa-map-marker-alt"></i> {{ salon.address }}, {{ salon.city }}
-            </p>
-        </div>
-        <div class="status-pill {% if salon.is_open %}open{% else %}closed{% endif %}" style="font-size: 1rem; padding: 10px 20px;">
-            {% if salon.is_open %}ABIERTO AHORA{% else %}CERRADO{% endif %}
-        </div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
-        
-        <div>
-            <h2 style="font-weight: 800; margin-bottom: 20px; font-size: 1.5rem;">Servicios</h2>
-            <div class="salon-card" style="padding: 0;">
-                {% for service in salon.services.all %}
-                <div class="service-item">
-                    <div>
-                        <h4 style="margin: 0; font-weight: 700;">{{ service.name }}</h4>
-                        <span style="font-size: 0.85rem; color: var(--secondary);">⏱ {{ service.duration_minutes }} min</span>
-                        {% if service.description %}
-                            <p style="font-size: 0.85rem; color: #94a3b8; margin: 5px 0 0;">{{ service.description }}</p>
-                        {% endif %}
-                    </div>
-                    <div style="text-align: right;">
-                        <div class="price-tag">${{ service.price }}</div>
-                        <a href="?service={{ service.id }}" class="btn-access" style="padding: 6px 15px; font-size: 0.8rem; margin-top: 8px; display: inline-block;">
-                            Agendar
-                        </a>
-                    </div>
-                </div>
-                {% empty %}
-                    <p style="padding: 30px; text-align: center; color: var(--secondary);">Sin servicios disponibles.</p>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div style="position: sticky; top: 100px; height: fit-content;">
-            <div class="salon-card" style="border: 2px solid var(--primary);">
-                <h3 style="margin-top: 0; font-weight: 800; margin-bottom: 20px;">📅 Confirmar Reserva</h3>
+    <div class="row mb-5 align-items-center">
+        <div class="col-md-8">
+            <h1 class="display-4 fw-bold text-dark">{{ salon.name }}</h1>
+            <p class="lead text-muted">{{ salon.description }}</p>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-secondary"><i class="bi bi-geo-alt-fill me-1"></i> {{ salon.city }} - {{ salon.address }}</span>
                 
-                {% if selected_service %}
-                    <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-                        <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--secondary);">Servicio:</span>
-                        <div style="font-weight: 700; font-size: 1.1rem;">{{ selected_service.name }}</div>
-                        <div style="color: var(--accent); font-weight: 700;">${{ selected_service.price }}</div>
-                    </div>
-
-                    <form method="post" id="bookingForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="service" value="{{ selected_service.id }}">
-                        
-                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">1. Selecciona Profesional</label>
-                        <select name="employee" id="id_employee" class="form-select" required>
-                            <option value="">-- Elige Profesional --</option>
-                            {% for emp in selected_service.salon.employees.all %}
-                                <option value="{{ emp.id }}">{{ emp.name }}</option>
-                            {% endfor %}
-                        </select>
-
-                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block; margin-top: 15px;">2. Selecciona Fecha</label>
-                        <input type="date" name="date_picked" id="datePicker" class="form-control" required min="{{ 'now'|date:'Y-m-d' }}">
-
-                        <div id="slotsContainer" style="display: none; margin-top: 15px;">
-                            <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; display: block;">3. Horarios Disponibles</label>
-                            <div id="slotsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                                </div>
-                            <input type="hidden" name="time_picked" id="timeInput" required>
-                        </div>
-                        <p id="loadingSlots" style="display:none; color: var(--secondary); font-size: 0.9rem; text-align: center; margin-top: 10px;">
-                            <i class="fas fa-spinner fa-spin"></i> Buscando disponibilidad...
-                        </p>
-                        <p id="noSlotsMsg" style="display:none; color: #dc2626; font-size: 0.9rem; text-align: center; margin-top: 10px;">
-                            No hay turnos libres para esta fecha.
-                        </p>
-
-                        <div style="margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-                            <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Tu Nombre</label>
-                            {{ form.customer_name }}
-                            
-                            <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block;">Tu Teléfono</label>
-                            {{ form.customer_phone }}
-                        </div>
-
-                        <button type="submit" class="btn-access" style="width: 100%; margin-top: 20px; font-size: 1.1rem; padding: 15px;">
-                            Confirmar Reserva
-                        </button>
-                    </form>
+                {% if is_open %}
+                    <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm animate-pulse">
+                        <i class="bi bi-shop me-1"></i> ABIERTO AHORA
+                    </span>
                 {% else %}
-                    <p style="color: var(--secondary); line-height: 1.6;">
-                        👈 Selecciona un servicio del menú de la izquierda para ver disponibilidad.
-                    </p>
+                    <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm">
+                        <i class="bi bi-door-closed-fill me-1"></i> CERRADO
+                    </span>
                 {% endif %}
             </div>
         </div>
+        
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="card border-0 bg-light p-3">
+                <small class="text-muted fw-bold text-uppercase">Contacto</small>
+                <p class="fs-5 fw-bold mb-1">{{ salon.phone }}</p>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="fw-bold mb-4">Nuestros Servicios</h3>
+    <div class="row g-4">
+        {% for service in services %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm hover-effect">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="fw-bold mb-0">{{ service.name }}</h5>
+                        <span class="badge bg-light text-dark border">${{ service.price }}</span>
+                    </div>
+                    <div class="d-flex align-items-center text-muted small mb-4">
+                        <i class="bi bi-clock me-2"></i> {{ service.duration_minutes }} minutos
+                    </div>
+                    
+                    <a href="{% url 'booking_create' service.id %}" class="btn btn-dark w-100 fw-bold">
+                        Reservar Cita
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">Este negocio aún no ha publicado sus servicios.</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const empSelect = document.getElementById('id_employee');
-    const dateInput = document.getElementById('datePicker');
-    const slotsDiv = document.getElementById('slotsContainer');
-    const slotsGrid = document.getElementById('slotsGrid');
-    const timeInput = document.getElementById('timeInput');
-    const loader = document.getElementById('loadingSlots');
-    const noSlots = document.getElementById('noSlotsMsg');
-    const salonSlug = "{{ salon.slug }}";
-    const serviceId = "{{ selected_service.id }}";
-
-    function fetchSlots() {
-        const empId = empSelect.value;
-        const dateVal = dateInput.value;
-
-        if (empId && dateVal) {
-            // Reset
-            slotsGrid.innerHTML = '';
-            slotsDiv.style.display = 'none';
-            noSlots.style.display = 'none';
-            loader.style.display = 'block';
-
-            // Llamada a la API
-            fetch(`/api/slots/${salonSlug}/?employee=${empId}&date=${dateVal}&service=${serviceId}`)
-                .then(response => response.json())
-                .then(data => {
-                    loader.style.display = 'none';
-                    if (data.slots && data.slots.length > 0) {
-                        slotsDiv.style.display = 'block';
-                        data.slots.forEach(slot => {
-                            const btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'btn-slot'; // Estilo definido en CSS
-                            btn.textContent = slot.label;
-                            btn.style.cssText = "padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;";
-                            
-                            btn.onclick = function() {
-                                // Remover clase active de todos
-                                document.querySelectorAll('#slotsGrid button').forEach(b => {
-                                    b.style.background = 'white';
-                                    b.style.color = 'var(--primary)';
-                                    b.style.borderColor = '#e2e8f0';
-                                });
-                                // Activar este
-                                btn.style.background = 'var(--primary)';
-                                btn.style.color = 'white';
-                                btn.style.borderColor = 'var(--primary)';
-                                timeInput.value = slot.value;
-                            };
-                            slotsGrid.appendChild(btn);
-                        });
-                    } else {
-                        noSlots.style.display = 'block';
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    loader.style.display = 'none';
-                });
-        }
+<style>
+    /* Efecto de pulso para cuando está abierto */
+    @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
     }
-
-    if(empSelect && dateInput) {
-        empSelect.addEventListener('change', fetchSlots);
-        dateInput.addEventListener('change', fetchSlots);
+    .animate-pulse {
+        animation: pulse-green 2s infinite;
     }
-});
-</script>
+    .hover-effect { transition: transform 0.2s; }
+    .hover-effect:hover { transform: translateY(-5px); }
+</style>
 {% endblock %}

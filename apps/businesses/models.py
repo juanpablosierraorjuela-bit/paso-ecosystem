@@ -2,7 +2,6 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from django.utils.text import slugify
 import datetime
 
 # --- MODELO SALON ---
@@ -12,10 +11,7 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # Token para invitar empleados (IMPORTANTE: Faltaba en tu archivo anterior)
-    invite_token = models.UUIDField(default=uuid.uuid4, editable=False)
-    
-    # UBICACIÓN
+    # DATOS DE UBICACIÓN
     city = models.CharField(max_length=100, verbose_name="Ciudad")
     address = models.CharField(max_length=255, verbose_name="Dirección")
     phone = models.CharField(max_length=20, verbose_name="Teléfono")
@@ -42,31 +38,21 @@ class Salon(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
+            from django.utils.text import slugify
             self.slug = slugify(self.name)
-            # Manejo básico de duplicados en slug
-            if Salon.objects.filter(slug=self.slug).exists():
-                self.slug = f"{self.slug}-{uuid.uuid4().hex[:4]}"
         super().save(*args, **kwargs)
 
     @property
     def is_open(self):
-        """Devuelve True si el negocio está abierto AHORA mismo."""
         now = timezone.localtime(timezone.now())
-        current_day = now.weekday() # 0=Lunes, 6=Domingo
+        current_day = now.weekday()
         current_time = now.time()
-        
         try:
-            # Intentamos obtener el horario de HOY
-            today_schedule = self.opening_hours.filter(weekday=current_day).first()
-            
-            if not today_schedule:
-                return False # Si no tiene horario configurado, asumimos cerrado
-                
+            today_schedule = self.opening_hours.get(weekday=current_day)
             if today_schedule.is_closed:
                 return False
-                
             return today_schedule.from_hour <= current_time <= today_schedule.to_hour
-        except Exception:
+        except:
             return False
 
     def __str__(self):
@@ -76,7 +62,6 @@ class Salon(models.Model):
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, verbose_name="Descripción")
     duration_minutes = models.PositiveIntegerField(default=30)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -98,12 +83,6 @@ class Employee(models.Model):
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
     telegram_chat_id = models.CharField(max_length=255, blank=True)
-    
-    def is_available(self, date_obj, start_time_obj, duration_minutes):
-        """Verifica si el empleado está libre en ese horario."""
-        # Lógica simplificada: siempre devuelve True por ahora
-        # Para evitar errores si falta implementar la lógica completa
-        return True, "Disponible"
 
     def __str__(self):
         return self.name

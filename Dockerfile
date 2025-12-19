@@ -1,36 +1,36 @@
-# Usar imagen oficial de Python ligera
-FROM python:3.10-slim-bullseye
+# 1. Usar una imagen oficial de Python ligera y segura
+FROM python:3.10-slim
 
-# Evitar archivos .pyc y buffer en logs
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# 2. Configuración para evitar archivos basura y ver logs en tiempo real
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Directorio de trabajo
+# 3. Directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias para PostgreSQL y compilación
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-     build-essential \
-     libpq-dev \
-     gcc \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+# 4. Instalar dependencias del sistema (PostgreSQL + Imágenes + Utilidades)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias de Python
-COPY requirements/base.txt /app/requirements.txt
-# Si tienes un requirements/production.txt, úsalo aquí en su lugar
-RUN pip install --upgrade pip && pip install -r requirements.txt
-RUN pip install gunicorn psycopg2-binary whitenoise
+# 5. Instalar dependencias de Python
+COPY ./requirements /app/requirements
+RUN pip install --upgrade pip
+RUN pip install -r requirements/base.txt
 
-# Copiar el resto del proyecto
+# 6. Copiar todo el código del proyecto
 COPY . /app
 
-# Dar permisos de ejecución al script de inicio
-RUN chmod +x /app/start.sh
+# 7. Configurar el script de inicio (start.sh)
+COPY ./start.sh /usr/local/bin/start.sh
+# Dar permisos de ejecución al script (Vital para que no falle)
+RUN chmod +x /usr/local/bin/start.sh
 
-# Render asigna el puerto dinámicamente, pero exponemos el 8000 por defecto
+# 8. Exponer el puerto
 EXPOSE 8000
 
-# Comando de arranque
-CMD ["/app/start.sh"]
+# 9. COMANDO DE ARRANQUE MAESTRO
+CMD ["/usr/local/bin/start.sh"]

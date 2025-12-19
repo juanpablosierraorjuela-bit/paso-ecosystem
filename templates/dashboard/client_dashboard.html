@@ -1,39 +1,61 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
-    <h1 style="font-weight: 800; margin-bottom: 10px;">Mi Agenda</h1>
-    <p style="color: var(--secondary); margin-bottom: 40px;">Gestiona tus próximas citas.</p>
-
-    <div class="glass-panel" style="padding: 0; overflow: hidden;">
-        {% if bookings %}
-            {% for booking in bookings %}
-                <div style="padding: 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <div>
-                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--accent); font-weight: 800; margin-bottom: 5px;">
-                            {{ booking.start_time|date:"D d M, Y" }}
-                        </div>
-                        <h3 style="margin: 0; font-weight: 700;">{{ booking.service.name }}</h3>
-                        <p style="margin: 5px 0 0; color: var(--secondary); font-size: 0.9rem;">
-                            En <strong>{{ booking.salon.name }}</strong> con {{ booking.employee.name }}
-                        </p>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--primary); display: block;">
-                            {{ booking.start_time|date:"H:i" }}
-                        </span>
-                        <div class="status-pill open" style="margin-top: 5px;">Confirmada</div>
-                    </div>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom pt-4 pb-3">
+                    <h3 class="fw-bold text-dark mb-0">📅 Mis Reservas</h3>
+                    <p class="text-muted small">Historial de tus citas de belleza</p>
                 </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align: center; padding: 60px;">
-                <div style="font-size: 3rem; margin-bottom: 20px;">📅</div>
-                <h3 style="font-weight: 700; margin-bottom: 10px;">No tienes citas</h3>
-                <p style="color: var(--secondary); margin-bottom: 30px;">Explora los salones y reserva tu primer servicio.</p>
-                <a href="{% url 'home' %}" class="btn-access">Explorar Salones</a>
+                <div class="card-body p-0">
+                    {% if bookings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">Negocio</th>
+                                        <th>Servicio</th>
+                                        <th>Fecha y Hora</th>
+                                        <th>Profesional</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in bookings %}
+                                        <tr>
+                                            <td class="ps-4 fw-bold text-primary">{{ booking.salon.name }}</td>
+                                            <td>{{ booking.service.name }}</td>
+                                            <td>{{ booking.start_time|date:"d M Y - h:i A" }}</td>
+                                            <td>
+                                                {% if booking.employee %}
+                                                    {{ booking.employee.name }}
+                                                {% else %}
+                                                    <span class="text-muted fst-italic">Cualquiera</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill bg-success">Confirmada</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5>Aún no tienes reservas.</h5>
+                            <p class="text-muted">Explora los mejores salones y agenda tu primera cita.</p>
+                            <a href="{% url 'home' %}" class="btn btn-primary rounded-pill px-4 mt-2">Buscar Salón</a>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
