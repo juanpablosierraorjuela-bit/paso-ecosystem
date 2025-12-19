@@ -2,36 +2,57 @@
 from django.utils import timezone
 from .models import Salon, Service, OpeningHours, Booking, Employee, EmployeeSchedule
 
-# --- NUEVO FORMULARIO PARA CREAR EMPLEADOS ---
-class EmployeeCreationForm(forms.Form):
-    name = forms.CharField(label="Nombre Completo", max_length=100, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Juan Pérez'}))
-    email = forms.EmailField(label="Correo Electrónico (Será su usuario)", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'empleado@salon.com'}))
-    phone = forms.CharField(label="Teléfono", max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    password = forms.CharField(label="Contraseña de Acceso", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+# --- NUEVO: FORMULARIO DE SERVICIOS ---
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'description', 'duration_minutes', 'price']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Corte de Cabello'}),
+            'description': forms.Textarea(attrs={'rows': 2, 'class': 'form-control', 'placeholder': 'Detalles del servicio...'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '25000'}),
+        }
 
-# --- (El resto de tus formularios se mantienen igual) ---
-class SalonCreateForm(forms.ModelForm):
+class EmployeeCreationForm(forms.Form):
+    name = forms.CharField(label="Nombre", max_length=100, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(label="Email", widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    phone = forms.CharField(label="Teléfono", required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
+# --- RENOMBRADO A SalonForm (Estándar) ---
+class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
         fields = [
             'name', 'slug', 'description', 'city', 'address', 'phone', 
-            'latitude', 'longitude', 
-            'logo', 'banner',
+            'latitude', 'longitude', 'logo', 'banner',
             'instagram', 'facebook', 'tiktok',
-            'bold_api_key', 'bold_signing_key', 
-            'telegram_bot_token', 'telegram_chat_id'
+            'bold_api_key', 'bold_signing_key', 'telegram_bot_token', 'telegram_chat_id'
         ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            # ... resto de widgets
+            'slug': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control'}),
+            'instagram': forms.URLInput(attrs={'class': 'form-control'}),
+            'facebook': forms.URLInput(attrs={'class': 'form-control'}),
+            'tiktok': forms.URLInput(attrs={'class': 'form-control'}),
+            'bold_api_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'bold_signing_key': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_bot_token': forms.TextInput(attrs={'class': 'form-control'}),
+            'telegram_chat_id': forms.TextInput(attrs={'class': 'form-control'}),
         }
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in self.fields:
-            if field_name not in ['name', 'city', 'address', 'phone']: 
-                self.fields[field_name].required = False
+        required_fields = ['name', 'city', 'address', 'phone']
+        for field in self.fields: 
+            if field not in required_fields:
+                self.fields[field].required = False
 
 class OpeningHoursForm(forms.ModelForm):
     class Meta:
@@ -45,32 +66,22 @@ class OpeningHoursForm(forms.ModelForm):
         }
 
 class BookingForm(forms.ModelForm):
-    employee = forms.ModelChoiceField(
-        queryset=Employee.objects.none(),
-        required=False,
-        empty_label="Cualquiera (Asignación Automática)",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-
+    employee = forms.ModelChoiceField(queryset=Employee.objects.none(), required=False, empty_label="Cualquiera", widget=forms.Select(attrs={'class': 'form-select'}))
     class Meta:
         model = Booking
         fields = ['employee', 'customer_name', 'customer_phone', 'start_time']
         widgets = {
-            'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu nombre'}),
-            'customer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu teléfono'}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'customer_phone': forms.TextInput(attrs={'class': 'form-control'}),
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         }
-
     def __init__(self, *args, **kwargs):
         service = kwargs.pop('service', None)
         super().__init__(*args, **kwargs)
-        if service:
-            self.fields['employee'].queryset = service.salon.employees.all()
-    
+        if service: self.fields['employee'].queryset = service.salon.employees.all()
     def clean_start_time(self):
         start_time = self.cleaned_data['start_time']
-        if start_time < timezone.now():
-            raise forms.ValidationError("No puedes reservar en el pasado.")
+        if start_time < timezone.now(): raise forms.ValidationError("Fecha inválida")
         return start_time
 
 class EmployeeSettingsForm(forms.ModelForm):
@@ -91,7 +102,7 @@ class EmployeeScheduleForm(forms.ModelForm):
         model = EmployeeSchedule
         fields = ['weekday', 'from_hour', 'to_hour', 'is_closed']
         widgets = {
-            'weekday': forms.Select(attrs={'class': 'form-select', 'disabled': 'disabled'}), 
+            'weekday': forms.Select(attrs={'class': 'form-select', 'disabled': 'disabled'}),
             'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'is_closed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

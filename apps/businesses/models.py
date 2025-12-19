@@ -2,6 +2,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.utils.text import slugify
 import datetime
 
 # --- MODELO SALON ---
@@ -11,7 +12,10 @@ class Salon(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Descripción")
     
-    # DATOS DE UBICACIÓN
+    # Token para invitar empleados
+    invite_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    
+    # UBICACIÓN
     city = models.CharField(max_length=100, verbose_name="Ciudad")
     address = models.CharField(max_length=255, verbose_name="Dirección")
     phone = models.CharField(max_length=20, verbose_name="Teléfono")
@@ -38,8 +42,9 @@ class Salon(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            from django.utils.text import slugify
             self.slug = slugify(self.name)
+            if Salon.objects.filter(slug=self.slug).exists():
+                self.slug = f"{self.slug}-{uuid.uuid4().hex[:4]}"
         super().save(*args, **kwargs)
 
     @property
@@ -48,22 +53,23 @@ class Salon(models.Model):
         current_day = now.weekday()
         current_time = now.time()
         try:
-            today_schedule = self.opening_hours.get(weekday=current_day)
-            if today_schedule.is_closed:
+            today_schedule = self.opening_hours.filter(weekday=current_day).first()
+            if not today_schedule or today_schedule.is_closed:
                 return False
             return today_schedule.from_hour <= current_time <= today_schedule.to_hour
-        except:
+        except Exception:
             return False
 
     def __str__(self):
         return self.name
 
-# --- MODELO SERVICIOS ---
+# --- MODELO SERVICIOS (Con campo description agregado) ---
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
-    name = models.CharField(max_length=100)
-    duration_minutes = models.PositiveIntegerField(default=30)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    name = models.CharField(max_length=100, verbose_name="Nombre del Servicio")
+    description = models.TextField(blank=True, verbose_name="Descripción")
+    duration_minutes = models.PositiveIntegerField(default=30, verbose_name="Duración (min)")
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio")
 
     def __str__(self):
         return f"{self.name} - ${self.price}"
@@ -72,13 +78,11 @@ class Service(models.Model):
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='employee')
-    
     name = models.CharField(max_length=100, default="Empleado")
     phone = models.CharField(max_length=20, default="")
-    
     lunch_start = models.TimeField(default=datetime.time(12, 0))
     lunch_end = models.TimeField(default=datetime.time(13, 0))
-
+    
     bold_api_key = models.CharField(max_length=255, blank=True)
     bold_signing_key = models.CharField(max_length=255, blank=True)
     telegram_bot_token = models.CharField(max_length=255, blank=True)
