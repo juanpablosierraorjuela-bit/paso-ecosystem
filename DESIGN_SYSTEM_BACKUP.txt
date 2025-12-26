@@ -1,0 +1,39 @@
+
+=====================================================
+💎 PASO ECOSISTEM - DESIGN SYSTEM REFERENCE (V-FINAL)
+=====================================================
+
+SI EL DISEÑO SE ROMPE, ENTREGA ESTAS INSTRUCCIONES AL PROGRAMADOR:
+
+1. PALETA DE COLORES:
+   --bs-primary: #D4AF37; (Dorado Champagne)
+   --bs-secondary: #1C1C1C; (Negro Carbón)
+   --gold-gradient: linear-gradient(135deg, #D4AF37 0%, #F5D76E 100%);
+   --dark-gradient: linear-gradient(135deg, #1C1C1C 0%, #333333 100%);
+
+2. TIPOGRAFÍA:
+   - Títulos: 'Playfair Display', serif;
+   - Textos: 'Poppins', sans-serif;
+
+3. EFECTO CRISTAL (GLASSMORPHISM):
+   .card, .navbar, .modal-content {
+       background: rgba(255, 255, 255, 0.65) !important;
+       backdrop-filter: blur(16px) !important;
+       border: 1px solid rgba(255, 255, 255, 0.4);
+       box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+       border-radius: 20px;
+   }
+
+4. FONDO ANIMADO (AURA):
+   - Fondo base: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+   - Orbes: blur(80px), opacity 0.5, animación 'float' 20s.
+
+5. COMPONENTES CLAVE:
+   - Botones: Bordes redondeados (rounded-pill), sombra suave.
+   - Inputs: Fondo semi-transparente, borde sutil.
+   - Barra Flotante (Booking): Negra (#1C1C1C), fija abajo, estilo App.
+
+=====================================================
+ESTE ARCHIVO ES LA VERDAD ABSOLUTA DEL DISEÑO.
+NO MODIFICAR SIN AUTORIZACIÓN.
+=====================================================

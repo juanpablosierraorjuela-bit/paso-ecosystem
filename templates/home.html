@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* ESTILOS PROTOCOLO DIAMANTE */
+    .salon-card {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        overflow: visible;
+        background: rgba(255, 255, 255, 0.85); /* Cristal base */
+    }
+    .salon-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(212, 175, 55, 0.2) !important;
+        border-color: #D4AF37 !important;
+    }
+    .salon-header-deco {
+        height: 100px;
+        background: linear-gradient(135deg, #1C1C1C 0%, #333333 100%);
+        position: relative;
+        border-radius: 20px 20px 0 0;
+        overflow: hidden;
+    }
+    .salon-header-deco::after {
+        content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+        background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d4af37' fill-opacity='0.1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+        opacity: 0.5;
+    }
+    .salon-avatar-container {
+        width: 90px; height: 90px;
+        margin: -45px auto 15px;
+        position: relative; z-index: 2;
+        background: rgba(255,255,255,0.9);
+        padding: 5px; border-radius: 50%;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .salon-avatar {
+        width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+        border: 2px solid #D4AF37;
+    }
+    .avatar-placeholder {
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #D4AF37 0%, #F5D76E 100%);
+        color: #1C1C1C; font-size: 1.8rem;
+    }
+    .social-icon-link {
+        width: 35px; height: 35px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        background: rgba(212, 175, 55, 0.1); color: #D4AF37;
+        transition: all 0.3s ease; text-decoration: none;
+    }
+    .social-icon-link:hover {
+        background: #D4AF37; color: #1C1C1C; transform: scale(1.1);
+    }
+    .btn-reservar {
+        background: linear-gradient(135deg, #1C1C1C 0%, #000 100%);
+        color: white; border: none; border-radius: 50px;
+    }
+    .btn-reservar:hover {
+        background: linear-gradient(135deg, #D4AF37 0%, #F5D76E 100%);
+        color: black;
+    }
+</style>
+
+<div class="glass-panel p-5 mb-5 text-center position-relative overflow-hidden">
+    <div class="position-relative z-1">
+        <span class="badge bg-warning bg-opacity-25 text-dark mb-3 px-3 py-2 rounded-pill fw-bold" style="letter-spacing: 2px;">ECOSISTEMA EXCLUSIVO</span>
+        <h1 class="display-3 fw-bold mb-3" style="font-family: 'Playfair Display';">PASO <span style="color: #D4AF37;">Ecosistem</span></h1>
+        <p class="lead text-muted mb-4 mx-auto" style="max-width: 600px;">La plataforma definitiva para gestionar tu belleza.</p>
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="#marketplace" class="btn btn-dark rounded-pill px-5 py-3 fw-bold">Explorar Salones</a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4" id="marketplace">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold m-0" style="font-family: 'Playfair Display';">Nuestros Aliados</h2>
+        <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm">{{ salones|length }} Disponibles</span>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for salon in salones %}
+        <div class="col">
+            <div class="card h-100 salon-card border-0">
+                <div class="salon-header-deco">
+                    <div class="position-absolute top-0 end-0 m-3 z-2">
+                        {% if salon.is_open_now %}
+                            <span class="badge bg-success bg-gradient shadow-sm px-3 py-2 rounded-pill">ABIERTO</span>
+                        {% else %}
+                            <span class="badge bg-dark bg-opacity-75 shadow-sm px-3 py-2 rounded-pill">CERRADO</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="salon-avatar-container">
+                    {% if salon.logo %}
+                        <img src="{{ salon.logo.url }}" class="salon-avatar" alt="{{ salon.name }}">
+                    {% else %}
+                        <div class="salon-avatar avatar-placeholder"><i class="fas fa-crown"></i></div>
+                    {% endif %}
+                </div>
+
+                <div class="card-body text-center pt-0 px-4 pb-4">
+                    <h3 class="h4 fw-bold mb-1" style="font-family: 'Playfair Display';">{{ salon.name }}</h3>
+                    <p class="text-muted small mb-3 text-uppercase" style="letter-spacing: 1px;">Experiencia Premium</p>
+                    
+                    <div class="mb-3 text-muted small d-flex justify-content-center align-items-center gap-2">
+                        <i class="fas fa-map-marker-alt" style="color: #D4AF37;"></i>
+                        <span class="text-truncate" style="max-width: 200px;">{{ salon.address|default:"Ubicación Exclusiva" }}</span>
+                    </div>
+
+                    {% if salon.instagram_url or salon.whatsapp_number %}
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        {% if salon.instagram_url %}
+                            <a href="{{ salon.instagram_url }}" target="_blank" class="social-icon-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        {% endif %}
+                        {% if salon.whatsapp_number %}
+                            <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="social-icon-link" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <a href="{% url 'booking_create' salon.slug %}" class="btn btn-reservar shadow-sm py-2 fw-bold">
+                            Reservar Cita <i class="fas fa-arrow-right ms-2 small"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

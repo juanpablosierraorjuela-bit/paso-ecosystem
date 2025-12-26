@@ -1,0 +1,42 @@
+
+<nav class="navbar navbar-expand-lg glass-panel p-3">
+    <div class="container-fluid">
+        <a class="navbar-brand brand-font d-flex align-items-center" href="/">
+            PASO <span class="text-gold ms-1">Ecosistem</span>
+        </a>
+        
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav ms-auto align-items-center gap-2">
+                <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'marketplace' %}">Marketplace</a></li>
+                
+                {% if user.is_authenticated %}
+                    <li class="nav-item ms-lg-3">
+                        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                            Hola, {{ user.first_name|default:user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary btn-sm px-4 shadow-sm">Mi Panel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/logout/" class="btn btn-outline-dark btn-sm rounded-circle" title="Salir">
+                            <i class="fas fa-power-off"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="nav-item ms-lg-3">
+                        <a href="/login/" class="btn btn-link text-dark text-decoration-none fw-bold">Entrar</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/registro-negocio/" class="btn btn-dark px-4 shadow-sm">Soy Negocio</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

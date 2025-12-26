@@ -1,0 +1,94 @@
+/* PASO BEAUTY - DESIGN OVERRIDE */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --bg-body: #F8FAFC;
+    --text-main: #0F172A;
+    --text-muted: #64748B;
+    --accent-gradient: linear-gradient(90deg, #EC4899 0%, #8B5CF6 100%);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+    --radius: 20px;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* --- FONDO ANIMADO (BLOBS) --- */
+.ambient-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1; pointer-events: none; overflow: hidden;
+}
+.blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5;
+    animation: float 10s infinite alternate;
+}
+.blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #fce7f3; }
+.blob-2 { bottom: -10%; right: -10%; width: 50vw; height: 50vw; background: #ede9fe; }
+
+@keyframes float { to { transform: translateY(20px); } }
+
+/* --- OVERRIDE BOOTSTRAP (ADIOS AZUL) --- */
+.navbar {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: var(--glass-border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav-link { color: var(--text-main) !important; font-weight: 600; }
+.nav-link:hover { color: #8B5CF6 !important; }
+
+/* Botones */
+.btn-primary {
+    background: var(--accent-gradient) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+    border-radius: 50px !important;
+    font-weight: 600;
+}
+.btn-primary:hover {
+    opacity: 0.9; transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: #8B5CF6 !important;
+    border-color: #8B5CF6 !important;
+    border-radius: 50px !important;
+}
+.btn-outline-primary:hover {
+    background: #8B5CF6 !important;
+    color: white !important;
+}
+
+/* Tarjetas y Contenedores */
+.card, .container-white {
+    background: var(--glass-bg);
+    border: var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+}
+
+/* Inputs */
+.form-control {
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    background: rgba(255,255,255,0.6);
+}
+.form-control:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}

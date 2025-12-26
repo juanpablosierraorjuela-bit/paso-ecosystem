@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="salon-card p-5">
+            <h2 class="text-center hero-text mb-4">Crea tu Tienda Digital</h2>
+            <form method="post">
+                {% csrf_token %}
+                <h5 class="mb-3 border-bottom pb-2">1. Datos de Acceso</h5>
+                {{ user_form.as_p }}
+                
+                <h5 class="mb-3 border-bottom pb-2 mt-4">2. Datos del Negocio</h5>
+                {{ salon_form.as_p }}
+                
+                <button type="submit" class="btn btn-success w-100 rounded-pill btn-lg mt-4">🚀 Lanzar mi Negocio</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

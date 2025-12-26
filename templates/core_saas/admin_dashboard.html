@@ -1,0 +1,31 @@
+
+{% extends 'base_saas.html' %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="display-5 fw-bold">Panel de Administración</h1>
+    <p class="lead text-muted">Gestiona tu salón y tu equipo desde aquí.</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100 p-4 text-center">
+            <div class="card-body">
+                <h3 class="card-title">👥 Equipo de Trabajo</h3>
+                <p class="card-text">Registra nuevos barberos/estilistas y asigna sus credenciales.</p>
+                <a href="{% url 'crear_empleado' %}" class="btn btn-primary btn-lg mt-3">Crear Nuevo Empleado</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 p-4 text-center bg-light">
+            <div class="card-body">
+                <h3 class="card-title">📊 Estadísticas</h3>
+                <p class="card-text">Resumen de citas del día (Próximamente).</p>
+                <button class="btn btn-secondary mt-3" disabled>Ver Reportes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

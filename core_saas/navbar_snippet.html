@@ -1,0 +1,21 @@
+
+{% if user.is_authenticated %}
+
+    {% if user.role == 'ADMIN' %}
+        <a href="{% url 'admin_dashboard' %}" class="nav-link">Administración</a>
+        <a href="{% url 'crear_empleado' %}" class="nav-link">Nuevo Empleado</a>
+    
+    {% elif user.role == 'EMPLOYEE' %}
+        <div class="employee-badge">👷 Panel de Trabajo</div>
+        <a href="{% url 'employee_panel' %}" class="nav-link">Mis Turnos</a>
+
+    {% else %}
+        <a href="/mis-citas/" class="nav-link">Mis Citas</a>
+        <a href="/reservar/" class="nav-link">Reservar</a>
+    {% endif %}
+
+    <a href="{% url 'logout' %}" class="nav-link">Salir</a>
+
+{% else %}
+    <a href="{% url 'saas_login' %}" class="nav-link">Entrar</a>
+{% endif %}

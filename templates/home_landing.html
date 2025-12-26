@@ -1,0 +1,40 @@
+{% extends 'base_saas.html' %}
+{% block content %}
+<div class="row align-items-center py-5">
+    <div class="col-lg-6">
+        <span class="badge bg-warning bg-opacity-10 text-warning mb-3 px-3 py-2 rounded-pill fw-bold">✨ La nueva era de la belleza</span>
+        <h1 class="display-3 fw-bold mb-2 text-dark">Tu belleza,</h1>
+        <h1 class="display-3 fw-bold mb-4" style="color: var(--bs-primary);">Tu tiempo.</h1>
+        <p class="lead text-muted mb-5" style="font-family: 'Poppins'; font-weight: 300;">
+            La plataforma definitiva para gestionar tu salón o reservar tu próxima cita sin llamadas ni esperas.
+        </p>
+        <div class="d-flex gap-3">
+            <a href="{% url 'marketplace' %}" class="btn btn-primary btn-lg rounded-pill px-5 shadow">
+                <i class="fas fa-search me-2"></i> Buscar Salón
+            </a>
+            <a href="{% url 'registro_owner' %}" class="btn btn-dark btn-lg rounded-pill px-5">
+                Soy Negocio
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-6 text-center mt-5 mt-lg-0 position-relative">
+        <div class="card p-5 border-0 d-inline-block rounded-circle shadow-lg position-relative z-1" style="width: 320px; height: 320px; display: flex; align-items: center; justify-content: center; background: white;">
+             <i class="fas fa-cut" style="font-size: 6rem; color: var(--bs-primary); background: -webkit-linear-gradient(#D4AF37, #F5D76E); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+        </div>
+        
+        <div class="card p-3 border-0 rounded-4 shadow position-absolute top-0 start-0 translate-middle-y z-2" style="left: 10%;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-check-circle text-success fs-4"></i>
+                <div class="text-start lh-1">
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">Cita Confirmada</small>
+                    <span class="fw-bold">10:00 AM</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3 border-0 rounded-circle shadow position-absolute bottom-0 end-0 translate-middle-y z-2" style="right: 15%;">
+             <i class="fas fa-star text-warning fs-3"></i>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base_saas.html' %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 p-4" style="background: rgba(255,255,255,0.85) !important; backdrop-filter: blur(20px);">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold display-6" style="font-family: 'Playfair Display', serif;">Crear Cuenta Negocio</h2>
+                    <p class="text-muted small">Gestiona tu salón con tu número de WhatsApp.</p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    {% if error %}
+                        <div class="alert alert-danger small p-2 text-center rounded-3 mb-3">
+                            {{ error }}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="fw-bold small ms-2 mb-1 text-dark">Nombre del Negocio</label>
+                        <input type="text" name="business_name" class="form-control form-control-lg bg-white text-dark border" 
+                               placeholder="Ej: Salón Estilo" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold small ms-2 mb-1 text-dark">Número de WhatsApp</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="fab fa-whatsapp text-success fs-4"></i></span>
+                            <input type="tel" name="phone" class="form-control form-control-lg bg-white text-dark border-start-0" 
+                               placeholder="300 123 4567" required>
+                        </div>
+                        <div class="form-text ms-2 small">Este será tu usuario para ingresar.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="fw-bold small ms-2 mb-1 text-dark">Contraseña</label>
+                        <input type="password" name="password" class="form-control form-control-lg bg-white text-dark border" 
+                               placeholder="••••••••" required>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success rounded-pill py-3 fw-bold shadow">
+                            🚀 Registrar con WhatsApp
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="small text-muted">¿Ya tienes cuenta? <a href="{% url 'login' %}" class="fw-bold text-dark text-decoration-none">Ingresa aquí</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

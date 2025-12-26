@@ -1,0 +1,45 @@
+
+{% extends 'base_saas.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
+                <span class="fs-1">🧔🏻</span>
+            </div>
+            <h4 class="fw-bold mb-0">{{ user.first_name }}</h4>
+            <span class="badge bg-success bg-opacity-10 text-success mt-2">Disponible</span>
+            <hr>
+            <div class="text-start small text-muted">
+                <div class="mb-2"><i class="ph-bold ph-clock"></i> Turno: 9:00 AM - 6:00 PM</div>
+                <div><i class="ph-bold ph-calendar-check"></i> Citas hoy: <strong>0</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">📅 Tu Agenda</h3>
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm active">Hoy</button>
+                <button class="btn btn-outline-secondary btn-sm">Semana</button>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <div class="text-center py-5">
+                        <div class="mb-3 text-muted opacity-50">
+                            <i class="ph-duotone ph-coffee fs-1"></i>
+                        </div>
+                        <h5 class="fw-bold text-secondary">Todo tranquilo por ahora</h5>
+                        <p class="text-muted small">No tienes citas programadas para hoy. ¡Disfruta el café!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

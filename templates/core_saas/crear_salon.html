@@ -1,0 +1,47 @@
+
+{% extends 'base_saas.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow border-0">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <span class="badge bg-success mb-2">Paso 2 de 2</span>
+                    <h2 class="fw-bold">Configura tu Local</h2>
+                    <p class="text-muted">Define el nombre y horarios de atención.</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre del Negocio</label>
+                        {{ form.name }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">WhatsApp / Teléfono</label>
+                        {{ form.phone }}
+                        <div class="form-text">Ej: 573001234567</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Abre a las:</label>
+                            {{ form.opening_time }}
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Cierra a las:</label>
+                            {{ form.closing_time }}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-3 fw-bold mt-3">🚀 Finalizar y Crear Salón</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('input[type="text"], input[type="number"]').forEach(i => i.classList.add('form-control'));
+</script>
+{% endblock %}

@@ -1,0 +1,230 @@
+
+{% extends 'base_saas.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Ocultar checkbox feo */
+    .service-check-input { display: none; }
+
+    /* Tarjeta Servicio Premium */
+    .service-card-luxury {
+        background: #fff; border: 1px solid #f0f0f0; border-radius: 16px;
+        padding: 20px; margin-bottom: 15px; cursor: pointer; transition: all 0.3s ease;
+        position: relative; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .service-card-luxury:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    .service-card-luxury.selected {
+        border: 2px solid #D4AF37; background: linear-gradient(145deg, #fffbf0, #ffffff);
+        animation: flashGold 0.4s ease-out;
+    }
+    .service-card-luxury.selected .service-name, .service-card-luxury.selected .service-price {
+        color: #D4AF37; font-weight: 800;
+    }
+    @keyframes flashGold {
+        0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); transform: scale(0.98); }
+        50% { transform: scale(1.02); box-shadow: 0 0 20px 10px rgba(212, 175, 55, 0); }
+        100% { transform: scale(1); }
+    }
+    .luxury-indicator {
+        width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e0e0e0;
+        transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+    }
+    .service-card-luxury.selected .luxury-indicator {
+        background-color: #D4AF37; border-color: #D4AF37; box-shadow: 0 0 10px #D4AF37;
+    }
+    .time-slot { 
+        border: 1px solid #eee; border-radius: 50px; padding: 10px 25px;
+        background: white; transition: 0.2s; font-weight: 500;
+    }
+    .time-slot.active { 
+        background: #D4AF37; color: white; border-color: #D4AF37; 
+        box-shadow: 0 4px 10px rgba(212, 175, 55, 0.4);
+    }
+    .floating-summary {
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        width: 90%; max-width: 700px; background: #1C1C1C; color: white;
+        border-radius: 20px; padding: 15px 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        z-index: 2000; display: none; align-items: center; justify-content: space-between;
+        animation: slideUp 0.4s ease-out;
+    }
+    @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+</style>
+
+<div class="row justify-content-center mb-5 pb-5">
+    <div class="col-md-8">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold" style="font-family: 'Playfair Display';">{{ salon.name }}</h1>
+            <div class="d-inline-block px-4 py-1 rounded-pill small fw-bold mt-2" style="background: rgba(212, 175, 55, 0.1); color: var(--bs-primary); letter-spacing: 1px;">
+                RESERVA PREMIUM
+            </div>
+        </div>
+
+        <form method="POST" id="bookingForm">
+            {% csrf_token %}
+            <input type="hidden" name="salon_id" id="salonId" value="{{ salon.id }}">
+            <input type="hidden" name="selected_time" id="selectedTimeInput">
+
+            <div class="mb-5">
+                <h4 class="fw-bold mb-4" style="font-family: 'Playfair Display';">1. Selecciona tu Experiencia</h4>
+                {% for srv in services %}
+                <div class="service-card-luxury" onclick="toggleService(this, {{ srv.price }})">
+                    <input type="checkbox" name="services" value="{{ srv.id }}" class="service-check-input" data-price="{{ srv.price }}">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light p-3 rounded-circle text-muted me-3"><i class="fas fa-cut"></i></div>
+                        <div>
+                            <h5 class="service-name mb-1 fw-bold">{{ srv.name }}</h5>
+                            <small class="text-muted"><i class="far fa-clock"></i> {{ srv.duration_minutes }} min</small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="service-price fs-5 fw-bold mb-1">${{ srv.price }}</div>
+                        <div class="d-flex justify-content-end"><div class="luxury-indicator"></div></div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="alert alert-light text-center">No hay servicios disponibles.</div>
+                {% endfor %}
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 mb-5" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);">
+                 <h4 class="fw-bold mb-4" style="font-family: 'Playfair Display';">2. Agenda tu Cita</h4>
+                 <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="small fw-bold ms-2 mb-2 text-uppercase text-muted">Profesional</label>
+                        <select name="employee" id="employeeSelect" class="form-select form-select-lg border-0 shadow-sm" onchange="checkAvailability()" required>
+                            <option value="" disabled selected>Elige estilista...</option>
+                            {% for emp in employees %}
+                                <option value="{{ emp.id }}">{{ emp.first_name }} {{ emp.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small fw-bold ms-2 mb-2 text-uppercase text-muted">Fecha</label>
+                        <input type="date" name="date" id="dateInput" class="form-control form-control-lg border-0 shadow-sm" onchange="checkAvailability()" required>
+                    </div>
+                </div>
+                <div id="slotsArea" class="mt-5 text-center" style="display:none;">
+                    <span class="small text-muted text-uppercase fw-bold mb-3 d-block">Horarios Disponibles</span>
+                    <div id="loading" class="d-none py-3 text-muted"><i class="fas fa-circle-notch fa-spin"></i> Buscando...</div>
+                    <div id="slotsGrid" class="d-flex flex-wrap justify-content-center gap-2"></div>
+                </div>
+            </div>
+            
+            {% if not user.is_authenticated %}
+                <div class="card border-0 shadow-sm p-4 mb-5 bg-white">
+                    <h4 class="fw-bold mb-4" style="font-family: 'Playfair Display';">3. Tus Datos</h4>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <input type="text" name="customer_name" class="form-control" placeholder="Tu Nombre" required>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="tel" name="customer_phone" class="form-control" placeholder="Tu WhatsApp" required>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <input type="hidden" name="customer_name" value="{{ user.first_name|default:user.username }}">
+                <input type="hidden" name="customer_phone" value="{{ user.username }}">
+                
+                <div class="text-center mb-4">
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                        <i class="fas fa-user-check text-success me-2"></i> Reservando como <strong>{{ user.first_name|default:user.username }}</strong>
+                    </span>
+                </div>
+            {% endif %}
+
+            <div class="floating-summary" id="floatBar">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-start lh-1">
+                        {% if salon.bold_identity_key %}
+                            <span class="d-block text-warning small fw-bold mb-1">Abono Inicial (50%)</span>
+                            <span class="fw-bold fs-3" id="displayTotal">$0</span>
+                            <small class="text-white-50 ms-2">(Total: <span id="realTotal">$0</span>)</small>
+                        {% else %}
+                            <span class="d-block text-white-50 small mb-1">Total a Pagar en Local</span>
+                            <span class="fw-bold fs-3" id="displayTotal">$0</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <button type="submit" id="submitBtn" class="btn btn-light rounded-pill px-4 fw-bold text-dark" disabled>
+                    Confirmar Cita
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script>
+    const hasBold = {% if salon.bold_identity_key %}true{% else %}false{% endif %};
+    let totalServicePrice = 0;
+
+    function toggleService(card, price) {
+        const checkbox = card.querySelector('.service-check-input');
+        checkbox.checked = !checkbox.checked;
+        if (checkbox.checked) { card.classList.add('selected'); } else { card.classList.remove('selected'); }
+        recalculateTotal();
+        checkAvailability(); 
+    }
+
+    function recalculateTotal() {
+        totalServicePrice = 0;
+        document.querySelectorAll('.service-check-input:checked').forEach(c => {
+            totalServicePrice += parseFloat(c.dataset.price);
+        });
+        
+        const bar = document.getElementById('floatBar');
+        bar.style.display = totalServicePrice > 0 ? 'flex' : 'none';
+
+        const displayEl = document.getElementById('displayTotal');
+        const realTotalEl = document.getElementById('realTotal');
+
+        if (hasBold) {
+            const abono = totalServicePrice * 0.5;
+            displayEl.innerText = '$' + abono.toLocaleString('es-CO');
+            if(realTotalEl) realTotalEl.innerText = '$' + totalServicePrice.toLocaleString('es-CO');
+        } else {
+            displayEl.innerText = '$' + totalServicePrice.toLocaleString('es-CO');
+        }
+    }
+
+    function checkAvailability() {
+        const empId = document.getElementById('employeeSelect').value;
+        const dateVal = document.getElementById('dateInput').value;
+        const salonId = document.getElementById('salonId').value;
+        const slotsArea = document.getElementById('slotsArea');
+        const grid = document.getElementById('slotsGrid');
+        const checks = document.querySelectorAll('.service-check-input:checked');
+        document.getElementById('submitBtn').disabled = true;
+
+        if (!empId || !dateVal || checks.length === 0) { slotsArea.style.display = 'none'; return; }
+
+        slotsArea.style.display = 'block'; grid.innerHTML = '';
+        document.getElementById('loading').classList.remove('d-none');
+
+        let url = `/api/get-slots/?salon_id=${salonId}&employee_id=${empId}&date=${dateVal}`;
+        checks.forEach(c => url += `&service_ids[]=${c.value}`);
+
+        fetch(url).then(res => res.json()).then(data => {
+            document.getElementById('loading').classList.add('d-none');
+            if (data.slots && data.slots.length > 0) {
+                data.slots.forEach(time => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button'; btn.className = 'btn time-slot'; btn.innerText = time;
+                    btn.onclick = () => {
+                        document.querySelectorAll('.time-slot').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.getElementById('selectedTimeInput').value = time;
+                        document.getElementById('submitBtn').disabled = false;
+                    };
+                    grid.appendChild(btn);
+                });
+            } else {
+                grid.innerHTML = '<div class="alert alert-warning w-100">Sin cupos.</div>';
+            }
+        });
+    }
+</script>
+{% endblock %}
