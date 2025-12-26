@@ -7,8 +7,11 @@ User = get_user_model()
 class SalonIntegrationsForm(forms.ModelForm):
     class Meta:
         model = Salon
-        fields = ['address', 'city', 'opening_time', 'closing_time', 'deposit_percentage', 'telegram_bot_token', 'telegram_chat_id', 'bold_identity_key', 'bold_secret_key', "instagram_url", "whatsapp_number"]
+        # AGREGAMOS 'name' AL PRINCIPIO
+        fields = ['name', 'address', 'city', 'opening_time', 'closing_time', 'deposit_percentage', 'telegram_bot_token', 'telegram_chat_id', 'bold_identity_key', 'bold_secret_key', "instagram_url", "whatsapp_number"]
         widgets = {
+            # WIDGET PARA EL NOMBRE (Clase form-control para que se vea bonito)
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de tu Negocio'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección completa (Ej: Cra 10 # 20-30)'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ciudad'}),
             'opening_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
@@ -17,11 +20,11 @@ class SalonIntegrationsForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['telegram_bot_token'].widget.attrs.update({'class': 'form-control', 'placeholder': '123456:ABC-DEF...'})
-        self.fields['telegram_chat_id'].widget.attrs.update({'class': 'form-control', 'placeholder': 'ID numérico'})
-        self.fields['bold_identity_key'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Identity Key'})
-        self.fields['bold_secret_key'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Secret Key'})
-        self.fields['deposit_percentage'].widget.attrs.update({'class': 'form-control', 'min': '0', 'max': '100', 'placeholder': '% de Abono (ej: 50)'})
+        # Aseguramos que los campos opcionales también tengan estilo
+        campos_extra = ['telegram_bot_token', 'telegram_chat_id', 'bold_identity_key', 'bold_secret_key', 'deposit_percentage', 'instagram_url', 'whatsapp_number']
+        for campo in campos_extra:
+            if campo in self.fields:
+                self.fields[campo].widget.attrs.update({'class': 'form-control'})
 
 class ServiceForm(forms.ModelForm):
     class Meta:
@@ -35,11 +38,9 @@ class ServiceForm(forms.ModelForm):
 
 class EmployeeCreationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Contraseña'}))
-    
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'username']
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields:
