@@ -59,19 +59,32 @@
                 {% endif %}
 
                 {% if salon.bold_identity_key %}
-                    <form action="https://checkout.bold.co/payment/init" method="POST">
-                        <input type="hidden" name="apikey" value="{{ salon.bold_identity_key }}">
-                        <input type="hidden" name="orderId" value="{{ order_id }}">
-                        <input type="hidden" name="amount" value="{{ deposit_amount }}">
-                        <input type="hidden" name="currency" value="COP">
-                        <input type="hidden" name="description" value="Reserva en {{ salon.name }}">
-                        <input type="hidden" name="integritySignature" value="{{ bold_signature }}">
-                        <input type="hidden" name="redirectionUrl" value="{{ request.scheme }}://{{ request.get_host }}/mis-citas/">
-
-                        <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill shadow-lg fw-bold fs-5 mt-2">
+                    
+                    <script src="https://checkout.bold.co/library/boldPaymentButton.js"></script>
+                    
+                    <div id="bold-container">
+                        <button type="button" onclick="pagarConBold()" class="btn btn-dark w-100 py-3 rounded-pill shadow-lg fw-bold fs-5 mt-2">
                             <i class="fas fa-lock me-2 text-warning"></i> Pagar Abono Seguro
                         </button>
-                    </form>
+                    </div>
+
+                    <script>
+                        function pagarConBold() {
+                            // Configuración oficial de Bold
+                            const checkout = new BoldCheckout({
+                                orderId: "{{ order_id }}",
+                                currency: "COP",
+                                amount: "{{ deposit_amount }}",
+                                apiKey: "{{ salon.bold_identity_key }}",
+                                integritySignature: "{{ bold_signature }}",
+                                description: "Reserva en {{ salon.name }}",
+                                redirectionUrl: "{{ request.scheme }}://{{ request.get_host }}/mis-citas/"
+                            });
+                            
+                            checkout.open();
+                        }
+                    </script>
+    
                     <div class="text-center mt-3">
                         <small class="text-muted"><i class="fas fa-shield-alt text-success"></i> Procesado por Bold.co</small>
                     </div>
