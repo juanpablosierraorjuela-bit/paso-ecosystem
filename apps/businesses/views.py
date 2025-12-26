@@ -372,67 +372,55 @@ def bold_webhook(request, salon_id):
         try:
             salon = get_object_or_404(Salon, id=salon_id)
             payload = json.loads(request.body)
-            print(f"Webhook recibido: {payload}") 
-
-            # 1. BUSQUEDA INTELIGENTE DEL ID
+            
+            # 1. BUSQUEDA ID
             ref = payload.get('orderId') or payload.get('order_id') or payload.get('payment_reference') or payload.get('reference')
-            
             if not ref:
-                print("❌ Error: No se encontró referencia de orden.")
                 return JsonResponse({'status': 'error', 'message': 'No reference'}, status=400)
-
             order_id = str(ref).replace('ORD-', '')
-            
-            # 2. VALIDAR ESTADO (4 = Aprobado)
+
+            # 2. VALIDAR ESTADO
             tx_status = payload.get('transactionStatus')
             if tx_status is not None and int(tx_status) != 4:
                 return JsonResponse({'status': 'ignored', 'message': 'Not approved'})
 
             bookings = Booking.objects.filter(payment_id=order_id)
-            
             if bookings.exists():
-                # 3. CALCULOS
-                total_servicio = sum(b.total_price for b in bookings)
-                monto_bold = payload.get('paymentAmount')
-                
-                if monto_bold:
-                    abono = Decimal(str(monto_bold))
+                total = sum(b.total_price for b in bookings)
+                monto = payload.get('paymentAmount')
+                if monto:
+                    abono = Decimal(str(monto))
                 else:
-                    abono = total_servicio * (salon.deposit_percentage / 100)
-
-                pendiente = total_servicio - abono
+                    abono = total * (salon.deposit_percentage / 100)
+                
+                pendiente = total - abono
                 cliente = bookings.first().customer_name
                 
-                # 4. ACTUALIZAR DB
-                bookings.update(status='paid') 
+                bookings.update(status='paid')
                 
-                # 5. ENVIAR TELEGRAM (Formato Seguro)
-                msg = (
-                    f"💰 *¡PAGO BOLD CONFIRMADO!*
+                # 5. ENVIAR TELEGRAM (Construcción segura del mensaje)
+                msg = "💰 *PAGO BOLD CONFIRMADO*
 "
-                    f"👤 Cliente: {cliente}
+                msg += f"👤 Cliente: {cliente}
 "
-                    f"🆔 Orden: #{order_id}
+                msg += f"🆔 Orden: #{order_id}
 "
-                    f"-----------------------------
+                msg += "-----------------------------
 "
-                    f"💵 Total: ${total_servicio:,.0f}
+                msg += f"💵 Total: ${total:,.0f}
 "
-                    f"✅ Abono: ${abono:,.0f}
+                msg += f"✅ Abono: ${abono:,.0f}
 "
-                    f"👉 *PENDIENTE: ${pendiente:,.0f}*
+                msg += f"👉 *PENDIENTE: ${pendiente:,.0f}*
 "
-                    f"-----------------------------
+                msg += "-----------------------------
 "
-                    f"📅 Cita Agendada."
-                )
-                
+                msg += "📅 Cita Agendada."
+
                 send_telegram_notification(salon, msg)
-                print("✅ Telegram enviado.")
                 
             return JsonResponse({'status': 'ok'})
         except Exception as e:
-            print(f"🔥 Error Webhook: {e}")
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return HttpResponse(status=405)
 
