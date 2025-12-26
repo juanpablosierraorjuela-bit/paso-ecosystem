@@ -357,37 +357,85 @@ def booking_success(request, booking_id):
 # ==============================================================================
 # WEBHOOK BOLD (Aquí llega la confirmación de pago)
 # ==============================================================================
+# ==============================================================================
+# WEBHOOK BOLD MEJORADO (Cálculos y Notificaciones Detalladas)
+# ==============================================================================
 @csrf_exempt
 def bold_webhook(request, salon_id):
     if request.method == 'POST':
         try:
             salon = get_object_or_404(Salon, id=salon_id)
             payload = json.loads(request.body)
+            print(f"Webhook recibido: {payload}") # Log para depuración en Render
+
+            # 1. Obtener ID de la orden (Soporta múltiples formatos de Bold)
+            ref = payload.get('orderId') or payload.get('order_id') or payload.get('payment_reference') or payload.get('reference')
             
-            # Buscar el Order ID
-            # Nota: Bold a veces envía 'reference' u 'orderId'. Ajusta si es necesario.
-            # En la integración estándar suele ser el ID que enviamos nosotros.
-            order_id = payload.get('order_id', '').replace('ORD-', '')
+            if not ref:
+                print("❌ Error: No se encontró referencia de orden en el webhook.")
+                return JsonResponse({'status': 'error', 'message': 'No reference found'}, status=400)
+
+            # Limpiar prefijo ORD- si existe
+            order_id = str(ref).replace('ORD-', '')
             
-            # Verificar status (4 = Aprobado, usualmente)
-            # Para este MVP, si recibimos el POST asumimos éxito o verificamos status
-            
+            # 2. Verificar Estado (4 = Aprobado en Bold)
+            # Si Bold envía el estado, lo validamos. Si no (pruebas), asumimos éxito.
+            tx_status = payload.get('transactionStatus')
+            if tx_status is not None and int(tx_status) != 4:
+                print(f"⚠️ Pago recibido pero NO aprobado. Estado: {tx_status}")
+                return JsonResponse({'status': 'ignored', 'message': 'Payment not approved'})
+
             bookings = Booking.objects.filter(payment_id=order_id)
             
             if bookings.exists():
-                total = sum(b.total_price for b in bookings)
+                # 3. Cálculos Financieros
+                total_servicio = sum(b.total_price for b in bookings)
+                
+                # Intentamos leer el monto pagado desde Bold, si no, lo calculamos
+                monto_bold = payload.get('paymentAmount')
+                if monto_bold:
+                    abono = Decimal(monto_bold)
+                else:
+                    # Fallback: Recalcular según porcentaje del salón
+                    abono = total_servicio * (salon.deposit_percentage / 100)
+
+                pendiente = total_servicio - abono
                 cliente = bookings.first().customer_name
                 
-                # Marcar como PAGADO
-                bookings.update(status='paid')
+                # 4. Actualizar Base de Datos
+                bookings.update(status='paid') # Marcar como pagado
                 
-                # NOTIFICAR AL DUEÑO
-                msg = f"💰 *PAGO BOLD RECIBIDO*\n👤 {cliente}\n💵 Total: ${total:,.0f}\n✅ Abono confirmado."
-                send_telegram_notification(salon, msg)
+                # 5. Notificación INTELIGENTE a Telegram
+                msg = (
+                    f"💰 *¡NUEVO ABONO RECIBIDO!*
+"
+                    f"👤 Cliente: {cliente}
+"
+                    f"🆔 Orden: #{order_id}
+"
+                    f"-----------------------------
+"
+                    f"💵 Total Servicio: ${total_servicio:,.0f}
+"
+                    f"✅ Abono Bold:     ${abono:,.0f}
+"
+                    f"👉 *COBRAR EN LOCAL: ${pendiente:,.0f}*
+"
+                    f"-----------------------------
+"
+                    f"📅 Cita confirmada exitosamente."
+                )
+                
+                enviado = send_telegram_notification(salon, msg)
+                if enviado:
+                    print("✅ Notificación enviada a Telegram.")
+                else:
+                    print("❌ Falló el envío a Telegram (Revisar Token/ChatID).")
                 
             return JsonResponse({'status': 'ok'})
         except Exception as e:
-            return JsonResponse({'status': 'error'}, status=500)
+            print(f"🔥 Error crítico en Webhook: {e}")
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return HttpResponse(status=405)
 
 @login_required
