@@ -1,30 +1,30 @@
 FROM python:3.12-slim
 
-# Configuración básica de Python
+# Optimización de Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
 WORKDIR /app
 
-# Instalar dependencias del sistema (necesario para Postgres)
+# Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar librerías de Python
+# Instalar librerías
 COPY requirements.txt /app/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copiar el código
+# Copiar proyecto
 COPY . /app/
 
-# Recolectar archivos estáticos (CSS/JS)
-RUN python manage.py collectstatic --noinput
+# --- CORRECCIÓN CLAVE ---
+# Forzamos a usar SQLite temporalmente durante el build
+# para que no intente conectar a la DB real (que falla en el build).
+RUN DATABASE_URL="sqlite:///db.sqlite3" python manage.py collectstatic --noinput
 
-# --- COMANDO DE INICIO ---
-# 1. Ejecuta migraciones (crea tablas en la DB real)
-# 2. Inicia el servidor (Gunicorn)
+# Comando de inicio (Aquí sí usará la DB real)
 CMD python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
