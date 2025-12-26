@@ -3,7 +3,7 @@ services:
     name: paso-backend
     runtime: docker
     region: oregon
-    plan: starter # El plan de $7 para el servidor web sigue llamándose 'starter'
+    plan: starter
     branch: main
     numInstances: 1
     healthCheckPath: /
@@ -20,6 +20,6 @@ services:
 databases:
   - name: paso-db
     region: oregon
-    plan: basic # <--- AQUÍ ESTABA EL ERROR. Ahora es 'basic' ($7 USD aprox)
+    plan: basic-256mb # <--- ¡ESTA ES LA CLAVE! (basic a secas no sirve)
     databaseName: paso_db
     user: paso_admin
