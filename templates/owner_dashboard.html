@@ -54,6 +54,23 @@
                             {% csrf_token %}
                             <input type="hidden" name="update_config" value="1">
                             
+                            
+                            <h6 class="fw-bold text-muted text-uppercase mb-3 small ls-1">📍 Ubicación del Negocio</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-8">
+                                    <div class="form-floating">
+                                        {{ config_form.address }}
+                                        <label>Dirección del Local</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        {{ config_form.city }}
+                                        <label>Ciudad</label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <h6 class="fw-bold text-muted text-uppercase mb-3 small ls-1">⏰ Horario General</h6>
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4">

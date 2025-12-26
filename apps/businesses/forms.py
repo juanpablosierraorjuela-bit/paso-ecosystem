@@ -7,8 +7,10 @@ User = get_user_model()
 class SalonIntegrationsForm(forms.ModelForm):
     class Meta:
         model = Salon
-        fields = ['opening_time', 'closing_time', 'deposit_percentage', 'telegram_bot_token', 'telegram_chat_id', 'bold_identity_key', 'bold_secret_key', "instagram_url", "whatsapp_number"]
+        fields = ['address', 'city', 'opening_time', 'closing_time', 'deposit_percentage', 'telegram_bot_token', 'telegram_chat_id', 'bold_identity_key', 'bold_secret_key', "instagram_url", "whatsapp_number"]
         widgets = {
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección completa (Ej: Cra 10 # 20-30)'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ciudad'}),
             'opening_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'closing_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
         }
