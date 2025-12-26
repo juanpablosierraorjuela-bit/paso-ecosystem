@@ -152,8 +152,14 @@
                                     </div>
 
                                     <div class="row g-2">
-                                        <div class="col-md-8">{{ config_form.telegram_bot_token }}</div>
-                                        <div class="col-md-4">{{ config_form.telegram_chat_id }}</div>
+                                        <div class="col-md-8">
+                {{ config_form.telegram_bot_token }}
+                <div class="form-text text-muted small mt-1"><i class="fa fa-info-circle"></i> {{ config_form.telegram_bot_token.help_text }}</div>
+                </div>
+                                        <div class="col-md-4">
+                {{ config_form.telegram_chat_id }}
+                <div class="form-text text-muted small mt-1"><i class="fa fa-info-circle"></i> {{ config_form.telegram_chat_id.help_text }}</div>
+                </div>
                                     </div>
                                     <div id="telegramFeedback" class="mt-2" style="display:none;"></div>
                                 </div>
@@ -199,8 +205,14 @@
                                     </div>
 
                                     <div class="row g-2">
-                                        <div class="col-md-6">{{ config_form.bold_identity_key }}</div>
-                                        <div class="col-md-6">{{ config_form.bold_secret_key }}</div>
+                                        <div class="col-md-6">
+                {{ config_form.bold_identity_key }}
+                <div class="form-text text-muted small mt-1"><i class="fa fa-info-circle"></i> {{ config_form.bold_identity_key.help_text }}</div>
+                </div>
+                                        <div class="col-md-6">
+                {{ config_form.bold_secret_key }}
+                <div class="form-text text-muted small mt-1"><i class="fa fa-info-circle"></i> {{ config_form.bold_secret_key.help_text }}</div>
+                </div>
                                     </div>
                                 </div>
                             </div>
