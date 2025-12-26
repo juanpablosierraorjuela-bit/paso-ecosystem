@@ -159,7 +159,10 @@ def owner_dashboard(request):
     employees = User.objects.filter(role='EMPLOYEE')
     
     # Webhook URL para mostrar en el panel
+        # Generar URL y forzar HTTPS para que Bold lo acepte
     webhook_url = request.build_absolute_uri(f'/api/webhooks/bold/{salon.id}/')
+    if 'http://' in webhook_url:
+        webhook_url = webhook_url.replace('http://', 'https://')
     
     return render(request, 'owner_dashboard.html', {
         'salon': salon, 'config_form': config_form, 'service_form': service_form,
