@@ -372,33 +372,29 @@ def bold_webhook(request, salon_id):
         try:
             salon = get_object_or_404(Salon, id=salon_id)
             payload = json.loads(request.body)
-            print(f"Webhook recibido: {payload}") # Log para depuración
+            print(f"Webhook recibido: {payload}") 
 
-            # 1. BUSQUEDA INTELIGENTE DEL ID (Soporta todos los formatos de Bold)
+            # 1. BUSQUEDA INTELIGENTE DEL ID
             ref = payload.get('orderId') or payload.get('order_id') or payload.get('payment_reference') or payload.get('reference')
             
             if not ref:
-                print("❌ Error: No se encontró referencia de orden en el webhook.")
-                return JsonResponse({'status': 'error', 'message': 'No reference found'}, status=400)
+                print("❌ Error: No se encontró referencia de orden.")
+                return JsonResponse({'status': 'error', 'message': 'No reference'}, status=400)
 
-            # Limpiar prefijo ORD- si existe
             order_id = str(ref).replace('ORD-', '')
             
-            # 2. VALIDAR ESTADO (4 = Aprobado en Bold)
+            # 2. VALIDAR ESTADO (4 = Aprobado)
             tx_status = payload.get('transactionStatus')
-            # Si tx_status existe y NO es 4, ignoramos (pago rechazado o pendiente)
             if tx_status is not None and int(tx_status) != 4:
-                print(f"⚠️ Pago no aprobado. Estado: {tx_status}")
-                return JsonResponse({'status': 'ignored', 'message': 'Payment not approved'})
+                return JsonResponse({'status': 'ignored', 'message': 'Not approved'})
 
             bookings = Booking.objects.filter(payment_id=order_id)
             
             if bookings.exists():
-                # 3. CÁLCULOS
+                # 3. CALCULOS
                 total_servicio = sum(b.total_price for b in bookings)
-                
-                # Intentamos leer monto pagado desde Bold
                 monto_bold = payload.get('paymentAmount')
+                
                 if monto_bold:
                     abono = Decimal(str(monto_bold))
                 else:
@@ -408,9 +404,9 @@ def bold_webhook(request, salon_id):
                 cliente = bookings.first().customer_name
                 
                 # 4. ACTUALIZAR DB
-                bookings.update(status='paid') # Marcar como pagado
+                bookings.update(status='paid') 
                 
-                # 5. ENVIAR TELEGRAM
+                # 5. ENVIAR TELEGRAM (Formato Seguro)
                 msg = (
                     f"💰 *¡PAGO BOLD CONFIRMADO!*
 "
@@ -420,23 +416,23 @@ def bold_webhook(request, salon_id):
 "
                     f"-----------------------------
 "
-                    f"💵 Total Servicio: ${total_servicio:,.0f}
+                    f"💵 Total: ${total_servicio:,.0f}
 "
-                    f"✅ Abono Recibido: ${abono:,.0f}
+                    f"✅ Abono: ${abono:,.0f}
 "
-                    f"👉 *PENDIENTE EN LOCAL: ${pendiente:,.0f}*
+                    f"👉 *PENDIENTE: ${pendiente:,.0f}*
 "
                     f"-----------------------------
 "
-                    f"📅 Cita agendada exitosamente."
+                    f"📅 Cita Agendada."
                 )
                 
                 send_telegram_notification(salon, msg)
-                print("✅ Notificación enviada a Telegram.")
+                print("✅ Telegram enviado.")
                 
             return JsonResponse({'status': 'ok'})
         except Exception as e:
-            print(f"🔥 Error en Webhook: {e}")
+            print(f"🔥 Error Webhook: {e}")
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return HttpResponse(status=405)
 
