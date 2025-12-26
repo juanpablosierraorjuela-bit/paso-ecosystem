@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from django.views.generic import TemplateView, RedirectView
 from django.contrib.auth import views as auth_views
 from apps.businesses.views import (
+    bold_webhook,
     home as marketplace_view, booking_create, booking_success, dashboard,
     register_owner, owner_dashboard, employee_dashboard,
     delete_service, get_available_slots_api, test_telegram_integration,
@@ -12,6 +13,7 @@ from apps.businesses.views import (
 )
 
 urlpatterns = [
+    path('api/webhooks/bold/<int:salon_id>/', bold_webhook, name='bold_webhook'),
     path('reserva-confirmada/<int:booking_id>/', booking_success, name='booking_success'),
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name="home_landing.html"), name='home'),

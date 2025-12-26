@@ -5,23 +5,21 @@ import json
 # 1. Tu dominio REAL en Render
 DOMINIO = "https://paso-backend.onrender.com"
 
-# 2. El ID de tu Salón (mira la URL cuando entras a tu dashboard, ej: /dashboard/1/)
+# 2. El ID de tu Salón
 SALON_ID = "1" 
 
-# 3. Un ID de reserva PENDIENTE que tengas en tu base de datos.
-# (Crea una cita, llega hasta el pago, copia el código de la URL y pégalo aquí)
-ORDER_ID = "PON_AQUI_EL_CODIGO_DE_LA_CITA" 
-# Ejemplo: "b8a9c1d2" (SIN el 'ORD-' si lo tuviera)
+# 3. TU CÓDIGO DE CITA REAL
+ORDER_ID = "8203009135"  # <--- ID corregido
 # =================================================
 
 def probar_webhook():
     url = f"{DOMINIO}/api/webhooks/bold/{SALON_ID}/"
     
-    # Simulamos lo que envía Bold exactamente
+    # Simulamos lo que envía Bold
     payload = {
-        "orderId": f"ORD-{ORDER_ID}",  # Bold suele ponerle prefijo
-        "transactionStatus": 4,        # 4 significa APROBADO
-        "paymentAmount": "50000.00",   # Simulamos un pago
+        "orderId": f"ORD-{ORDER_ID}",
+        "transactionStatus": 4,        # 4 = APROBADO
+        "paymentAmount": "50000.00",   # Simulamos pago de 50k
         "paymentStatus": "APPROVED"
     }
 
@@ -37,9 +35,9 @@ def probar_webhook():
             print("✅ ¡ÉXITO! El servidor aceptó el pago.")
             print("👉 REVISA TU TELEGRAM AHORA. ¿Llegó el mensaje?")
         elif response.status_code == 404:
-            print("❌ Error 404: No encontró el salón o la URL está mal escrita.")
+            print("❌ Error 404: La URL es incorrecta o el despliegue en Render falló.")
         elif response.status_code == 500:
-            print("🔥 Error 500: El servidor falló por dentro (revisar Logs de Render).")
+            print("🔥 Error 500: Fallo interno (Revisa los logs en Render).")
             print("   Respuesta:", response.text)
         else:
             print(f"⚠️ Respuesta inesperada: {response.text}")
