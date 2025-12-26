@@ -104,3 +104,6 @@ LOGOUT_ON_GET = True
 
 # --- BLINDAJE DE DESPLIEGUE ---
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# --- SEGURIDAD RENDER ---
+CSRF_TRUSTED_ORIGINS = ['https://paso-backend.onrender.com']
