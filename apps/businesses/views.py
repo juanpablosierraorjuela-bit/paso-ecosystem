@@ -389,61 +389,77 @@ def test_telegram_integration(request):
 @csrf_exempt
 def bold_webhook(request, salon_id):
     if request.method == 'POST':
-        print(f"🔵 [WEBHOOK] INICIO - Intento de conexión para Salón ID: {salon_id}")
+        print(f"🔵 [WEBHOOK V2] Recibido para Salón ID: {salon_id}")
         try:
-            # 1. Ver qué nos mandan exactamente
             body_unicode = request.body.decode('utf-8')
-            print(f"📦 [WEBHOOK] Payload Recibido: {body_unicode}")
+            payload = json.loads(body_unicode)
             
-            try:
-                payload = json.loads(body_unicode)
-            except:
-                print("❌ [WEBHOOK] Error: El cuerpo no es JSON válido.")
-                return JsonResponse({'status': 'error'}, status=400)
-
-            salon = get_object_or_404(Salon, id=salon_id)
+            # --- ESTRATEGIA HÍBRIDA DE EXTRACCIÓN ---
             
-            # 2. BUSQUEDA ID
-            ref = payload.get('orderId') or payload.get('order_id') or payload.get('payment_reference') or payload.get('reference')
+            # 1. BUSCAR ID DE REFERENCIA
+            # Intento A: Formato V1 (Raíz)
+            ref = payload.get('orderId') or payload.get('order_id') or payload.get('payment_reference')
+            
+            # Intento B: Formato V2 (Anidado en data -> metadata)
+            if not ref:
+                data_obj = payload.get('data', {})
+                if isinstance(data_obj, dict):
+                    meta = data_obj.get('metadata', {})
+                    ref = meta.get('reference')
             
             if not ref:
-                print("⚠️ [WEBHOOK] Alerta: No viene 'orderId' en el paquete.")
-                return JsonResponse({'status': 'error', 'message': 'No reference'}, status=400)
-            
-            order_id = str(ref).replace('ORD-', '')
-            print(f"🔍 [WEBHOOK] Buscando en Base de Datos la Reserva ID: {order_id}")
+                print("⚠️ [WEBHOOK] Fallo: No se encontró 'reference' ni en raíz ni en metadata.")
+                return JsonResponse({'status': 'error', 'message': 'No reference found'}, status=400)
 
-            # 3. VALIDAR ESTADO
-            tx_status = payload.get('transactionStatus')
-            print(f"📊 [WEBHOOK] Estado de transacción Bold: {tx_status} (Esperamos 4)")
+            order_id = str(ref).replace('ORD-', '')
+            print(f"🔍 [WEBHOOK] ID Detectado: {order_id}")
+
+            # 2. VALIDAR APROBACIÓN
+            is_approved = False
             
-            if tx_status is not None and int(tx_status) != 4:
-                print("⛔ [WEBHOOK] Ignorado: El pago no fue aprobado (Estado distinto a 4).")
+            # Chequeo V1: transactionStatus = 4
+            tx_status = payload.get('transactionStatus')
+            if tx_status is not None and int(tx_status) == 4:
+                is_approved = True
+                
+            # Chequeo V2: type = 'SALE_APPROVED'
+            if payload.get('type') == 'SALE_APPROVED':
+                is_approved = True
+
+            if not is_approved:
+                print(f"⛔ [WEBHOOK] Ignorado. No es venta aprobada (Type: {payload.get('type')}, Status: {tx_status})")
                 return JsonResponse({'status': 'ignored', 'message': 'Not approved'})
 
+            # 3. PROCESAR RESERVA
             bookings = Booking.objects.filter(payment_id=order_id)
             
             if bookings.exists():
-                print(f"✅ [WEBHOOK] ¡Reserva ENCONTRADA! ({bookings.count()} citas)")
+                print(f"✅ [WEBHOOK] ¡Reserva {order_id} ENCONTRADA!")
                 
+                # Calcular montos
                 total = sum(b.total_price for b in bookings)
-                monto = payload.get('paymentAmount')
-                if monto:
-                    abono = Decimal(str(monto))
+                
+                # Extraer monto pagado (V1 o V2)
+                monto_pagado = payload.get('paymentAmount')
+                if not monto_pagado:
+                    # Intento V2: data -> amount -> total
+                    monto_pagado = payload.get('data', {}).get('amount', {}).get('total')
+                
+                if monto_pagado:
+                    abono = Decimal(str(monto_pagado))
                 else:
-                    abono = total * (salon.deposit_percentage / 100)
+                    abono = total  # Asumimos total si falla la lectura
                 
                 pendiente = total - abono
                 cliente = bookings.first().customer_name
+                salon = bookings.first().salon 
                 
-                # Actualizar DB
                 bookings.update(status='paid')
-                print("💾 [WEBHOOK] Estado actualizado a 'paid' en BD.")
+                print("💾 Estado actualizado a 'paid'.")
                 
-                # 5. ENVIAR TELEGRAM
-                print("outbox [WEBHOOK] Intentando enviar Telegram...")
+                # Notificación Telegram
                 msgs = [
-                    "💰 *PAGO BOLD CONFIRMADO (PRODUCCIÓN)*",
+                    "💰 *PAGO BOLD CONFIRMADO*",
                     f"👤 Cliente: {cliente}",
                     f"🆔 Orden: #{order_id}",
                     "-----------------------------",
@@ -455,21 +471,18 @@ def bold_webhook(request, salon_id):
                 ]
                 
                 try:
-                    resultado = send_telegram_notification(salon, "\n".join(msgs))
-                    if resultado:
-                        print("🚀 [WEBHOOK] Telegram ENVIADO con éxito.")
-                    else:
-                        print("⚠️ [WEBHOOK] Telegram FALLÓ (Revisar token/chat_id en Dashboard).")
-                except Exception as e_tel:
-                    print(f"🔥 [WEBHOOK] Excepción al enviar Telegram: {e_tel}")
+                    send_telegram_notification(salon, "\n".join(msgs))
+                    print("🚀 Telegram enviado.")
+                except Exception as e:
+                    print(f"⚠️ Fallo Telegram: {e}")
                 
             else:
-                print(f"❌ [WEBHOOK] Error: No existe ninguna reserva con payment_id='{order_id}'")
-                
+                print(f"❌ [WEBHOOK] Error: No existe reserva con ID {order_id}")
+
             return JsonResponse({'status': 'ok'})
+            
         except Exception as e:
-            print(f"🔥 [WEBHOOK] Error Crítico en el código: {e}")
+            print(f"🔥 [WEBHOOK] Error Crítico: {e}")
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
-    print(f"⛔ [WEBHOOK] Rechazado: Método {request.method} no permitido (Solo POST).")
+            
     return HttpResponse(status=405)
