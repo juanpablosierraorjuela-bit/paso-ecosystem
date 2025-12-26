@@ -1,4 +1,3 @@
-
 import json
 from decimal import Decimal
 import uuid
@@ -419,8 +418,8 @@ def bold_webhook(request, salon_id):
                 
                 bookings.update(status='paid')
                 
-                # 5. ENVIAR TELEGRAM (Construcción segura por lista)
-                lineas_msg = [
+                # 5. ENVIAR TELEGRAM (Construcción segura)
+                msgs = [
                     "💰 *PAGO BOLD CONFIRMADO*",
                     f"👤 Cliente: {cliente}",
                     f"🆔 Orden: #{order_id}",
@@ -431,9 +430,7 @@ def bold_webhook(request, salon_id):
                     "-----------------------------",
                     "📅 Cita Agendada."
                 ]
-                msg = "\n".join(lineas_msg)
-
-                send_telegram_notification(salon, msg)
+                send_telegram_notification(salon, "\n".join(msgs))
                 
             return JsonResponse({'status': 'ok'})
         except Exception as e:
