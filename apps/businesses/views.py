@@ -258,6 +258,13 @@ def get_available_slots_api(request):
 # ==============================================================================
 def booking_create(request, salon_slug):
     salon = get_object_or_404(Salon, slug=salon_slug)
+
+    # --- AUDITORIA DE SEGURIDAD ---
+    if salon.owner != request.user:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("No tienes permiso para ver este salón.")
+    # ------------------------------
+            
     services = Service.objects.filter(salon=salon)
     employees = User.objects.filter(role='EMPLOYEE')
 

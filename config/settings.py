@@ -107,3 +107,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # --- SEGURIDAD RENDER ---
 CSRF_TRUSTED_ORIGINS = ['https://paso-backend.onrender.com']
+
+# SEGURIDAD PROD
+SECURE_SSL_REDIRECT = os.environ.get('RENDER', False)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
