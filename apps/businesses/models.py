@@ -10,6 +10,12 @@ class Salon(models.Model):
     # Campos básicos
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salons', null=True, blank=True)
     name = models.CharField(max_length=100)
+    # --- UBICACIÓN REAL (Nivel Marketplace Nacional) ---
+    address = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección Física")
+    city = models.CharField(max_length=100, blank=True, null=True, verbose_name="Ciudad")
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+
     slug = models.SlugField(unique=True)
     is_active = models.BooleanField(default=True)
     
@@ -27,14 +33,60 @@ class Salon(models.Model):
     bold_secret_key = models.CharField(max_length=200, blank=True, null=True)
     deposit_percentage = models.IntegerField(default=100, help_text="Porcentaje a cobrar online (0-100)")
 
+    
+    @property
+    def is_open_now(self):
+        """Determina si el salón está abierto en este momento exacto."""
+        if not self.opening_time or not self.closing_time:
+            return False
+            
+        from django.utils import timezone
+        import datetime
+        
+        # Obtenemos la hora actual en la zona horaria del servidor (Colombia)
+        now = timezone.localtime(timezone.now()).time()
+        
+        if self.opening_time < self.closing_time:
+            # Horario normal (ej: 8am a 8pm)
+            return self.opening_time <= now <= self.closing_time
+        else:
+            # Horario nocturno que cruza medianoche (ej: 6pm a 2am)
+            return now >= self.opening_time or now <= self.closing_time
+    
     def __str__(self):
         return self.name
 
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100)
+    # --- UBICACIÓN REAL (Nivel Marketplace Nacional) ---
+    address = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección Física")
+    city = models.CharField(max_length=100, blank=True, null=True, verbose_name="Ciudad")
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+
     duration_minutes = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    
+    @property
+    def is_open_now(self):
+        """Determina si el salón está abierto en este momento exacto."""
+        if not self.opening_time or not self.closing_time:
+            return False
+            
+        from django.utils import timezone
+        import datetime
+        
+        # Obtenemos la hora actual en la zona horaria del servidor (Colombia)
+        now = timezone.localtime(timezone.now()).time()
+        
+        if self.opening_time < self.closing_time:
+            # Horario normal (ej: 8am a 8pm)
+            return self.opening_time <= now <= self.closing_time
+        else:
+            # Horario nocturno que cruza medianoche (ej: 6pm a 2am)
+            return now >= self.opening_time or now <= self.closing_time
     
     def __str__(self):
         return self.name
@@ -54,6 +106,12 @@ class Booking(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, null=True)
     employee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     customer_name = models.CharField(max_length=100)
+    # --- UBICACIÓN REAL (Nivel Marketplace Nacional) ---
+    address = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección Física")
+    city = models.CharField(max_length=100, blank=True, null=True, verbose_name="Ciudad")
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='bookings', blank=True)
     
     start_time = models.DateTimeField()

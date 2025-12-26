@@ -37,4 +37,30 @@
         </div>
     </div>
 </div>
+
+<script>
+// --- GEOLOCALIZACIÓN AUTOMÁTICA (Auto-Inyectado) ---
+document.addEventListener("DOMContentLoaded", function() {
+    if (!sessionStorage.getItem("locationAsked")) {
+        // Pequeño delay para no ser invasivo al cargar
+        setTimeout(() => {
+            if (confirm("¿Quieres ver los salones exclusivos cerca de tu ciudad? 📍")) {
+                navigator.geolocation.getCurrentPosition(success, error);
+                sessionStorage.setItem("locationAsked", "true");
+            }
+        }, 1000);
+    }
+
+    function success(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        // Redirigir a búsqueda con coordenadas (ajusta la URL si es necesario)
+        window.location.href = `/marketplace/?lat=${lat}&lng=${lng}`;
+    }
+
+    function error() {
+        console.log("Ubicación denegada. Mostrando catálogo nacional.");
+    }
+});
+</script>
 {% endblock %}
