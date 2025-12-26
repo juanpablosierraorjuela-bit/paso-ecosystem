@@ -112,3 +112,7 @@ CSRF_TRUSTED_ORIGINS = ['https://paso-backend.onrender.com']
 SECURE_SSL_REDIRECT = os.environ.get('RENDER', False)
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+
+# --- FIX DE BUCLE INFINITO RENDER ---
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
