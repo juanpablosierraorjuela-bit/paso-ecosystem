@@ -366,6 +366,27 @@ def booking_success(request, booking_id):
 # ==============================================================================
 # WEBHOOK BOLD MEJORADO (Cálculos y Notificaciones Detalladas)
 # ==============================================================================
+
+
+@login_required
+def test_telegram_integration(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        token = data.get('token')
+        chat_id = data.get('chat_id')
+        if not token or not chat_id: return JsonResponse({'success': False, 'message': 'Faltan datos.'})
+        try:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            payload = {'chat_id': chat_id, 'text': "✅ Conexión Exitosa con PASO"}
+            data_encoded = parse.urlencode(payload).encode()
+            req = url_request.Request(url, data=data_encoded)
+            with url_request.urlopen(req) as response:
+                return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False})
+
+
 @csrf_exempt
 def bold_webhook(request, salon_id):
     if request.method == 'POST':
@@ -398,24 +419,19 @@ def bold_webhook(request, salon_id):
                 
                 bookings.update(status='paid')
                 
-                # 5. ENVIAR TELEGRAM (Construcción segura del mensaje)
-                msg = "💰 *PAGO BOLD CONFIRMADO*
-"
-                msg += f"👤 Cliente: {cliente}
-"
-                msg += f"🆔 Orden: #{order_id}
-"
-                msg += "-----------------------------
-"
-                msg += f"💵 Total: ${total:,.0f}
-"
-                msg += f"✅ Abono: ${abono:,.0f}
-"
-                msg += f"👉 *PENDIENTE: ${pendiente:,.0f}*
-"
-                msg += "-----------------------------
-"
-                msg += "📅 Cita Agendada."
+                # 5. ENVIAR TELEGRAM (Construcción segura por lista)
+                lineas_msg = [
+                    "💰 *PAGO BOLD CONFIRMADO*",
+                    f"👤 Cliente: {cliente}",
+                    f"🆔 Orden: #{order_id}",
+                    "-----------------------------",
+                    f"💵 Total: ${total:,.0f}",
+                    f"✅ Abono: ${abono:,.0f}",
+                    f"👉 *PENDIENTE: ${pendiente:,.0f}*",
+                    "-----------------------------",
+                    "📅 Cita Agendada."
+                ]
+                msg = "\n".join(lineas_msg)
 
                 send_telegram_notification(salon, msg)
                 
@@ -423,21 +439,3 @@ def bold_webhook(request, salon_id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return HttpResponse(status=405)
-
-@login_required
-def test_telegram_integration(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        token = data.get('token')
-        chat_id = data.get('chat_id')
-        if not token or not chat_id: return JsonResponse({'success': False, 'message': 'Faltan datos.'})
-        try:
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            payload = {'chat_id': chat_id, 'text': "✅ Conexión Exitosa con PASO"}
-            data_encoded = parse.urlencode(payload).encode()
-            req = url_request.Request(url, data=data_encoded)
-            with url_request.urlopen(req) as response:
-                return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
-    return JsonResponse({'success': False})
