@@ -77,7 +77,7 @@ def home(request):
             is_open = True
             
         # Agregamos atributo temporal al objeto (sin guardar en DB)
-        salon.is_open_now = is_open
+            # salon.is_open_now = is_open  # FIX: Conflict with model property
         salones_con_estado.append(salon)
 
     return render(request, 'home.html', {'salones': salones_con_estado})
