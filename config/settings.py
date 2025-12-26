@@ -56,15 +56,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Configuración de Base de Datos (PostgreSQL)
+# --- BASE DE DATOS (Híbrida: Render vs Local) ---
+# En Render: Usa DATABASE_URL (PostgreSQL)
+# En Local: Usa db.sqlite3 (SQLite)
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'marketplace_db',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres_password',
-        'HOST': 'db',
-        'PORT': 5432,
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
