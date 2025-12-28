@@ -63,6 +63,12 @@
         background: linear-gradient(135deg, #D4AF37 0%, #F5D76E 100%);
         color: black;
     }
+    /* Estilos para el mensaje de ciudad no disponible */
+    .city-coming-soon {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px dashed #D4AF37;
+        border-radius: 20px;
+    }
 </style>
 
 <div class="glass-panel p-5 mb-5 text-center position-relative overflow-hidden">
@@ -79,60 +85,118 @@
 <div class="container py-4" id="marketplace">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold m-0" style="font-family: 'Playfair Display';">Nuestros Aliados</h2>
-        <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm">{{ salones|length }} Disponibles</span>
+        
+        {% if user_located %}
+            <span class="badge bg-success text-white border px-3 py-2 rounded-pill shadow-sm">
+                <i class="fas fa-map-marker-alt me-1"></i> Cerca de ti
+            </span>
+        {% else %}
+            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm">
+                {{ salones|length }} Disponibles
+            </span>
+        {% endif %}
     </div>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for salon in salones %}
-        <div class="col">
-            <div class="card h-100 salon-card border-0">
-                <div class="salon-header-deco">
-                    <div class="position-absolute top-0 end-0 m-3 z-2">
-                        {% if salon.is_open_now %}
-                            <span class="badge bg-success bg-gradient shadow-sm px-3 py-2 rounded-pill">ABIERTO</span>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Verificar si ya tenemos parámetros en la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasLat = urlParams.has('lat');
+            
+            // Si no hay latitud, pedimos ubicación
+            if (!hasLat) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        // Recargar la página con los parámetros
+                        window.location.search = `?lat=${lat}&lng=${lng}`;
+                    }, function(error) {
+                        console.log("Geolocalización denegada o error: ", error);
+                        // Si deniegan, simplemente se muestran todos los salones (comportamiento por defecto del backend)
+                    });
+                }
+            }
+        });
+    </script>
+
+    {% if salones %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for salon in salones %}
+            <div class="col">
+                <div class="card h-100 salon-card border-0">
+                    <div class="salon-header-deco">
+                        <div class="position-absolute top-0 end-0 m-3 z-2">
+                            {% if salon.is_open_now_dynamic %}
+                                <span class="badge bg-success bg-gradient shadow-sm px-3 py-2 rounded-pill">ABIERTO</span>
+                            {% else %}
+                                <span class="badge bg-dark bg-opacity-75 shadow-sm px-3 py-2 rounded-pill">CERRADO</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="salon-avatar-container">
+                        {% if salon.logo %}
+                            <img src="{{ salon.logo.url }}" class="salon-avatar" alt="{{ salon.name }}">
                         {% else %}
-                            <span class="badge bg-dark bg-opacity-75 shadow-sm px-3 py-2 rounded-pill">CERRADO</span>
+                            <div class="salon-avatar avatar-placeholder"><i class="fas fa-crown"></i></div>
                         {% endif %}
                     </div>
-                </div>
 
-                <div class="salon-avatar-container">
-                    {% if salon.logo %}
-                        <img src="{{ salon.logo.url }}" class="salon-avatar" alt="{{ salon.name }}">
-                    {% else %}
-                        <div class="salon-avatar avatar-placeholder"><i class="fas fa-crown"></i></div>
-                    {% endif %}
-                </div>
+                    <div class="card-body text-center pt-0 px-4 pb-4">
+                        <h3 class="h4 fw-bold mb-1" style="font-family: 'Playfair Display';">{{ salon.name }}</h3>
+                        <p class="text-muted small mb-3 text-uppercase" style="letter-spacing: 1px;">Experiencia Premium</p>
+                        
+                        <div class="mb-3 text-muted small d-flex justify-content-center align-items-center gap-2">
+                            <i class="fas fa-map-marker-alt" style="color: #D4AF37;"></i>
+                            <span class="text-truncate" style="max-width: 200px;">{{ salon.address|default:"Ubicación Exclusiva" }}</span>
+                        </div>
 
-                <div class="card-body text-center pt-0 px-4 pb-4">
-                    <h3 class="h4 fw-bold mb-1" style="font-family: 'Playfair Display';">{{ salon.name }}</h3>
-                    <p class="text-muted small mb-3 text-uppercase" style="letter-spacing: 1px;">Experiencia Premium</p>
-                    
-                    <div class="mb-3 text-muted small d-flex justify-content-center align-items-center gap-2">
-                        <i class="fas fa-map-marker-alt" style="color: #D4AF37;"></i>
-                        <span class="text-truncate" style="max-width: 200px;">{{ salon.address|default:"Ubicación Exclusiva" }}</span>
-                    </div>
-
-                    {% if salon.instagram_url or salon.whatsapp_number %}
-                    <div class="d-flex justify-content-center gap-3 mb-4">
-                        {% if salon.instagram_url %}
-                            <a href="{{ salon.instagram_url }}" target="_blank" class="social-icon-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        {% if salon.instagram_url or salon.whatsapp_number %}
+                        <div class="d-flex justify-content-center gap-3 mb-4">
+                            {% if salon.instagram_url %}
+                                <a href="{{ salon.instagram_url }}" target="_blank" class="social-icon-link" title="Instagram"><i class="fab fa-instagram"></i></a>
+                            {% endif %}
+                            {% if salon.whatsapp_number %}
+                                <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="social-icon-link" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                            {% endif %}
+                        </div>
                         {% endif %}
-                        {% if salon.whatsapp_number %}
-                            <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="social-icon-link" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        {% endif %}
-                    </div>
-                    {% endif %}
 
-                    <div class="d-grid">
-                        <a href="{% url 'booking_create' salon.slug %}" class="btn btn-reservar shadow-sm py-2 fw-bold">
-                            Reservar Cita <i class="fas fa-arrow-right ms-2 small"></i>
-                        </a>
+                        <div class="d-grid">
+                            <a href="{% url 'booking_create' salon.slug %}" class="btn btn-reservar shadow-sm py-2 fw-bold">
+                                Reservar Cita <i class="fas fa-arrow-right ms-2 small"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
+    {% else %}
+        <div class="city-coming-soon p-5 text-center mt-4">
+            <div class="mb-4">
+                <i class="fas fa-map-marked-alt fa-4x text-muted opacity-50"></i>
+            </div>
+            <h3 class="fw-bold mb-3" style="font-family: 'Playfair Display'; color: #333;">
+                Estamos trabajando para llegar a tu ciudad 🚀
+            </h3>
+            <p class="lead text-muted mx-auto mb-4" style="max-width: 600px;">
+                ¡Vaya! Parece que aún no tenemos aliados activos en tu ubicación actual. 
+                Estamos expandiendo nuestro ecosistema diariamente para traerte los mejores servicios de belleza.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="https://wa.me/573000000000?text=Hola,%20quiero%20recomendar%20un%20salón%20en%20mi%20ciudad" target="_blank" class="btn btn-outline-dark rounded-pill px-4">
+                    <i class="fab fa-whatsapp me-2"></i> Recomendar un Salón
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-primary rounded-pill px-4">
+                    <i class="fas fa-globe me-2"></i> Ver todos (Global)
+                </a>
+            </div>
+            <p class="small text-muted mt-4">
+                ¿Eres dueño de un salón en esta zona? <a href="{% url 'registro_owner' %}" class="fw-bold text-dark">Únete a PASO aquí</a>.
+            </p>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

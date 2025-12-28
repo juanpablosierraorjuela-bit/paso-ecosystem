@@ -4,11 +4,15 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-clave-de-desarrollo-rapida'
+# --- SEGURIDAD CRÍTICA (CORREGIDO) ---
+# En producción (Render), toma la clave del entorno. En local, usa la insegura por defecto.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-de-desarrollo-rapida')
 
-DEBUG = True
+# En producción, DEBUG debe ser False. Se controla vía variable de entorno.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# Define los hosts permitidos separando por comas (ej: paso-backend.onrender.com,localhost)
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -27,6 +31,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- AUDITORÍA: NECESARIO PARA ESTÁTICOS EN RENDER
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -79,8 +84,14 @@ TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
+# --- STATIC FILES (Configuración Blindada para Producción) ---
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Compresión y cacheo eficiente para producción (WhiteNoise)
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -101,18 +112,23 @@ DATETIME_INPUT_FORMATS = [
 # Permitir logout mediante enlace directo
 LOGOUT_ON_GET = True
 
-
-# --- BLINDAJE DE DESPLIEGUE ---
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# --- SEGURIDAD RENDER ---
+# --- SEGURIDAD RENDER Y PRODUCCIÓN ---
 CSRF_TRUSTED_ORIGINS = ['https://paso-backend.onrender.com']
 
-# SEGURIDAD PROD
-SECURE_SSL_REDIRECT = os.environ.get('RENDER', False)
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Detectar si estamos en Render para activar seguridad extra
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
-# --- FIX DE BUCLE INFINITO RENDER ---
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Activar seguridad SSL y Cookies SOLO si no estamos en modo DEBUG (Producción)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+else:
+    # En desarrollo local (Debug=True), permitimos HTTP normal para no bloquearte
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
