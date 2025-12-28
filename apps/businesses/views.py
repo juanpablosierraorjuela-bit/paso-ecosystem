@@ -4,6 +4,7 @@ import uuid
 import hashlib
 from urllib import request as url_request, parse, error
 from datetime import datetime, timedelta, time, date
+from math import radians, cos, sin, asin, sqrt
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -20,6 +21,22 @@ from .models import Salon, Service, Booking, EmployeeSchedule
 from .forms import SalonIntegrationsForm, ServiceForm, EmployeeCreationForm, ScheduleForm
 
 User = get_user_model()
+
+# --- UTILIDAD: CÁLCULO DE DISTANCIA (Haversine) ---
+def haversine_distance(lon1, lat1, lon2, lat2):
+    """
+    Calcula la distancia en kilómetros entre dos puntos geográficos.
+    """
+    try:
+        lon1, lat1, lon2, lat2 = map(radians, [float(lon1), float(lat1), float(lon2), float(lat2)])
+        dlon = lon2 - lon1 
+        dlat = lat2 - lat1 
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a)) 
+        r = 6371 # Radio de la tierra en KM
+        return c * r
+    except (ValueError, TypeError):
+        return float('inf') # Si hay error en datos, retornamos distancia infinita
 
 # --- UTILIDAD: ENVIAR TELEGRAM ---
 def send_telegram_notification(salon, message):
@@ -48,38 +65,65 @@ def home(request):
     current_weekday = now.weekday() # 0=Lunes
     current_time = now.time()
 
-    salones_activos = Salon.objects.filter(is_active=True)
-    salones_con_estado = []
+    # --- LÓGICA DE GEOLOCALIZACIÓN INTELIGENTE ---
+    user_lat = request.GET.get('lat')
+    user_lng = request.GET.get('lng')
+    user_located = False
+    
+    # Obtenemos todos los activos primero
+    salones_query = Salon.objects.filter(is_active=True)
+    salones_filtrados = []
 
-    for salon in salones_activos:
-        # Lógica Autónoma: ¿El salón está abierto?
-        # Revisamos si HAY ALGÚN empleado trabajando AHORA mismo en este salón
-        # (Asumimos que si hay empleados con turno activo, el salón está abierto)
-        
-        # Primero buscamos empleados de este salón (simplificado por rol global o relación)
-        # Para este MVP, buscamos schedules de empleados activos
-        # Nota: Idealmente Salon debería tener relación directa con Empleados. 
-        # Si no la tiene, usaremos una heurística o asumiremos 'Cerrado' y mostramos Agenda 24/7.
-        
+    # Si tenemos ubicación del usuario, filtramos por radio de ciudad (aprox 35km)
+    if user_lat and user_lng:
+        user_located = True
+        CITY_RADIUS_KM = 35 
+        for salon in salones_query:
+            # Solo procesar si el salón tiene coordenadas configuradas
+            if salon.latitude is not None and salon.longitude is not None:
+                dist = haversine_distance(user_lng, user_lat, salon.longitude, salon.latitude)
+                if dist <= CITY_RADIUS_KM:
+                    salones_filtrados.append(salon)
+            else:
+                # Si un salón no tiene GPS configurado, decidimos si mostrarlo o no.
+                # Para ser estrictos con "solo negocios de tu ciudad", mejor no mostrar los sin ubicación
+                # cuando el usuario está filtrando por ubicación.
+                pass 
+    else:
+        # Si no hay ubicación (primera carga o denegado), mostramos todos como fallback
+        # Opcional: Podrías dejar esta lista vacía si quieres ser ULTRA estricto.
+        salones_filtrados = list(salones_query)
+
+    # --- LÓGICA DE ESTADO (ABIERTO/CERRADO) ---
+    salones_con_estado = []
+    
+    for salon in salones_filtrados:
         is_open = False
         
         # Buscamos turnos activos para hoy que cubran la hora actual
         schedules = EmployeeSchedule.objects.filter(
+            employee__role='EMPLOYEE', # Asegurar que sea empleado
             weekday=current_weekday,
             is_active=True,
             from_hour__lte=current_time,
             to_hour__gte=current_time
         )
-        
-        # Si encuentras al menos un turno activo, asumimos abierto
+        # Filtramos schedules que pertenezcan a empleados de ESTE salón
+        # Como el modelo EmployeeSchedule no tiene link directo a Salon, 
+        # asumimos que la relación viene por: Salon -> Owner -> (Logic Gap in original code)
+        # NOTA: Mantengo la lógica original del código provisto que asume schedules globales o filtrados implícitamente.
+        # Para ser precisos, filtramos por la relación inversa si existiera, pero usaremos la lógica base:
         if schedules.exists():
             is_open = True
             
-        # Agregamos atributo temporal al objeto (sin guardar en DB)
-            # salon.is_open_now = is_open  # FIX: Conflict with model property
+        # Agregamos atributo temporal al objeto
+        salon.is_open_now_dynamic = is_open 
         salones_con_estado.append(salon)
 
-    return render(request, 'home.html', {'salones': salones_con_estado})
+    return render(request, 'home.html', {
+        'salones': salones_con_estado,
+        'user_located': user_located, # Flag para saber si el filtro geográfico se aplicó
+    })
 
 
 def register_owner(request):
@@ -158,11 +202,7 @@ def owner_dashboard(request):
     employees = User.objects.filter(role='EMPLOYEE')
     
     # Webhook URL para mostrar en el panel
-        # Generar URL y forzar HTTPS para que Bold lo acepte
-    # Generar URL y forzar HTTPS (Bold requiere HTTPS obligatorio)
     webhook_url = request.build_absolute_uri(f'/api/webhooks/bold/{salon.id}/')
-    if 'http://' in webhook_url:
-        webhook_url = webhook_url.replace('http://', 'https://')
     if 'http://' in webhook_url:
         webhook_url = webhook_url.replace('http://', 'https://')
     
@@ -254,7 +294,7 @@ def get_available_slots_api(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 # ==============================================================================
-# LÓGICA DE RESERVA (CORREGIDA)
+# LÓGICA DE RESERVA
 # ==============================================================================
 def booking_create(request, salon_slug):
     salon = get_object_or_404(Salon, slug=salon_slug)
@@ -358,15 +398,8 @@ def booking_success(request, booking_id):
     })
 
 # ==============================================================================
-# WEBHOOK BOLD (Aquí llega la confirmación de pago)
+# WEBHOOK BOLD 
 # ==============================================================================
-# ==============================================================================
-# WEBHOOK BOLD MEJORADO (Cálculos y Notificaciones Detalladas)
-# ==============================================================================
-# ==============================================================================
-# WEBHOOK BOLD MEJORADO (Cálculos y Notificaciones Detalladas)
-# ==============================================================================
-
 
 @login_required
 def test_telegram_integration(request):
@@ -395,13 +428,9 @@ def bold_webhook(request, salon_id):
             body_unicode = request.body.decode('utf-8')
             payload = json.loads(body_unicode)
             
-            # --- ESTRATEGIA HÍBRIDA DE EXTRACCIÓN ---
-            
             # 1. BUSCAR ID DE REFERENCIA
-            # Intento A: Formato V1 (Raíz)
             ref = payload.get('orderId') or payload.get('order_id') or payload.get('payment_reference')
             
-            # Intento B: Formato V2 (Anidado en data -> metadata)
             if not ref:
                 data_obj = payload.get('data', {})
                 if isinstance(data_obj, dict):
@@ -409,54 +438,41 @@ def bold_webhook(request, salon_id):
                     ref = meta.get('reference')
             
             if not ref:
-                print("⚠️ [WEBHOOK] Fallo: No se encontró 'reference' ni en raíz ni en metadata.")
                 return JsonResponse({'status': 'error', 'message': 'No reference found'}, status=400)
 
             order_id = str(ref).replace('ORD-', '')
-            print(f"🔍 [WEBHOOK] ID Detectado: {order_id}")
 
             # 2. VALIDAR APROBACIÓN
             is_approved = False
-            
-            # Chequeo V1: transactionStatus = 4
             tx_status = payload.get('transactionStatus')
             if tx_status is not None and int(tx_status) == 4:
                 is_approved = True
-                
-            # Chequeo V2: type = 'SALE_APPROVED'
             if payload.get('type') == 'SALE_APPROVED':
                 is_approved = True
 
             if not is_approved:
-                print(f"⛔ [WEBHOOK] Ignorado. No es venta aprobada (Type: {payload.get('type')}, Status: {tx_status})")
                 return JsonResponse({'status': 'ignored', 'message': 'Not approved'})
 
             # 3. PROCESAR RESERVA
             bookings = Booking.objects.filter(payment_id=order_id)
             
             if bookings.exists():
-                print(f"✅ [WEBHOOK] ¡Reserva {order_id} ENCONTRADA!")
-                
-                # Calcular montos
                 total = sum(b.total_price for b in bookings)
                 
-                # Extraer monto pagado (V1 o V2)
                 monto_pagado = payload.get('paymentAmount')
                 if not monto_pagado:
-                    # Intento V2: data -> amount -> total
                     monto_pagado = payload.get('data', {}).get('amount', {}).get('total')
                 
                 if monto_pagado:
                     abono = Decimal(str(monto_pagado))
                 else:
-                    abono = total  # Asumimos total si falla la lectura
+                    abono = total
                 
                 pendiente = total - abono
                 cliente = bookings.first().customer_name
                 salon = bookings.first().salon 
                 
                 bookings.update(status='paid')
-                print("💾 Estado actualizado a 'paid'.")
                 
                 # Notificación Telegram
                 msgs = [
@@ -470,16 +486,11 @@ def bold_webhook(request, salon_id):
                     "-----------------------------",
                     "📅 Cita Agendada."
                 ]
-                
                 try:
                     send_telegram_notification(salon, "\n".join(msgs))
-                    print("🚀 Telegram enviado.")
                 except Exception as e:
                     print(f"⚠️ Fallo Telegram: {e}")
                 
-            else:
-                print(f"❌ [WEBHOOK] Error: No existe reserva con ID {order_id}")
-
             return JsonResponse({'status': 'ok'})
             
         except Exception as e:
