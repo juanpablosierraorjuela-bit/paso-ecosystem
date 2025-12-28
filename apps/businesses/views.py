@@ -26,16 +26,36 @@ User = get_user_model()
 def haversine_distance(lon1, lat1, lon2, lat2):
     """
     Calcula la distancia en kilómetros entre dos puntos geográficos.
+    CORREGIDO: Maneja errores de formato (comas) y validación matemática.
     """
     try:
-        lon1, lat1, lon2, lat2 = map(radians, [float(lon1), float(lat1), float(lon2), float(lat2)])
+        # 1. Validación básica de nulos
+        if lon1 is None or lat1 is None or lon2 is None or lat2 is None:
+            return float('inf')
+
+        # 2. Limpieza de formato (reemplazar comas por puntos para evitar ValueError)
+        lon1 = float(str(lon1).replace(',', '.'))
+        lat1 = float(str(lat1).replace(',', '.'))
+        lon2 = float(str(lon2).replace(',', '.'))
+        lat2 = float(str(lat2).replace(',', '.'))
+
+        # 3. Conversión a radianes
+        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+        # 4. Fórmula
         dlon = lon2 - lon1 
         dlat = lat2 - lat1 
         a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        
+        # 5. Protección matemática (evitar crash si 'a' es > 1 por decimales)
+        if a > 1: a = 1
+        if a < 0: a = 0
+            
         c = 2 * asin(sqrt(a)) 
         r = 6371 # Radio de la tierra en KM
         return c * r
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, Exception) as e:
+        # En caso de error, retornamos infinito para no romper la vista
         return float('inf') 
 
 # --- UTILIDAD: ENVIAR TELEGRAM ---
@@ -74,7 +94,8 @@ def home(request):
     salones_filtrados = []
 
     # Lógica de Filtrado Estricta por Ciudad
-    if user_lat and user_lng:
+    # CORREGIDO: Verificamos que no sean "undefined" (texto) ni cadenas vacías
+    if user_lat and user_lng and user_lat != "undefined" and user_lng != "undefined":
         user_located = True
         CITY_RADIUS_KM = 35 
         for salon in salones_query:
@@ -93,15 +114,19 @@ def home(request):
     
     for salon in salones_filtrados:
         is_open = False
-        schedules = EmployeeSchedule.objects.filter(
-            employee__role='EMPLOYEE',
-            weekday=current_weekday,
-            is_active=True,
-            from_hour__lte=current_time,
-            to_hour__gte=current_time
-        )
-        if schedules.exists():
-            is_open = True
+        # Protección extra para evitar errores si la relación employee falla
+        try:
+            schedules = EmployeeSchedule.objects.filter(
+                employee__role='EMPLOYEE',
+                weekday=current_weekday,
+                is_active=True,
+                from_hour__lte=current_time,
+                to_hour__gte=current_time
+            )
+            if schedules.exists():
+                is_open = True
+        except Exception:
+            is_open = False
             
         salon.is_open_now_dynamic = is_open 
         salones_con_estado.append(salon)
