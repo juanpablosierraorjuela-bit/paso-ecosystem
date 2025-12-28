@@ -15,7 +15,7 @@ from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.text import slugify
-from django.db.models import Sum
+from django.db.models import Sum, Q
 
 from .models import Salon, Service, Booking, EmployeeSchedule
 from .forms import SalonIntegrationsForm, ServiceForm, EmployeeCreationForm, ScheduleForm
@@ -70,7 +70,7 @@ def logout_view(request):
 
 def home(request):
     """
-    VISTA BLINDADA: Si la geolocalización falla, carga la página igual.
+    VISTA BLINDADA: Recupera búsqueda por texto y geolocalización.
     """
     try:
         now = timezone.now().astimezone(timezone.get_current_timezone())
@@ -78,6 +78,12 @@ def home(request):
         current_time = now.time()
 
         salones_base = Salon.objects.filter(is_active=True)
+        
+        # 1. FILTRO DE BÚSQUEDA (Texto) - Recuperado
+        query = request.GET.get('q')
+        if query:
+            salones_base = salones_base.filter(name__icontains=query)
+
         salones_para_mostrar = list(salones_base) 
         
         user_located = False
@@ -85,6 +91,7 @@ def home(request):
         user_lng = request.GET.get('lng')
 
         try:
+            # 2. FILTRO DE UBICACIÓN (GPS)
             if user_lat and user_lng and user_lat != "undefined" and user_lng != "undefined":
                 temp_filtrados = []
                 CITY_RADIUS_KM = 35
@@ -95,11 +102,18 @@ def home(request):
                         if dist <= CITY_RADIUS_KM:
                             temp_filtrados.append(salon)
                 
-                if len(temp_filtrados) > 0:
-                    salones_para_mostrar = temp_filtrados
-                    user_located = True
-                elif len(temp_filtrados) == 0:
-                    salones_para_mostrar = [] 
+                # Si hay filtro de texto, respetamos el filtro de texto aunque esté lejos, 
+                # pero si NO hay texto, aplicamos la lógica de ciudad.
+                if not query:
+                    if len(temp_filtrados) > 0:
+                        salones_para_mostrar = temp_filtrados
+                        user_located = True
+                    elif len(temp_filtrados) == 0:
+                        salones_para_mostrar = [] 
+                        user_located = True
+                else:
+                    # Si buscó por nombre, ordenamos por distancia pero mostramos todo
+                    salones_para_mostrar.sort(key=lambda s: haversine_distance(user_lng, user_lat, s.longitude, s.latitude))
                     user_located = True
 
         except Exception as e_geo:
@@ -115,7 +129,8 @@ def home(request):
                     weekday=current_weekday,
                     is_active=True,
                     from_hour__lte=current_time,
-                    to_hour__gte=current_time
+                    to_hour__gte=current_time,
+                    employee__salon=salon # Asegurar que es empleado del salón
                 )
                 if schedules.exists():
                     is_open = True
@@ -135,6 +150,10 @@ def home(request):
         return HttpResponse(f"El sistema se está reiniciando. Intenta recargar. Error: {str(e_critical)}", status=200)
 
 def register_owner(request):
+    # CORRECCIÓN: Limpiar sesión previa para evitar errores al registrar nuevo negocio
+    if request.method == 'GET' and request.user.is_authenticated:
+        logout(request)
+
     if request.method == 'POST':
         business_name = request.POST.get('business_name')
         phone = request.POST.get('phone')
@@ -148,14 +167,16 @@ def register_owner(request):
              return render(request, 'users/register_owner.html', {'error': 'Ingresa un número de WhatsApp válido.'})
 
         if User.objects.filter(username=clean_phone).exists():
-            return render(request, 'users/register_owner.html', {'error': 'Este número de WhatsApp ya está registrado.'})
+            return render(request, 'users/register_owner.html', {'error': 'Este número de WhatsApp ya está registrado. Intenta iniciar sesión.'})
 
         try:
+            # Crear usuario
             user = User.objects.create_user(username=clean_phone, email="", password=password)
             user.role = 'ADMIN'
             user.first_name = business_name
             user.save()
 
+            # Crear Slug único
             slug = slugify(business_name)
             if Salon.objects.filter(slug=slug).exists():
                 slug += f"-{str(uuid.uuid4())[:4]}"

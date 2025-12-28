@@ -67,17 +67,51 @@
         background: rgba(255, 255, 255, 0.9);
         border: 2px dashed #D4AF37;
         border-radius: 20px;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    /* Estilo del buscador restaurado */
+    .search-input-hero {
+        border: 2px solid #D4AF37;
+        padding-left: 20px;
+    }
+    .search-input-hero:focus {
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        border-color: #D4AF37;
     }
 </style>
 
 <div class="glass-panel p-5 mb-5 text-center position-relative overflow-hidden">
+    <div class="position-absolute top-0 end-0 p-3 z-3">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-dark rounded-pill">Mi Perfil</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-sm btn-dark rounded-pill">Entrar</a>
+        {% endif %}
+    </div>
+
     <div class="position-relative z-1">
         <span class="badge bg-warning bg-opacity-25 text-dark mb-3 px-3 py-2 rounded-pill fw-bold" style="letter-spacing: 2px;">ECOSISTEMA EXCLUSIVO</span>
         <h1 class="display-3 fw-bold mb-3" style="font-family: 'Playfair Display';">PASO <span style="color: #D4AF37;">Ecosistem</span></h1>
         <p class="lead text-muted mb-4 mx-auto" style="max-width: 600px;">La plataforma definitiva para gestionar tu belleza.</p>
-        <div class="d-flex gap-3 justify-content-center">
-            <a href="#marketplace" class="btn btn-dark rounded-pill px-5 py-3 fw-bold">Explorar Salones</a>
-        </div>
+        
+        <form method="GET" action="{% url 'home' %}" class="d-flex justify-content-center mx-auto mb-3" style="max-width: 500px; position: relative;">
+            {% if request.GET.lat %}
+                <input type="hidden" name="lat" value="{{ request.GET.lat }}">
+                <input type="hidden" name="lng" value="{{ request.GET.lng }}">
+            {% endif %}
+            
+            <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                <input type="text" name="q" class="form-control search-input-hero border-0 py-3" 
+                       placeholder="¿Qué salón o servicio buscas hoy?" 
+                       value="{{ request.GET.q|default:'' }}"
+                       aria-label="Buscar">
+                <button class="btn btn-dark px-4 fw-bold" type="submit">
+                    <i class="fas fa-search me-2"></i> Buscar
+                </button>
+            </div>
+        </form>
+        <small class="text-muted">Busca por nombre o explora los salones cercanos</small>
     </div>
 </div>
 
@@ -101,8 +135,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const hasLat = urlParams.has('lat');
             
-            // Si no hay latitud, pedimos ubicación para filtrar
-            if (!hasLat) {
+            // Si no hay latitud Y no hay búsqueda por texto, pedimos ubicación
+            const hasQuery = urlParams.has('q');
+            
+            if (!hasLat && !hasQuery) {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(function(position) {
                         const lat = position.coords.latitude;
@@ -176,21 +212,29 @@
                 <i class="fas fa-map-marked-alt fa-4x text-muted opacity-50"></i>
             </div>
             <h3 class="fw-bold mb-3" style="font-family: 'Playfair Display'; color: #333;">
-                Estamos trabajando para llegar a tu ciudad 🚀
+                {% if request.GET.q %}
+                   No encontramos salones llamados "{{ request.GET.q }}" 🔍
+                {% else %}
+                   Estamos trabajando para llegar a tu ciudad 🚀
+                {% endif %}
             </h3>
             <p class="lead text-muted mx-auto mb-4" style="max-width: 600px;">
-                ¡Vaya! Parece que aún no tenemos aliados activos en tu ubicación actual. 
-                Estamos expandiendo nuestro ecosistema diariamente para traerte los mejores servicios de belleza.
+                {% if request.GET.q %}
+                   Intenta con otro nombre o explora los que están cerca de ti.
+                {% else %}
+                   ¡Vaya! Parece que aún no tenemos aliados activos en tu ubicación actual. 
+                   Estamos expandiendo nuestro ecosistema diariamente.
+                {% endif %}
             </p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="https://wa.me/573228317702?text=Hola,%20estoy%20en%20una%20ciudad%20sin%20cobertura%20y%20quiero%20recomendar%20un%20salón" target="_blank" class="btn btn-outline-dark rounded-pill px-4">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="https://wa.me/573228317702?text=Hola,%20quiero%20recomendar%20un%20salón" target="_blank" class="btn btn-outline-dark rounded-pill px-4">
                     <i class="fab fa-whatsapp me-2"></i> Recomendar un Salón
                 </a>
                 <a href="{% url 'register_owner' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">
                     <i class="fas fa-handshake me-2"></i> Únete a PASO
                 </a>
             </div>
-            </div>
+        </div>
     {% endif %}
 </div>
 {% endblock %}
