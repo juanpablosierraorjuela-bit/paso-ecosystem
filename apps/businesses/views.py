@@ -68,22 +68,13 @@ def home(request):
     # --- LÓGICA DE GEOLOCALIZACIÓN INTELIGENTE ---
     user_lat = request.GET.get('lat')
     user_lng = request.GET.get('lng')
-    mode = request.GET.get('mode') # Nuevo parámetro para detectar "Modo Global"
-    
     user_located = False
     
     salones_query = Salon.objects.filter(is_active=True)
     salones_filtrados = []
 
-    # Lógica de Filtrado Principal
-    if mode == 'global':
-        # CASO 1: El usuario pidió explícitamente ver TODOS (Global)
-        # Ignoramos GPS y mostramos todo el directorio
-        salones_filtrados = list(salones_query)
-        user_located = False # Marcamos como no localizado para UI genérica
-
-    elif user_lat and user_lng:
-        # CASO 2: Tenemos coordenadas, aplicamos filtro de ciudad (35km)
+    # Lógica de Filtrado Estricta por Ciudad
+    if user_lat and user_lng:
         user_located = True
         CITY_RADIUS_KM = 35 
         for salon in salones_query:
@@ -94,7 +85,7 @@ def home(request):
             else:
                 pass 
     else:
-        # CASO 3: Primera carga (sin datos aún), mostramos todo por defecto hasta que el JS actúe
+        # Si no hay ubicación aún, mostramos lista base (el JS se encarga de pedir GPS)
         salones_filtrados = list(salones_query)
 
     # --- LÓGICA DE ESTADO (ABIERTO/CERRADO) ---
@@ -118,7 +109,6 @@ def home(request):
     return render(request, 'home.html', {
         'salones': salones_con_estado,
         'user_located': user_located,
-        'is_global_mode': (mode == 'global') # Flag para el template
     })
 
 
