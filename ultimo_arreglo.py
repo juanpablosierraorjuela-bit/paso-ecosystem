@@ -1,4 +1,7 @@
-from django.urls import path
+import os
+
+# ESTE ES EL ARCHIVO URLS QUE INCLUYE 'MARKETPLACE' PARA QUE NO FALLE
+contenido_urls_definitivo = r'''from django.urls import path
 from . import views
 
 urlpatterns = [
@@ -29,3 +32,16 @@ urlpatterns = [
     path('api/webhooks/bold/<int:salon_slug>/', views.bold_webhook, name='bold_webhook_slug'),
     path('api/webhooks/bold/<int:salon_id>/', views.bold_webhook, name='bold_webhook'),
 ]
+'''
+
+ruta_archivo = os.path.join('apps', 'businesses', 'urls.py')
+
+print(f"🚑 Aplicando parche de emergencia en: {ruta_archivo}")
+
+try:
+    with open(ruta_archivo, 'w', encoding='utf-8') as f:
+        f.write(contenido_urls_definitivo)
+    print("✅ ¡ARREGLADO! Se agregó la ruta 'marketplace' que faltaba.")
+    print("👉 Por favor ejecuta: git add . && git commit -m 'fix marketplace url' && git push origin main")
+except Exception as e:
+    print(f"❌ Error escribiendo el archivo: {e}")
