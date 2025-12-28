@@ -1,4 +1,7 @@
-import json
+import os
+
+# CONTIENE EL CÓDIGO CORREGIDO Y BLINDADO DE VIEWS.PY
+nuevo_contenido_views = r'''import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -505,3 +508,26 @@ def bold_webhook(request, salon_id):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
             
     return HttpResponse(status=405)
+'''
+
+# RUTA EXACTA DEL ARCHIVO A REPARAR
+archivo_destino = os.path.join('apps', 'businesses', 'views.py')
+
+print(f"🛠️ Iniciando reparación automática de: {archivo_destino}...")
+
+try:
+    with open(archivo_destino, 'w', encoding='utf-8') as f:
+        f.write(nuevo_contenido_views)
+    print("✅ Archivo views.py reescrito con éxito (Versión Blindada).")
+    
+    # Intentar correr migraciones y estáticos por si acaso
+    print("🔄 Ejecutando migraciones de seguridad...")
+    os.system("python manage.py migrate")
+    print("🔄 Asegurando archivos estáticos...")
+    os.system("python manage.py collectstatic --noinput")
+    
+    print("\n✨ ¡LISTO! El sistema ha sido reparado.")
+    print("👉 AHORA: Sube estos cambios a GitHub (git add, commit, push) para que Render se actualice.")
+
+except Exception as e:
+    print(f"❌ Error al escribir el archivo: {e}")
