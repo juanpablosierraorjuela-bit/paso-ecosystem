@@ -36,7 +36,7 @@ def haversine_distance(lon1, lat1, lon2, lat2):
         r = 6371 # Radio de la tierra en KM
         return c * r
     except (ValueError, TypeError):
-        return float('inf') # Si hay error en datos, retornamos distancia infinita
+        return float('inf') 
 
 # --- UTILIDAD: ENVIAR TELEGRAM ---
 def send_telegram_notification(salon, message):
@@ -68,30 +68,33 @@ def home(request):
     # --- LÓGICA DE GEOLOCALIZACIÓN INTELIGENTE ---
     user_lat = request.GET.get('lat')
     user_lng = request.GET.get('lng')
+    mode = request.GET.get('mode') # Nuevo parámetro para detectar "Modo Global"
+    
     user_located = False
     
-    # Obtenemos todos los activos primero
     salones_query = Salon.objects.filter(is_active=True)
     salones_filtrados = []
 
-    # Si tenemos ubicación del usuario, filtramos por radio de ciudad (aprox 35km)
-    if user_lat and user_lng:
+    # Lógica de Filtrado Principal
+    if mode == 'global':
+        # CASO 1: El usuario pidió explícitamente ver TODOS (Global)
+        # Ignoramos GPS y mostramos todo el directorio
+        salones_filtrados = list(salones_query)
+        user_located = False # Marcamos como no localizado para UI genérica
+
+    elif user_lat and user_lng:
+        # CASO 2: Tenemos coordenadas, aplicamos filtro de ciudad (35km)
         user_located = True
         CITY_RADIUS_KM = 35 
         for salon in salones_query:
-            # Solo procesar si el salón tiene coordenadas configuradas
             if salon.latitude is not None and salon.longitude is not None:
                 dist = haversine_distance(user_lng, user_lat, salon.longitude, salon.latitude)
                 if dist <= CITY_RADIUS_KM:
                     salones_filtrados.append(salon)
             else:
-                # Si un salón no tiene GPS configurado, decidimos si mostrarlo o no.
-                # Para ser estrictos con "solo negocios de tu ciudad", mejor no mostrar los sin ubicación
-                # cuando el usuario está filtrando por ubicación.
                 pass 
     else:
-        # Si no hay ubicación (primera carga o denegado), mostramos todos como fallback
-        # Opcional: Podrías dejar esta lista vacía si quieres ser ULTRA estricto.
+        # CASO 3: Primera carga (sin datos aún), mostramos todo por defecto hasta que el JS actúe
         salones_filtrados = list(salones_query)
 
     # --- LÓGICA DE ESTADO (ABIERTO/CERRADO) ---
@@ -99,30 +102,23 @@ def home(request):
     
     for salon in salones_filtrados:
         is_open = False
-        
-        # Buscamos turnos activos para hoy que cubran la hora actual
         schedules = EmployeeSchedule.objects.filter(
-            employee__role='EMPLOYEE', # Asegurar que sea empleado
+            employee__role='EMPLOYEE',
             weekday=current_weekday,
             is_active=True,
             from_hour__lte=current_time,
             to_hour__gte=current_time
         )
-        # Filtramos schedules que pertenezcan a empleados de ESTE salón
-        # Como el modelo EmployeeSchedule no tiene link directo a Salon, 
-        # asumimos que la relación viene por: Salon -> Owner -> (Logic Gap in original code)
-        # NOTA: Mantengo la lógica original del código provisto que asume schedules globales o filtrados implícitamente.
-        # Para ser precisos, filtramos por la relación inversa si existiera, pero usaremos la lógica base:
         if schedules.exists():
             is_open = True
             
-        # Agregamos atributo temporal al objeto
         salon.is_open_now_dynamic = is_open 
         salones_con_estado.append(salon)
 
     return render(request, 'home.html', {
         'salones': salones_con_estado,
-        'user_located': user_located, # Flag para saber si el filtro geográfico se aplicó
+        'user_located': user_located,
+        'is_global_mode': (mode == 'global') # Flag para el template
     })
 
 
@@ -201,7 +197,6 @@ def owner_dashboard(request):
     services = Service.objects.filter(salon=salon)
     employees = User.objects.filter(role='EMPLOYEE')
     
-    # Webhook URL para mostrar en el panel
     webhook_url = request.build_absolute_uri(f'/api/webhooks/bold/{salon.id}/')
     if 'http://' in webhook_url:
         webhook_url = webhook_url.replace('http://', 'https://')
