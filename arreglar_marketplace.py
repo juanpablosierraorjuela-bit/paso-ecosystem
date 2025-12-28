@@ -1,4 +1,11 @@
+import os
 
+# ==========================================
+# NUEVO DISEÑO PARA EL MARKETPLACE (home.html)
+# ==========================================
+# Incluye el bloque "Sin Resultados" con las opciones de Unirse o Recomendar.
+
+HOME_HTML_CONTENT = """
 {% extends 'base_saas.html' %}
 {% load static %}
 
@@ -123,3 +130,18 @@
     .form-control:focus { box-shadow: none; border-color: transparent; }
 </style>
 {% endblock %}
+"""
+
+def arreglar_template():
+    base_dir = os.getcwd()
+    path_template = os.path.join(base_dir, 'templates', 'home.html')
+    
+    print(f"🛠️  Actualizando {path_template}...")
+    with open(path_template, 'w', encoding='utf-8') as f:
+        f.write(HOME_HTML_CONTENT)
+        
+    print("✅  ¡Listo! El Marketplace ahora maneja ubicaciones vacías elegantemente.")
+    print("👉  Ejecuta: python subir_cambios.py (o git add/commit/push) para ver los cambios en Render.")
+
+if __name__ == "__main__":
+    arreglar_template()
