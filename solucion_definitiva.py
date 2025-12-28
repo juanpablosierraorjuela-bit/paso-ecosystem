@@ -1,4 +1,8 @@
-import json
+import os
+
+# 1. CONTENIDO COMPLETO PARA apps/businesses/views.py
+# (Incluye imports, lógica de mapas, bold, webhooks y la separación de Inicio/Marketplace)
+VIEWS_CONTENT = """import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -70,17 +74,17 @@ def logout_view(request):
     return redirect('home')
 
 def home(request):
-    """
+    \"\"\"
     VISTA DE INICIO (LANDING PAGE)
     Muestra la portada de presentación.
-    """
+    \"\"\"
     return render(request, 'home_landing.html')
 
 def marketplace(request):
-    """
+    \"\"\"
     VISTA DEL MARKETPLACE (ANTIGUA HOME)
     Contiene la lógica de búsqueda y geolocalización.
-    """
+    \"\"\"
     try:
         now = timezone.now().astimezone(timezone.get_current_timezone())
         current_weekday = now.weekday()
@@ -392,7 +396,7 @@ def booking_create(request, salon_slug):
             # NOTIFICACIÓN INTELIGENTE
             if not tiene_bold:
                 # LOCAL: Avisar de una vez
-                msg = f"✅ *NUEVA CITA (LOCAL)*\n👤 {customer_name}\n📱 {customer_phone}\n💰 Total: ${total_price:,.0f}"
+                msg = f"✅ *NUEVA CITA (LOCAL)*\\n👤 {customer_name}\\n📱 {customer_phone}\\n💰 Total: ${total_price:,.0f}"
                 send_telegram_notification(salon, msg)
             else:
                 # BOLD: Esperar al Webhook
@@ -522,7 +526,7 @@ def bold_webhook(request, salon_id):
                     "📅 Cita Agendada."
                 ]
                 try:
-                    send_telegram_notification(salon, "\n".join(msgs))
+                    send_telegram_notification(salon, "\\n".join(msgs))
                 except Exception as e:
                     print(f"⚠️ Fallo Telegram: {e}")
                 
@@ -533,3 +537,130 @@ def bold_webhook(request, salon_id):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
             
     return HttpResponse(status=405)
+"""
+
+# 2. CONTENIDO COMPLETO PARA apps/businesses/urls.py
+URLS_CONTENT = """from django.urls import path
+from django.contrib.auth import views as auth_views
+from . import views
+
+urlpatterns = [
+    # 1. INICIO (Raíz): Lleva a la Landing Page
+    path('', views.home, name='home'),
+
+    # 2. MARKETPLACE: Donde aparecen los negocios
+    path('marketplace/', views.marketplace, name='marketplace'),
+
+    # 3. ENTRAR: Login de usuarios (Redirige al login de admin o cliente)
+    # Se asume que el template está en registration/login.html o users/login.html
+    # Ajusta 'template_name' si tu archivo se llama diferente.
+    path('login/', auth_views.LoginView.as_view(template_name='users/login.html'), name='login'),
+    path('logout/', views.logout_view, name='logout'),
+
+    # 4. SOY NEGOCIO: Registro
+    path('soy-negocio/', views.register_owner, name='registro_owner'),
+
+    # 5. PANELES DE CONTROL
+    path('dashboard/', views.dashboard, name='dashboard'), # Cliente
+    path('admin-dashboard/', views.owner_dashboard, name='admin_dashboard'), # Dueño
+    path('employee-panel/', views.employee_dashboard, name='employee_panel'), # Empleado
+
+    # 6. API Y UTILIDADES
+    path('api/available-slots/', views.get_available_slots_api, name='get_available_slots_api'),
+    path('services/delete/<int:service_id>/', views.delete_service, name='delete_service'),
+    path('api/telegram-test/', views.test_telegram_integration, name='test_telegram_integration'),
+    
+    # 7. RESERVAS Y PAGOS (Slugs y Webhooks)
+    path('api/webhooks/bold/<int:salon_id>/', views.bold_webhook, name='bold_webhook'),
+    path('booking/success/<int:booking_id>/', views.booking_success, name='booking_success'),
+    
+    # Esta ruta siempre va AL FINAL porque captura cualquier texto como slug del salón
+    path('<slug:salon_slug>/', views.booking_create, name='booking_create'),
+]
+"""
+
+# 3. CONTENIDO COMPLETO PARA templates/navbar_inteligente.html
+NAVBAR_CONTENT = """
+<nav class="navbar navbar-expand-lg glass-panel p-3">
+    <div class="container-fluid">
+        <a class="navbar-brand brand-font d-flex align-items-center" href="{% url 'home' %}">
+            PASO <span class="text-gold ms-1">Ecosistem</span>
+        </a>
+        
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav ms-auto align-items-center gap-2">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}">Inicio</a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'marketplace' %}">Marketplace</a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    <li class="nav-item ms-lg-3">
+                        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                            Hola, {{ user.first_name|default:user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        {% if user.role == 'ADMIN' %}
+                            <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-sm px-4 shadow-sm">Mi Negocio</a>
+                        {% elif user.role == 'EMPLOYEE' %}
+                            <a href="{% url 'employee_panel' %}" class="btn btn-primary btn-sm px-4 shadow-sm">Mi Agenda</a>
+                        {% else %}
+                            <a href="{% url 'dashboard' %}" class="btn btn-primary btn-sm px-4 shadow-sm">Mis Citas</a>
+                        {% endif %}
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'logout' %}" class="btn btn-outline-dark btn-sm rounded-circle" title="Salir">
+                            <i class="fas fa-power-off"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="nav-item ms-lg-3">
+                        <a href="{% url 'login' %}" class="btn btn-link text-dark text-decoration-none fw-bold">Entrar</a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a href="{% url 'registro_owner' %}" class="btn btn-dark px-4 shadow-sm">Soy Negocio</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+"""
+
+def aplicar_cambios():
+    base_dir = os.getcwd()
+    
+    # Definir rutas de archivos
+    path_views = os.path.join(base_dir, 'apps', 'businesses', 'views.py')
+    path_urls = os.path.join(base_dir, 'apps', 'businesses', 'urls.py')
+    path_navbar = os.path.join(base_dir, 'templates', 'navbar_inteligente.html')
+    
+    # Escribir Views
+    print(f"🔄 Sobreescribiendo {path_views}...")
+    with open(path_views, 'w', encoding='utf-8') as f:
+        f.write(VIEWS_CONTENT)
+        
+    # Escribir Urls
+    print(f"🔄 Sobreescribiendo {path_urls}...")
+    with open(path_urls, 'w', encoding='utf-8') as f:
+        f.write(URLS_CONTENT)
+        
+    # Escribir Navbar
+    print(f"🔄 Sobreescribiendo {path_navbar}...")
+    with open(path_navbar, 'w', encoding='utf-8') as f:
+        f.write(NAVBAR_CONTENT)
+        
+    print("\\n✅ ¡TODO LISTO! Los archivos han sido corregidos con el código completo.")
+    print("👉 Por favor reinicia el servidor con: python manage.py runserver")
+
+if __name__ == "__main__":
+    aplicar_cambios()
