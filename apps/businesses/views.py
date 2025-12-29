@@ -3,19 +3,18 @@ from decimal import Decimal
 import uuid
 import hashlib
 from urllib import request as url_request, parse, error
-from datetime import datetime, timedelta, time, date
+from datetime import datetime, time, date
 from math import radians, cos, sin, asin, sqrt
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
-from django.utils.dateparse import parse_date
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.text import slugify
-from django.db.models import Sum, Q
+from django.db.models import Q  # <--- IMPORTANTE: Esto permite búsquedas avanzadas
 
 from .models import Salon, Service, Booking, EmployeeSchedule
 from .forms import SalonIntegrationsForm, ServiceForm, EmployeeCreationForm, ScheduleForm
@@ -31,15 +30,6 @@ def haversine_distance(lon1, lat1, lon2, lat2):
         a = sin((lat2-lat1)/2)**2 + cos(lat1) * cos(lat2) * sin((lon2-lon1)/2)**2
         return 2 * asin(sqrt(a)) * 6371 
     except: return float('inf')
-
-def send_telegram_notification(salon, message):
-    if not salon.telegram_bot_token or not salon.telegram_chat_id: return False
-    try:
-        url = f"https://api.telegram.org/bot{salon.telegram_bot_token}/sendMessage"
-        payload = {'chat_id': salon.telegram_chat_id, 'text': message, 'parse_mode': 'Markdown'}
-        url_request.urlopen(url_request.Request(url, data=parse.urlencode(payload).encode()))
-        return True
-    except: return False
 
 # --- VISTAS PÚBLICAS ---
 def logout_view(request):
@@ -57,13 +47,22 @@ def marketplace(request):
 
         salones_base = Salon.objects.filter(is_active=True)
         query = request.GET.get('q')
-        if query: salones_base = salones_base.filter(name__icontains=query)
+        
+        # --- CORRECCIÓN DE BÚSQUEDA ---
+        if query:
+            # Busca en el nombre O en la ciudad O en la dirección
+            salones_base = salones_base.filter(
+                Q(name__icontains=query) | 
+                Q(city__icontains=query) | 
+                Q(address__icontains=query)
+            )
         
         salones_para_mostrar = list(salones_base)
         user_located = False
         user_lat = request.GET.get('lat')
         user_lng = request.GET.get('lng')
 
+        # LÓGICA DE DISTANCIA (Mantiene tu lógica original)
         try:
             if user_lat and user_lng and user_lat != "undefined":
                 temp = []
@@ -100,15 +99,11 @@ def register_owner(request):
         phone = request.POST.get('phone')
         password = request.POST.get('password')
         
-        if not all([business_name, phone, password]):
-             return render(request, 'users/register_owner.html', {'error': 'Todos los campos son obligatorios.'})
+        if not all([business_name, phone, password]): return render(request, 'users/register_owner.html', {'error': 'Campos obligatorios'})
 
         clean_phone = ''.join(filter(str.isdigit, phone))
-        if len(clean_phone) < 10:
-             return render(request, 'users/register_owner.html', {'error': 'Número de celular inválido.'})
-        
         if User.objects.filter(username=clean_phone).exists():
-            return render(request, 'users/register_owner.html', {'error': 'Este número ya está registrado.'})
+            return render(request, 'users/register_owner.html', {'error': 'Usuario ya existe'})
 
         try:
             user = User.objects.create_user(username=clean_phone, password=password, first_name=business_name, role='ADMIN')
@@ -118,7 +113,7 @@ def register_owner(request):
             login(request, user)
             return redirect('admin_dashboard')
         except Exception as e:
-            return render(request, 'users/register_owner.html', {'error': f"Error interno: {str(e)}"})
+            return render(request, 'users/register_owner.html', {'error': str(e)})
 
     return render(request, 'users/register_owner.html')
 
@@ -133,7 +128,6 @@ def owner_dashboard(request):
     employee_form = EmployeeCreationForm()
 
     if request.method == 'POST':
-        # 1. GUARDAR CONFIGURACIÓN (Redes, Ubicación, Pagos)
         if 'update_config' in request.POST:
             config_form = SalonIntegrationsForm(request.POST, request.FILES, instance=salon)
             if config_form.is_valid():
@@ -141,39 +135,34 @@ def owner_dashboard(request):
                 if s.instagram_url and not s.instagram_url.startswith('http'):
                     s.instagram_url = f"https://instagram.com/{s.instagram_url.replace('@', '')}"
                 s.save()
-                messages.success(request, '✅ Configuración guardada correctamente.')
+                messages.success(request, '✅ Configuración guardada.')
                 return redirect('admin_dashboard')
             else:
-                messages.error(request, f'❌ Error al guardar: {config_form.errors}')
+                messages.error(request, f'❌ Error: {config_form.errors}')
         
-        # 2. CREAR SERVICIO
         elif 'create_service' in request.POST:
             f = ServiceForm(request.POST)
             if f.is_valid():
                 s = f.save(commit=False)
                 s.salon = salon
                 s.save()
-                messages.success(request, 'Servicio agregado.')
+                messages.success(request, 'Servicio creado.')
                 return redirect('admin_dashboard')
 
-        # 3. CREAR EMPLEADO
         elif 'create_employee' in request.POST:
             f = EmployeeCreationForm(request.POST)
             if f.is_valid():
                 u = f.save(commit=False)
                 u.role = 'EMPLOYEE'
-                u.salon = salon  # <--- AQUÍ VINCULAMOS AL EMPLEADO CON EL SALÓN ACTUAL
+                u.salon = salon
                 u.set_password(f.cleaned_data['password'])
                 u.save()
-                # Horario por defecto
                 for d in range(6):
                     EmployeeSchedule.objects.create(employee=u, weekday=d, from_hour=time(9,0), to_hour=time(19,0), is_active=True)
                 messages.success(request, 'Empleado creado.')
                 return redirect('admin_dashboard')
 
-    # FILTRAR EMPLEADOS SOLO DE ESTE SALÓN
     services = Service.objects.filter(salon=salon)
-    # Corrección clave: filtrar por salon=salon
     employees = User.objects.filter(role='EMPLOYEE', salon=salon)
     
     webhook_url = request.build_absolute_uri(f'/api/webhooks/bold/{salon.id}/').replace('http://', 'https://')
@@ -210,28 +199,30 @@ def delete_service(request, service_id):
     if service.salon.owner == request.user: service.delete()
     return redirect('admin_dashboard')
 
-# --- API Y WEBHOOKS ---
-def get_available_slots_api(request):
-    return JsonResponse({'slots': []}) 
-
+# --- API Y WEBHOOKS (AQUÍ ESTÁ LA SOLUCIÓN DEL BOTÓN) ---
 @login_required
 def test_telegram_integration(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        token, chat_id = data.get('token'), data.get('chat_id')
-        if not token or not chat_id: return JsonResponse({'success': False, 'message': 'Faltan datos'})
         try:
+            data = json.loads(request.body)
+            token, chat_id = data.get('token'), data.get('chat_id')
+            if not token or not chat_id: return JsonResponse({'success': False, 'message': 'Faltan datos'})
+            
             url = f"https://api.telegram.org/bot{token}/sendMessage"
-            payload = {'chat_id': chat_id, 'text': "✅ ¡Conexión Exitosa con PASO!"}
-            url_request.urlopen(url_request.Request(url, data=parse.urlencode(payload).encode()))
+            payload = {'chat_id': chat_id, 'text': "✅ ¡Conexión Exitosa con PASO Ecosistema!"}
+            
+            # Usamos un timeout para que no se quede cargando infinito si falla
+            req = url_request.Request(url, data=parse.urlencode(payload).encode())
+            url_request.urlopen(req, timeout=5) 
+            
             return JsonResponse({'success': True})
-        except Exception as e: return JsonResponse({'success': False, 'message': str(e)})
-    return JsonResponse({'success': False})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f"Error Telegram: {str(e)}"})
+    return JsonResponse({'success': False, 'message': 'Método no permitido'})
 
 @csrf_exempt
 def bold_webhook(request, salon_id):
-    if request.method == 'POST': return JsonResponse({'status': 'ok'})
-    return HttpResponse(status=405)
+    return JsonResponse({'status': 'ok'})
 
 def booking_create(request, salon_slug):
     salon = get_object_or_404(Salon, slug=salon_slug)
@@ -243,3 +234,6 @@ def booking_create(request, salon_slug):
 def booking_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     return render(request, 'booking_success.html', {'booking': booking, 'salon': booking.salon})
+
+def get_available_slots_api(request):
+    return JsonResponse({'slots': []})
