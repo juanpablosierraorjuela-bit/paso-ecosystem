@@ -4,84 +4,58 @@ from .models import Salon, Service, EmployeeSchedule
 
 User = get_user_model()
 
+# Lista de ciudades inyectada por el script de mejora
+CIUDADES_CHOICES = [('Arauca', 'Arauca'), ('Armenia', 'Armenia'), ('Barranquilla', 'Barranquilla'), ('Bogotá', 'Bogotá'), ('Bucaramanga', 'Bucaramanga'), ('Cali', 'Cali'), ('Cartagena', 'Cartagena'), ('Cúcuta', 'Cúcuta'), ('Florencia', 'Florencia'), ('Ibagué', 'Ibagué'), ('Leticia', 'Leticia'), ('Manizales', 'Manizales'), ('Medellín', 'Medellín'), ('Mitú', 'Mitú'), ('Mocoa', 'Mocoa'), ('Montería', 'Montería'), ('Neiva', 'Neiva'), ('Pasto', 'Pasto'), ('Pereira', 'Pereira'), ('Popayán', 'Popayán'), ('Puerto Carreño', 'Puerto Carreño'), ('Inírida', 'Inírida'), ('Quibdó', 'Quibdó'), ('Riohacha', 'Riohacha'), ('San Andrés', 'San Andrés'), ('San José del Guaviare', 'San José del Guaviare'), ('Santa Marta', 'Santa Marta'), ('Sincelejo', 'Sincelejo'), ('Tunja', 'Tunja'), ('Valledupar', 'Valledupar'), ('Villavicencio', 'Villavicencio'), ('Yopal', 'Yopal'), ('Duitama', 'Duitama'), ('Sogamoso', 'Sogamoso'), ('Paipa', 'Paipa'), ('Bello', 'Bello'), ('Soacha', 'Soacha'), ('Soledad', 'Soledad')]
+
 class SalonIntegrationsForm(forms.ModelForm):
+    # Campo de ciudad personalizado con Selector
+    city = forms.ChoiceField(
+        choices=[('', 'Selecciona tu ciudad...')] + CIUDADES_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Ciudad"
+    )
+
     class Meta:
         model = Salon
-        fields = ['name', 'address', 'city', 'opening_time', 'closing_time', 'deposit_percentage', 'telegram_bot_token', 'telegram_chat_id', 'bold_identity_key', 'bold_secret_key', "instagram_url", "whatsapp_number"]
-        
+        fields = ['address', 'city', 'opening_time', 'closing_time', 'instagram_url', 'whatsapp_number']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Salón de Belleza Estilo'}),
-            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Cra 15 # 85-30, Bogotá'}),
-            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Bogotá'}),
             'opening_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'closing_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'deposit_percentage': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 50'}),
-            
-            # --- TELEGRAM ---
-            'telegram_bot_token': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Ej: 123456789:ABC-DefGhiJklMnoPqrStu...'
-            }),
-            'telegram_chat_id': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Ej: 987654321'
-            }),
-
-            # --- BOLD (Seguridad Máxima) ---
-            'bold_identity_key': forms.PasswordInput(attrs={
-                'class': 'form-control', 
-                'placeholder': '••••••••••••••••',
-                'autocomplete': 'new-password'
-            }, render_value=True),
-            
-            'bold_secret_key': forms.PasswordInput(attrs={
-                'class': 'form-control', 
-                'placeholder': '••••••••••••••••',
-                'autocomplete': 'new-password'
-            }, render_value=True),
-            
-            'instagram_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/tusalon'}),
-            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '3001234567'}),
-        }
-        
-        help_texts = {
-            'deposit_percentage': 'Porcentaje que debe pagar el cliente para confirmar (Ej: 50%).',
-            'telegram_bot_token': 'Copia el token que te da @BotFather al crear tu bot.',
-            'telegram_chat_id': 'Tu ID numérico personal. Puedes obtenerlo escribiéndole a @userinfobot.',
-            'bold_identity_key': 'La "Identity Key" de tu panel de integración de Bold.',
-            'bold_secret_key': 'La "Secret Key" de Bold. (No la compartas con nadie).',
-            'instagram_url': 'Link directo a tu perfil de Instagram (Opcional).',
-            'whatsapp_number': 'Número para contacto directo (Opcional).'
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Cra 10 # 20-30'}),
+            'instagram_url': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: https://instagram.com/tu_salon'}),
+            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 573001234567'}),
         }
 
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ['name', 'duration_minutes', 'price']
+        fields = ['name', 'description', 'price', 'duration']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Corte de Cabello'}),
-            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '25000'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'price': forms.NumberInput(attrs={'class': 'form-control'}),
+            'duration': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minutos'}),
         }
 
 class EmployeeCreationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Contraseña segura'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'username']
+        fields = ['first_name', 'last_name', 'username', 'email', 'password']
         widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}),
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario o Celular'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono (Usuario)'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
 
 class ScheduleForm(forms.ModelForm):
     class Meta:
         model = EmployeeSchedule
-        fields = ['weekday', 'from_hour', 'to_hour']
+        fields = ['weekday', 'from_hour', 'to_hour', 'is_active']
         widgets = {
-            'weekday': forms.Select(attrs={'class': 'form-select'}),
             'from_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'to_hour': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
