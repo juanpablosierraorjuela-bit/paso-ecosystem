@@ -20,6 +20,17 @@ class User(AbstractUser):
 
     # Campos adicionales opcionales
     telefono = models.CharField(max_length=15, blank=True, null=True)
+    
+    # --- VINCULACIÓN CON EL SALÓN (CRÍTICO PARA QUE FUNCIONE EL DASHBOARD) ---
+    # Esto permite que cada empleado pertenezca a un solo salón
+    salon = models.ForeignKey(
+        'businesses.Salon', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='employees',
+        verbose_name="Salón Asignado"
+    )
 
     @property
     def is_employee(self):
