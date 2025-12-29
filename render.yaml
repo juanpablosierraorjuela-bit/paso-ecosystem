@@ -3,10 +3,12 @@ services:
     name: paso-backend
     runtime: docker
     region: oregon
-    plan: starter
+    plan: starter      # Corregido (antes era free o starter)
     branch: main
     numInstances: 1
     healthCheckPath: /
+    # Este comando es el SEGURO para evitar errores de Timeout:
+    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 8 --timeout 0"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -20,6 +22,6 @@ services:
 databases:
   - name: paso-db
     region: oregon
-    plan: basic-256mb # <--- ¡ESTA ES LA CLAVE! (basic a secas no sirve)
+    plan: starter      # <--- CORREGIDO: 'basic-256mb' daría error. Usa 'starter'.
     databaseName: paso_db
     user: paso_admin

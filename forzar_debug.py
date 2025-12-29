@@ -1,4 +1,8 @@
-from pathlib import Path
+import os
+
+# Contenido corregido del archivo settings.py
+# El cambio principal es: DEBUG = True (sin condiciones)
+settings_content = """from pathlib import Path
 import os
 import dj_database_url
 
@@ -115,3 +119,18 @@ if RENDER_EXTERNAL_HOSTNAME:
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+"""
+
+def main():
+    try:
+        # Escribimos el archivo settings.py con la configuración forzada
+        with open('config/settings.py', 'w', encoding='utf-8') as f:
+            f.write(settings_content)
+        print("✅ ¡Listo! settings.py arreglado con DEBUG = True.")
+        print("👉 Ahora tu servidor se reiniciará solo. Recarga la página http://localhost:8000")
+        print("⚠️ Deberías ver una pantalla amarilla con el error exacto en lugar del Error 500.")
+    except Exception as e:
+        print(f"❌ Error al escribir el archivo: {e}")
+
+if __name__ == "__main__":
+    main()
