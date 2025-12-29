@@ -1,4 +1,10 @@
-from django.urls import path
+import os
+
+print("🔧 Arreglando el archivo de URLs para sincronizar nombres...")
+
+urls_path = os.path.join('apps', 'businesses', 'urls.py')
+
+urls_content = """from django.urls import path
 from . import views
 
 urlpatterns = [
@@ -28,3 +34,12 @@ urlpatterns = [
     path('api/webhooks/bold/<int:salon_id>/', views.bold_webhook, name='bold_webhook'),
     path('api/test-telegram/', views.test_telegram_integration, name='test_telegram'),
 ]
+"""
+
+try:
+    with open(urls_path, 'w', encoding='utf-8') as f:
+        f.write(urls_content)
+    print(f"✅ ¡Archivo {urls_path} arreglado exitosamente!")
+    print("Ahora puedes volver a probar tu página.")
+except Exception as e:
+    print(f"❌ Error escribiendo el archivo: {e}")
