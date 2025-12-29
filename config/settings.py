@@ -12,7 +12,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-de-desarrollo-r
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Define los hosts permitidos separando por comas (ej: paso-backend.onrender.com,localhost)
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
