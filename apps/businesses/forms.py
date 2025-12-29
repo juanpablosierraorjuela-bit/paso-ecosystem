@@ -4,7 +4,7 @@ from .models import Salon, Service, EmployeeSchedule
 
 User = get_user_model()
 
-# Lista de ciudades inyectada por el script de mejora
+# Lista de ciudades inyectada
 CIUDADES_CHOICES = [('Arauca', 'Arauca'), ('Armenia', 'Armenia'), ('Barranquilla', 'Barranquilla'), ('Bogotá', 'Bogotá'), ('Bucaramanga', 'Bucaramanga'), ('Cali', 'Cali'), ('Cartagena', 'Cartagena'), ('Cúcuta', 'Cúcuta'), ('Florencia', 'Florencia'), ('Ibagué', 'Ibagué'), ('Leticia', 'Leticia'), ('Manizales', 'Manizales'), ('Medellín', 'Medellín'), ('Mitú', 'Mitú'), ('Mocoa', 'Mocoa'), ('Montería', 'Montería'), ('Neiva', 'Neiva'), ('Pasto', 'Pasto'), ('Pereira', 'Pereira'), ('Popayán', 'Popayán'), ('Puerto Carreño', 'Puerto Carreño'), ('Inírida', 'Inírida'), ('Quibdó', 'Quibdó'), ('Riohacha', 'Riohacha'), ('San Andrés', 'San Andrés'), ('San José del Guaviare', 'San José del Guaviare'), ('Santa Marta', 'Santa Marta'), ('Sincelejo', 'Sincelejo'), ('Tunja', 'Tunja'), ('Valledupar', 'Valledupar'), ('Villavicencio', 'Villavicencio'), ('Yopal', 'Yopal'), ('Duitama', 'Duitama'), ('Sogamoso', 'Sogamoso'), ('Paipa', 'Paipa'), ('Bello', 'Bello'), ('Soacha', 'Soacha'), ('Soledad', 'Soledad')]
 
 class SalonIntegrationsForm(forms.ModelForm):
@@ -29,12 +29,12 @@ class SalonIntegrationsForm(forms.ModelForm):
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ['name', 'description', 'price', 'duration']
+        # CORRECCIÓN: Usamos los nombres reales del modelo
+        fields = ['name', 'price', 'duration_minutes']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'price': forms.NumberInput(attrs={'class': 'form-control'}),
-            'duration': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minutos'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minutos'}),
         }
 
 class EmployeeCreationForm(forms.ModelForm):
