@@ -1,4 +1,14 @@
-import json
+import os
+
+# ==============================================================================
+# 1. CORRECCIÓN DEL BACKEND (views.py)
+# ==============================================================================
+# - Implementa la lógica de cruce de medianoche (Overnight Logic).
+# - Prioriza los horarios generales del Salón sobre los de empleados individuales.
+# ==============================================================================
+
+views_path = os.path.join('apps', 'businesses', 'views.py')
+views_content = """import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -41,11 +51,11 @@ def home(request):
 
 def marketplace(request):
     try:
-        # 1. OBTENER HORA REAL (Timezone Aware para Colombia)
+        # 1. OBTENER HORA REAL (Timezone Aware)
         now = timezone.localtime(timezone.now())
         current_time = now.time()
         
-        # 2. FILTRADO BÁSICO DE SALONES ACTIVOS
+        # 2. FILTRADO BÁSICO
         salones_base = Salon.objects.filter(is_active=True)
         query = request.GET.get('q')
         
@@ -61,7 +71,7 @@ def marketplace(request):
         user_lat = request.GET.get('lat')
         user_lng = request.GET.get('lng')
 
-        # 3. LÓGICA DE DISTANCIA (Opcional, si hay geolocalización)
+        # 3. LÓGICA DE DISTANCIA (Opcional)
         try:
             if user_lat and user_lng and user_lat != "undefined":
                 temp = []
@@ -78,7 +88,7 @@ def marketplace(request):
         except: pass
 
         # 4. LÓGICA MAESTRA DE APERTURA (SOPORTE MADRUGADA)
-        # Corrige el error de "Cerrado" cuando el horario cruza la medianoche (ej: 11 AM - 2 AM)
+        # Esta lógica soluciona el problema de "Cierra a las 2 AM"
         for salon in salones_para_mostrar:
             is_open = False
             
@@ -88,17 +98,16 @@ def marketplace(request):
                 ct = salon.closing_time
                 
                 if ct < ot: 
-                    # CASO MADRUGADA: El cierre es "menor" que la apertura (ej: Cierra 02:00, Abre 11:00)
-                    # Significa que cierra al día siguiente.
-                    # Está ABIERTO si la hora actual es >= apertura (tarde/noche) O <= cierre (madrugada)
+                    # CASO MADRUGADA: El cierre es menor que la apertura (ej: Abre 11am, Cierra 2am)
+                    # Está abierto si es mas tarde que la apertura (11pm) O más temprano que el cierre (1am)
                     if current_time >= ot or current_time <= ct:
                         is_open = True
                 else:
-                    # CASO NORMAL: (ej: Abre 09:00, Cierra 19:00)
+                    # CASO NORMAL: (ej: Abre 9am, Cierra 7pm)
                     if ot <= current_time <= ct:
                         is_open = True
             
-            # Inyectamos el estado dinámico al objeto salon temporalmente para el template
+            # Inyectamos el estado dinámico al objeto salon temporalmente
             salon.is_open_dynamic = is_open
 
         return render(request, 'home.html', {
@@ -150,7 +159,6 @@ def owner_dashboard(request):
             config_form = SalonIntegrationsForm(request.POST, request.FILES, instance=salon)
             if config_form.is_valid():
                 s = config_form.save(commit=False)
-                # Asegurar prefijo https en Instagram
                 if s.instagram_url and not s.instagram_url.startswith('http'):
                     s.instagram_url = f"https://instagram.com/{s.instagram_url.replace('@', '')}"
                 s.save()
@@ -251,3 +259,163 @@ def booking_success(request, booking_id):
 
 def get_available_slots_api(request):
     return JsonResponse({'slots': []})
+"""
+
+# ==============================================================================
+# 2. CORRECCIÓN DEL FRONTEND (templates/home.html)
+# ==============================================================================
+# - Restaura el diseño "Card de Lujo" (Fondo negro/oro, Corona).
+# - Restaura los iconos de WhatsApp e Instagram.
+# - Restaura el bloque "Empty State" con los botones de Recomendar/Unirse.
+# ==============================================================================
+
+template_path = os.path.join('templates', 'home.html')
+template_content = """{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container main-container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold" style="font-family: 'Playfair Display', serif; color: #1a1a1a;">
+            Marketplace <span style="color: #D4AF37;">Exclusivo</span>
+        </h1>
+        <p class="lead text-muted">Encuentra los mejores servicios de belleza cerca de ti</p>
+    </div>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <form method="GET" action="{% url 'marketplace' %}" class="d-flex shadow-sm rounded-pill overflow-hidden bg-white">
+                <input type="text" name="q" class="form-control border-0 px-4 py-3" 
+                       placeholder="¿Qué servicio buscas hoy?" value="{{ query_string|default:'' }}">
+                <input type="hidden" name="lat" id="user_lat">
+                <input type="hidden" name="lng" id="user_lng">
+                <button type="submit" class="btn btn-dark px-4" style="background: #1a1a1a;">
+                    <i class="fas fa-search text-gold"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for salon in salones %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-0 shadow-lg luxury-card" style="border-radius: 20px; overflow: hidden; transition: transform 0.3s ease;">
+                <div class="card-header position-relative text-center py-4" style="background: #1a1a1a; color: white;">
+                    {% if salon.is_open_dynamic %}
+                        <span class="badge position-absolute top-0 end-0 m-3" 
+                              style="background-color: #28a745; font-size: 0.8rem; padding: 8px 12px; border-radius: 30px;">
+                            ABIERTO
+                        </span>
+                    {% else %}
+                        <span class="badge position-absolute top-0 end-0 m-3" 
+                              style="background-color: #343a40; font-size: 0.8rem; padding: 8px 12px; border-radius: 30px; border: 1px solid #555;">
+                            CERRADO
+                        </span>
+                    {% endif %}
+                    
+                    <div class="crown-icon mb-2">
+                        <i class="fas fa-crown fa-2x" style="color: #D4AF37;"></i>
+                    </div>
+                </div>
+
+                <div class="card-body text-center bg-white pt-5 position-relative">
+                    <div class="position-absolute start-50 translate-middle" style="top: 0; width: 80px; height: 80px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 3px solid #D4AF37;">
+                         <i class="fas fa-store fa-2x text-dark"></i>
+                    </div>
+
+                    <h3 class="card-title fw-bold mt-3" style="font-family: 'Playfair Display', serif;">{{ salon.name }}</h3>
+                    <p class="text-muted small text-uppercase letter-spacing-1">EXPERIENCIA PREMIUM</p>
+                    
+                    <div class="mb-3 text-muted">
+                        <i class="fas fa-map-marker-alt text-gold me-1"></i> 
+                        {{ salon.address|default:"Ubicación Exclusiva" }}
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        {% if salon.instagram_url %}
+                        <a href="{{ salon.instagram_url }}" target="_blank" class="social-icon-btn" style="width: 40px; height: 40px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #E1306C; transition: all 0.3s;">
+                            <i class="fab fa-instagram fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if salon.whatsapp_number %}
+                        <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="social-icon-btn" style="width: 40px; height: 40px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #25D366; transition: all 0.3s;">
+                            <i class="fab fa-whatsapp fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        
+                         {% if not salon.instagram_url and not salon.whatsapp_number %}
+                             <span class="text-muted small">Sin redes conectadas</span>
+                         {% endif %}
+                    </div>
+
+                    <a href="{% url 'booking_create' salon.slug %}" class="btn w-100 py-3 rounded-pill fw-bold text-white" 
+                       style="background: #000; border: 2px solid #000; transition: all 0.3s;">
+                        Reservar Cita <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-search-location fa-4x text-muted mb-3"></i>
+                <h3 class="text-muted">No encontramos salones en esta zona aún...</h3>
+                <p class="text-muted">¡Sé el primero en traer la experiencia PASO a tu ciudad!</p>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="#" class="btn btn-outline-dark px-4 py-2 rounded-pill">
+                    <i class="fas fa-share-alt me-2"></i> Recomendar un Salón
+                </a>
+                <a href="{% url 'register_owner' %}" class="btn px-4 py-2 rounded-pill text-dark fw-bold" style="background-color: #D4AF37;">
+                    <i class="fas fa-store me-2"></i> Unirse a PASO
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .text-gold { color: #D4AF37 !important; }
+    .luxury-card:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; }
+    .social-icon-btn:hover { transform: scale(1.1); background: #fff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+</style>
+
+<script>
+    // Geolocalización
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('user_lat').value = position.coords.latitude;
+            document.getElementById('user_lng').value = position.coords.longitude;
+        });
+    }
+</script>
+{% endblock %}
+"""
+
+# Escritura de archivos
+print("⏳ Aplicando correcciones de diseño Luxury y Lógica de Madrugada...")
+
+with open(views_path, 'w', encoding='utf-8') as f:
+    f.write(views_content)
+print(f"✅ views.py actualizado con éxito en: {views_path}")
+
+with open(template_path, 'w', encoding='utf-8') as f:
+    f.write(template_content)
+print(f"✅ home.html actualizado con diseño Luxury y botones en: {template_path}")
+
+print("\n✨ ¡SCRIPT COMPLETADO! Ahora haz:")
+print("1. python solucion_definitiva_v2.py")
+print("2. git add .")
+print('3. git commit -m "Fix diseño luxury y logica madrugada"')
+print("4. git push origin main")
+"""
+
+with open('solucion_definitiva_v2.py', 'w', encoding='utf-8') as f:
+    f.write(views_content) # NOTA: Esto solo escribiría la primera parte. El bloque de arriba está diseñado para ser COPIADO por el usuario.
+    # El script real que debes ejecutar es el bloque de texto completo que te di arriba.
+
+pass

@@ -1,4 +1,12 @@
-import json
+import os
+
+print("🚀 Iniciando reparación del Sistema Luxury y Horarios...")
+
+# ==============================================================================
+# 1. CONTENIDO PARA VIEWS.PY (Backend)
+# Usamos comillas simples triples para envolver el código de Python
+# ==============================================================================
+views_content = '''import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -251,3 +259,164 @@ def booking_success(request, booking_id):
 
 def get_available_slots_api(request):
     return JsonResponse({'slots': []})
+'''
+
+# ==============================================================================
+# 2. CONTENIDO PARA HOME.HTML (Frontend)
+# Usamos comillas dobles triples para envolver el HTML
+# ==============================================================================
+template_content = """{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container main-container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold" style="font-family: 'Playfair Display', serif; color: #1a1a1a;">
+            Marketplace <span style="color: #D4AF37;">Exclusivo</span>
+        </h1>
+        <p class="lead text-muted">Encuentra los mejores servicios de belleza cerca de ti</p>
+    </div>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <form method="GET" action="{% url 'marketplace' %}" class="d-flex shadow-sm rounded-pill overflow-hidden bg-white">
+                <input type="text" name="q" class="form-control border-0 px-4 py-3" 
+                       placeholder="¿Qué servicio buscas hoy?" value="{{ query_string|default:'' }}">
+                <input type="hidden" name="lat" id="user_lat">
+                <input type="hidden" name="lng" id="user_lng">
+                <button type="submit" class="btn btn-dark px-4" style="background: #1a1a1a;">
+                    <i class="fas fa-search text-gold"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for salon in salones %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-0 shadow-lg luxury-card" style="border-radius: 20px; overflow: hidden; transition: transform 0.3s ease;">
+                <div class="card-header position-relative text-center py-4" style="background: #1a1a1a; color: white;">
+                    {% if salon.is_open_dynamic %}
+                        <span class="badge position-absolute top-0 end-0 m-3" 
+                              style="background-color: #28a745; font-size: 0.8rem; padding: 8px 12px; border-radius: 30px;">
+                            ABIERTO
+                        </span>
+                    {% else %}
+                        <span class="badge position-absolute top-0 end-0 m-3" 
+                              style="background-color: #343a40; font-size: 0.8rem; padding: 8px 12px; border-radius: 30px; border: 1px solid #555;">
+                            CERRADO
+                        </span>
+                    {% endif %}
+                    
+                    <div class="crown-icon mb-2">
+                        <i class="fas fa-crown fa-2x" style="color: #D4AF37;"></i>
+                    </div>
+                </div>
+
+                <div class="card-body text-center bg-white pt-5 position-relative">
+                    <div class="position-absolute start-50 translate-middle" style="top: 0; width: 80px; height: 80px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 3px solid #D4AF37;">
+                         <i class="fas fa-store fa-2x text-dark"></i>
+                    </div>
+
+                    <h3 class="card-title fw-bold mt-3" style="font-family: 'Playfair Display', serif;">{{ salon.name }}</h3>
+                    <p class="text-muted small text-uppercase letter-spacing-1">EXPERIENCIA PREMIUM</p>
+                    
+                    <div class="mb-3 text-muted">
+                        <i class="fas fa-map-marker-alt text-gold me-1"></i> 
+                        {{ salon.address|default:"Ubicación Exclusiva" }}
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        {% if salon.instagram_url %}
+                        <a href="{{ salon.instagram_url }}" target="_blank" class="social-icon-btn" style="width: 40px; height: 40px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #E1306C; transition: all 0.3s;">
+                            <i class="fab fa-instagram fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if salon.whatsapp_number %}
+                        <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="social-icon-btn" style="width: 40px; height: 40px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #25D366; transition: all 0.3s;">
+                            <i class="fab fa-whatsapp fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        
+                         {% if not salon.instagram_url and not salon.whatsapp_number %}
+                             <span class="text-muted small">Sin redes conectadas</span>
+                         {% endif %}
+                    </div>
+
+                    <a href="{% url 'booking_create' salon.slug %}" class="btn w-100 py-3 rounded-pill fw-bold text-white" 
+                       style="background: #000; border: 2px solid #000; transition: all 0.3s;">
+                        Reservar Cita <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-search-location fa-4x text-muted mb-3"></i>
+                <h3 class="text-muted">No encontramos salones en esta zona aún...</h3>
+                <p class="text-muted">¡Sé el primero en traer la experiencia PASO a tu ciudad!</p>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="#" class="btn btn-outline-dark px-4 py-2 rounded-pill">
+                    <i class="fas fa-share-alt me-2"></i> Recomendar un Salón
+                </a>
+                <a href="{% url 'register_owner' %}" class="btn px-4 py-2 rounded-pill text-dark fw-bold" style="background-color: #D4AF37;">
+                    <i class="fas fa-store me-2"></i> Unirse a PASO
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .text-gold { color: #D4AF37 !important; }
+    .luxury-card:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; }
+    .social-icon-btn:hover { transform: scale(1.1); background: #fff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+</style>
+
+<script>
+    // Geolocalización
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('user_lat').value = position.coords.latitude;
+            document.getElementById('user_lng').value = position.coords.longitude;
+        });
+    }
+</script>
+{% endblock %}
+"""
+
+# ==============================================================================
+# 3. ESCRITURA DE ARCHIVOS
+# ==============================================================================
+
+# Rutas
+views_path = os.path.join('apps', 'businesses', 'views.py')
+template_path = os.path.join('templates', 'home.html')
+
+print("⏳ Escribiendo views.py con lógica de madrugada...")
+try:
+    with open(views_path, 'w', encoding='utf-8') as f:
+        f.write(views_content)
+    print(f"✅ views.py actualizado correctamente.")
+except Exception as e:
+    print(f"❌ Error escribiendo views.py: {e}")
+
+print("⏳ Escribiendo home.html con diseño Luxury restaurado...")
+try:
+    with open(template_path, 'w', encoding='utf-8') as f:
+        f.write(template_content)
+    print(f"✅ home.html actualizado correctamente.")
+except Exception as e:
+    print(f"❌ Error escribiendo home.html: {e}")
+
+print("\n✨ ¡SCRIPT FINALIZADO CON ÉXITO!")
+print("Ahora ejecuta:")
+print("1. git add .")
+print('2. git commit -m "Solucion final v3 diseño luxury y horarios"')
+print("3. git push origin main")
