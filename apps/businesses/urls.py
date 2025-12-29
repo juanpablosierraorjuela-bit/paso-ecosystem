@@ -3,7 +3,6 @@ from . import views
 
 urlpatterns = [
     # --- BOTÓN DE PÁNICO (Solo Admin) ---
-    path('reset-database-secure-action/', views.emergency_reset_db, name='emergency_reset'),
 
     # Rutas Publicas
     path('', views.home, name='home'),

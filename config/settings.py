@@ -9,7 +9,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-de-desarrollo-r
 
 # --- ¡CAMBIO IMPORTANTE AQUÍ! ---
 # Forzamos el modo DEBUG a True para que Docker te muestre los errores en pantalla.
-DEBUG = True 
+DEBUG = False 
 
 # Permitimos todo en local
 ALLOWED_HOSTS = ["*"]
@@ -115,3 +115,5 @@ if RENDER_EXTERNAL_HOSTNAME:
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+
+ALLOWED_HOSTS = ['*']  # Forzado por script de producción
