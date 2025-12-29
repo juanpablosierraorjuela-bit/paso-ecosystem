@@ -3,83 +3,106 @@
 
 {% block content %}
 <div class="container main-container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold" style="font-family: 'Playfair Display', serif; color: #1a1a1a;">
-            Marketplace <span style="color: #D4AF37;">Exclusivo</span>
+    
+    <div class="text-center mb-5 fade-in-up">
+        <h1 class="display-5 fw-bold" style="font-family: 'Playfair Display', serif; color: #1a1a1a;">
+            Experiencias <span style="color: #D4AF37;">Premium</span>
         </h1>
-        <p class="lead text-muted">Encuentra los mejores servicios de belleza cerca de ti</p>
+        <p class="text-muted" style="letter-spacing: 2px; font-size: 0.9rem;">ENCUENTRA TU LUGAR EXCLUSIVO</p>
     </div>
 
-    <div class="row justify-content-center mb-5">
-        <div class="col-md-8">
-            <form method="GET" action="{% url 'marketplace' %}" class="d-flex shadow-sm rounded-pill overflow-hidden bg-white">
-                <input type="text" name="q" class="form-control border-0 px-4 py-3" 
-                       placeholder="¿Qué servicio buscas hoy?" value="{{ query_string|default:'' }}">
+    <div class="row justify-content-center mb-5 fade-in-up" style="animation-delay: 0.1s;">
+        <div class="col-lg-10">
+            <form method="GET" action="{% url 'marketplace' %}" class="d-flex flex-column flex-md-row shadow-sm rounded-pill overflow-hidden bg-white border border-light">
+                
+                <div class="flex-grow-1 position-relative">
+                    <span class="position-absolute top-50 start-0 translate-middle-y ms-4 text-muted">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control border-0 py-3 ps-5" 
+                           placeholder="¿Qué servicio o lugar buscas hoy?" 
+                           value="{{ query_string|default:'' }}"
+                           style="border-radius: 30px 0 0 30px; height: 60px;">
+                </div>
+
+                <div class="d-none d-md-block border-end my-2"></div>
+
+                <div class="position-relative" style="min-width: 200px;">
+                    <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-gold">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </span>
+                    <select name="city" class="form-select border-0 py-3 ps-5 shadow-none" 
+                            style="height: 60px; cursor: pointer; background-color: transparent;">
+                        <option value="">Todas las ciudades</option>
+                        {% for city in available_cities %}
+                            <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-dark px-5 py-3 fw-bold" style="background: #1a1a1a; border-radius: 30px;">
+                    BUSCAR
+                </button>
+
                 <input type="hidden" name="lat" id="user_lat">
                 <input type="hidden" name="lng" id="user_lng">
-                <button type="submit" class="btn btn-dark px-4" style="background: #1a1a1a;">
-                    <i class="fas fa-search text-gold"></i>
-                </button>
             </form>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         {% for salon in salones %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 border-0 shadow-lg luxury-card" style="border-radius: 20px; overflow: hidden; transition: transform 0.3s ease;">
-                <div class="card-header position-relative text-center py-4" style="background: #1a1a1a; color: white;">
+        <div class="col-md-6 col-lg-4 fade-in-up" style="animation-delay: 0.2s;">
+            
+            <div class="card h-100 border-0 shadow-hover transition-all" 
+                 style="background: #fff; border-radius: 15px; overflow: hidden; border: 1px solid #f0f0f0;">
+                
+                <div class="position-absolute top-0 end-0 m-3 z-1">
                     {% if salon.is_open_dynamic %}
-                        <span class="badge position-absolute top-0 end-0 m-3" 
-                              style="background-color: #28a745; font-size: 0.8rem; padding: 8px 12px; border-radius: 30px;">
-                            ABIERTO
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(5px);">
+                            ● Abierto
                         </span>
                     {% else %}
-                        <span class="badge position-absolute top-0 end-0 m-3" 
-                              style="background-color: #343a40; font-size: 0.8rem; padding: 8px 12px; border-radius: 30px; border: 1px solid #555;">
-                            CERRADO
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(5px);">
+                            ● Cerrado
                         </span>
                     {% endif %}
-                    
-                    <div class="crown-icon mb-2">
-                        <i class="fas fa-crown fa-2x" style="color: #D4AF37;"></i>
-                    </div>
                 </div>
 
-                <div class="card-body text-center bg-white pt-5 position-relative">
-                    <div class="position-absolute start-50 translate-middle" style="top: 0; width: 80px; height: 80px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 3px solid #D4AF37;">
-                         <i class="fas fa-store fa-2x text-dark"></i>
-                    </div>
-
-                    <h3 class="card-title fw-bold mt-3" style="font-family: 'Playfair Display', serif;">{{ salon.name }}</h3>
-                    <p class="text-muted small text-uppercase letter-spacing-1">EXPERIENCIA PREMIUM</p>
+                <div class="card-body text-center p-5 d-flex flex-column align-items-center justify-content-center">
                     
-                    <div class="mb-3 text-muted">
-                        <i class="fas fa-map-marker-alt text-gold me-1"></i> 
-                        {{ salon.address|default:"Ubicación Exclusiva" }}
+                    <div class="mb-4 d-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                         style="width: 80px; height: 80px; background: #1a1a1a; border: 2px solid #D4AF37;">
+                        <span class="display-5 fw-bold text-white" style="font-family: 'Playfair Display', serif;">
+                            {{ salon.name|slice:":1" }}
+                        </span>
                     </div>
 
-                    <div class="d-flex justify-content-center gap-3 mb-4">
+                    <h3 class="card-title fw-bold mb-1 text-dark" style="font-family: 'Playfair Display', serif; letter-spacing: -0.5px;">
+                        {{ salon.name }}
+                    </h3>
+                    
+                    <p class="text-muted small mb-4">
+                        <i class="fas fa-map-pin text-gold me-1"></i> {{ salon.city|default:"Ubicación Exclusiva" }}
+                    </p>
+
+                    <div class="d-flex gap-3 mb-4 opacity-75">
                         {% if salon.instagram_url %}
-                        <a href="{{ salon.instagram_url }}" target="_blank" class="social-icon-btn" style="width: 40px; height: 40px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #E1306C; transition: all 0.3s;">
-                            <i class="fab fa-instagram fa-lg"></i>
-                        </a>
+                            <a href="{{ salon.instagram_url }}" target="_blank" class="text-dark hover-gold transition-colors">
+                                <i class="fab fa-instagram fa-lg"></i>
+                            </a>
                         {% endif %}
-                        
                         {% if salon.whatsapp_number %}
-                        <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="social-icon-btn" style="width: 40px; height: 40px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #25D366; transition: all 0.3s;">
-                            <i class="fab fa-whatsapp fa-lg"></i>
-                        </a>
+                            <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="text-dark hover-gold transition-colors">
+                                <i class="fab fa-whatsapp fa-lg"></i>
+                            </a>
                         {% endif %}
-                        
-                         {% if not salon.instagram_url and not salon.whatsapp_number %}
-                             <span class="text-muted small">Sin redes conectadas</span>
-                         {% endif %}
                     </div>
 
-                    <a href="{% url 'booking_create' salon.slug %}" class="btn w-100 py-3 rounded-pill fw-bold text-white" 
-                       style="background: #000; border: 2px solid #000; transition: all 0.3s;">
-                        Reservar Cita <i class="fas fa-arrow-right ms-2"></i>
+                    <a href="{% url 'booking_create' salon.slug %}" 
+                       class="btn btn-outline-dark w-100 rounded-pill py-2 fw-bold text-uppercase"
+                       style="font-size: 0.8rem; letter-spacing: 1px; border-width: 1.5px;">
+                        Reservar Cita
                     </a>
                 </div>
             </div>
@@ -87,18 +110,14 @@
         
         {% empty %}
         <div class="col-12 text-center py-5">
-            <div class="mb-4">
-                <i class="fas fa-search-location fa-4x text-muted mb-3"></i>
-                <h3 class="text-muted">No encontramos salones en esta zona aún...</h3>
-                <p class="text-muted">¡Sé el primero en traer la experiencia PASO a tu ciudad!</p>
+            <div class="mb-4 opacity-50">
+                <i class="far fa-compass fa-3x mb-3 text-muted"></i>
+                <h4 class="text-muted fw-light">No encontramos resultados en esta zona.</h4>
             </div>
             
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
-                <a href="#" class="btn btn-outline-dark px-4 py-2 rounded-pill">
-                    <i class="fas fa-share-alt me-2"></i> Recomendar un Salón
-                </a>
-                <a href="{% url 'register_owner' %}" class="btn px-4 py-2 rounded-pill text-dark fw-bold" style="background-color: #D4AF37;">
-                    <i class="fas fa-store me-2"></i> Unirse a PASO
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'register_owner' %}" class="btn btn-dark rounded-pill px-4">
+                    <i class="fas fa-plus me-2"></i> Registrar mi Negocio
                 </a>
             </div>
         </div>
@@ -107,13 +126,37 @@
 </div>
 
 <style>
+    /* Estilos Luxury Custom */
     .text-gold { color: #D4AF37 !important; }
-    .luxury-card:hover { transform: translateY(-5px); box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; }
-    .social-icon-btn:hover { transform: scale(1.1); background: #fff !important; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .hover-gold:hover { color: #D4AF37 !important; transform: scale(1.1); }
+    .transition-all { transition: all 0.3s ease; }
+    .transition-colors { transition: color 0.3s ease; }
+    
+    .shadow-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08) !important;
+        border-color: #D4AF37 !important;
+    }
+
+    /* Animación de entrada suave */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+    }
+    
+    /* Ajustes Mobile */
+    @media (max-width: 768px) {
+        .d-flex.flex-column.flex-md-row input { border-radius: 30px !important; margin-bottom: 10px; }
+        .d-flex.flex-column.flex-md-row select { border-radius: 30px !important; margin-bottom: 10px; padding-left: 20px !important; }
+        .d-flex.flex-column.flex-md-row button { border-radius: 30px !important; width: 100%; }
+    }
 </style>
 
 <script>
-    // Geolocalización
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
             document.getElementById('user_lat').value = position.coords.latitude;

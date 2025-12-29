@@ -1,4 +1,18 @@
-import json
+import os
+
+print("💎 Iniciando actualización a Marketplace Luxury 2.0...")
+
+# ==============================================================================
+# 1. ACTUALIZAR VIEWS.PY (Backend)
+# - Agregamos la lógica para obtener la lista de ciudades disponibles.
+# - Agregamos el filtro por ciudad.
+# ==============================================================================
+views_path = os.path.join('apps', 'businesses', 'views.py')
+
+# Leemos el archivo actual para no perder nada, pero reemplazaremos la función marketplace
+# Usaremos una versión completa de views.py para asegurar que todo encaje.
+
+views_content = '''import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -228,3 +242,194 @@ def booking_success(request, booking_id):
     return render(request, 'booking_success.html', {'booking': booking, 'salon': booking.salon})
 
 def get_available_slots_api(request): return JsonResponse({'slots': []})
+'''
+
+# ==============================================================================
+# 2. ACTUALIZAR HOME.HTML (Frontend)
+# - Agregamos el selector de ciudades en el formulario.
+# - Rediseñamos la tarjeta: Minimalista, sin corona, sin iconos feos.
+# ==============================================================================
+template_path = os.path.join('templates', 'home.html')
+template_content = """{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container main-container py-5">
+    
+    <div class="text-center mb-5 fade-in-up">
+        <h1 class="display-5 fw-bold" style="font-family: 'Playfair Display', serif; color: #1a1a1a;">
+            Experiencias <span style="color: #D4AF37;">Premium</span>
+        </h1>
+        <p class="text-muted" style="letter-spacing: 2px; font-size: 0.9rem;">ENCUENTRA TU LUGAR EXCLUSIVO</p>
+    </div>
+
+    <div class="row justify-content-center mb-5 fade-in-up" style="animation-delay: 0.1s;">
+        <div class="col-lg-10">
+            <form method="GET" action="{% url 'marketplace' %}" class="d-flex flex-column flex-md-row shadow-sm rounded-pill overflow-hidden bg-white border border-light">
+                
+                <div class="flex-grow-1 position-relative">
+                    <span class="position-absolute top-50 start-0 translate-middle-y ms-4 text-muted">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control border-0 py-3 ps-5" 
+                           placeholder="¿Qué servicio o lugar buscas hoy?" 
+                           value="{{ query_string|default:'' }}"
+                           style="border-radius: 30px 0 0 30px; height: 60px;">
+                </div>
+
+                <div class="d-none d-md-block border-end my-2"></div>
+
+                <div class="position-relative" style="min-width: 200px;">
+                    <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-gold">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </span>
+                    <select name="city" class="form-select border-0 py-3 ps-5 shadow-none" 
+                            style="height: 60px; cursor: pointer; background-color: transparent;">
+                        <option value="">Todas las ciudades</option>
+                        {% for city in available_cities %}
+                            <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-dark px-5 py-3 fw-bold" style="background: #1a1a1a; border-radius: 30px;">
+                    BUSCAR
+                </button>
+
+                <input type="hidden" name="lat" id="user_lat">
+                <input type="hidden" name="lng" id="user_lng">
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for salon in salones %}
+        <div class="col-md-6 col-lg-4 fade-in-up" style="animation-delay: 0.2s;">
+            
+            <div class="card h-100 border-0 shadow-hover transition-all" 
+                 style="background: #fff; border-radius: 15px; overflow: hidden; border: 1px solid #f0f0f0;">
+                
+                <div class="position-absolute top-0 end-0 m-3 z-1">
+                    {% if salon.is_open_dynamic %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(5px);">
+                            ● Abierto
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(5px);">
+                            ● Cerrado
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body text-center p-5 d-flex flex-column align-items-center justify-content-center">
+                    
+                    <div class="mb-4 d-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                         style="width: 80px; height: 80px; background: #1a1a1a; border: 2px solid #D4AF37;">
+                        <span class="display-5 fw-bold text-white" style="font-family: 'Playfair Display', serif;">
+                            {{ salon.name|slice:":1" }}
+                        </span>
+                    </div>
+
+                    <h3 class="card-title fw-bold mb-1 text-dark" style="font-family: 'Playfair Display', serif; letter-spacing: -0.5px;">
+                        {{ salon.name }}
+                    </h3>
+                    
+                    <p class="text-muted small mb-4">
+                        <i class="fas fa-map-pin text-gold me-1"></i> {{ salon.city|default:"Ubicación Exclusiva" }}
+                    </p>
+
+                    <div class="d-flex gap-3 mb-4 opacity-75">
+                        {% if salon.instagram_url %}
+                            <a href="{{ salon.instagram_url }}" target="_blank" class="text-dark hover-gold transition-colors">
+                                <i class="fab fa-instagram fa-lg"></i>
+                            </a>
+                        {% endif %}
+                        {% if salon.whatsapp_number %}
+                            <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="text-dark hover-gold transition-colors">
+                                <i class="fab fa-whatsapp fa-lg"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <a href="{% url 'booking_create' salon.slug %}" 
+                       class="btn btn-outline-dark w-100 rounded-pill py-2 fw-bold text-uppercase"
+                       style="font-size: 0.8rem; letter-spacing: 1px; border-width: 1.5px;">
+                        Reservar Cita
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="mb-4 opacity-50">
+                <i class="far fa-compass fa-3x mb-3 text-muted"></i>
+                <h4 class="text-muted fw-light">No encontramos resultados en esta zona.</h4>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'register_owner' %}" class="btn btn-dark rounded-pill px-4">
+                    <i class="fas fa-plus me-2"></i> Registrar mi Negocio
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* Estilos Luxury Custom */
+    .text-gold { color: #D4AF37 !important; }
+    .hover-gold:hover { color: #D4AF37 !important; transform: scale(1.1); }
+    .transition-all { transition: all 0.3s ease; }
+    .transition-colors { transition: color 0.3s ease; }
+    
+    .shadow-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08) !important;
+        border-color: #D4AF37 !important;
+    }
+
+    /* Animación de entrada suave */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+    }
+    
+    /* Ajustes Mobile */
+    @media (max-width: 768px) {
+        .d-flex.flex-column.flex-md-row input { border-radius: 30px !important; margin-bottom: 10px; }
+        .d-flex.flex-column.flex-md-row select { border-radius: 30px !important; margin-bottom: 10px; padding-left: 20px !important; }
+        .d-flex.flex-column.flex-md-row button { border-radius: 30px !important; width: 100%; }
+    }
+</style>
+
+<script>
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('user_lat').value = position.coords.latitude;
+            document.getElementById('user_lng').value = position.coords.longitude;
+        });
+    }
+</script>
+{% endblock %}
+"""
+
+# Escritura segura
+try:
+    with open(views_path, 'w', encoding='utf-8') as f:
+        f.write(views_content)
+    print("✅ Backend actualizado con selector de ciudades.")
+
+    with open(template_path, 'w', encoding='utf-8') as f:
+        f.write(template_content)
+    print("✅ Frontend actualizado con diseño Minimal Luxury.")
+    
+    print("\\n✨ ¡TODO LISTO! Ejecuta los comandos de Git ahora.")
+
+except Exception as e:
+    print(f"❌ Error al escribir archivos: {e}")
