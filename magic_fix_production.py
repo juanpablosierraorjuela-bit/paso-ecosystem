@@ -1,4 +1,34 @@
-import json
+import os
+import shutil
+import re
+
+# --- CONFIGURACIÓN DEL RITUAL ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+print("🔮 Iniciando el Ritual de Reparación para Producción...")
+
+def backup_file(filepath):
+    """Crea una copia de seguridad sagrada antes de tocar nada."""
+    if os.path.exists(filepath):
+        backup_path = filepath + ".bak_magic"
+        shutil.copy2(filepath, backup_path)
+        print(f"🛡️  Respaldo creado: {os.path.basename(filepath)}")
+    else:
+        print(f"⚠️  Advertencia: No encontré {filepath}")
+
+def write_file(filepath, content):
+    """Escribe la nueva realidad en el archivo."""
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f"✨ Energía renovada en: {os.path.basename(filepath)}")
+
+# ==============================================================================
+# 1. REPARACIÓN DE VIEWS.PY (Booking Real + Integración Bold)
+# ==============================================================================
+views_path = os.path.join(BASE_DIR, 'apps', 'businesses', 'views.py')
+backup_file(views_path)
+
+new_views_content = """import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -293,3 +323,101 @@ def get_available_slots_api(request):
     # API endpoint para el frontend (JavaScript)
     # Debes conectar esto con tu services.py
     return JsonResponse({'slots': []})
+"""
+
+write_file(views_path, new_views_content)
+
+# ==============================================================================
+# 2. REPARACIÓN DE SERVICES.PY (Lógica de horarios inteligente)
+# ==============================================================================
+services_path = os.path.join(BASE_DIR, 'apps', 'businesses', 'services.py')
+backup_file(services_path)
+
+new_services_content = """from datetime import datetime, timedelta, date, time
+from django.utils import timezone
+from .models import Booking, EmployeeSchedule, Salon
+
+def get_available_slots(employee, check_date, service_duration):
+    '''
+    Genera lista de horas disponibles (ej: ['15:00', '15:30'])
+    basado en el horario del empleado, el cierre del salón y citas existentes.
+    '''
+    # 1. Buscar horario del empleado para ese día de la semana
+    weekday = check_date.weekday()
+    try:
+        schedule = EmployeeSchedule.objects.get(employee=employee, weekday=weekday, is_active=True)
+    except EmployeeSchedule.DoesNotExist:
+        return [] # El empleado no trabaja ese día
+
+    # 2. Definir rango de trabajo del empleado (Ej: 3pm a 6pm)
+    start_dt = datetime.combine(check_date, schedule.from_hour)
+    end_dt = datetime.combine(check_date, schedule.to_hour)
+    
+    # 🌟 CORRECCIÓN MÁGICA: Respetar hora de cierre del Salón
+    # Si el salón cierra antes de que el empleado termine, el salón manda.
+    if employee.salon and employee.salon.closing_time:
+        salon_closing = datetime.combine(check_date, employee.salon.closing_time)
+        # Si el cierre es "madrugada" (ej: 2 AM), ajustamos la lógica (aquí simplificado)
+        if salon_closing.time() > time(0,0) and salon_closing < start_dt:
+             pass # Caso especial nocturno, omitido por seguridad inicial
+        elif salon_closing < end_dt:
+            end_dt = salon_closing
+
+    # Ajuste de zona horaria para comparaciones correctas
+    if timezone.is_naive(start_dt):
+        start_dt = timezone.make_aware(start_dt)
+    if timezone.is_naive(end_dt):
+        end_dt = timezone.make_aware(end_dt)
+
+    available_slots = []
+    current_slot = start_dt
+
+    # 3. Iterar cada 30 min (o duración del servicio)
+    # Validamos que el servicio completo quepa antes del cierre
+    while current_slot + timedelta(minutes=service_duration) <= end_dt:
+        slot_end = current_slot + timedelta(minutes=service_duration)
+        
+        # 4. Verificar si choca con una reserva existente
+        collision = Booking.objects.filter(
+            employee=employee,
+            status__in=['confirmed', 'pending'], # Contamos pendientes también
+            start_time__lt=slot_end,
+            end_time__gt=current_slot
+        ).exists()
+
+        if not collision:
+            available_slots.append(current_slot.strftime("%H:%M"))
+
+        current_slot += timedelta(minutes=30) # Intervalos de 30 min
+
+    return available_slots
+"""
+
+write_file(services_path, new_services_content)
+
+# ==============================================================================
+# 3. REPARACIÓN DE SETTINGS.PY (Zona Horaria Colombia)
+# ==============================================================================
+settings_path = os.path.join(BASE_DIR, 'config', 'settings.py')
+backup_file(settings_path)
+
+if os.path.exists(settings_path):
+    with open(settings_path, 'r', encoding='utf-8') as f:
+        settings_content = f.read()
+    
+    # Buscar y destruir UTC, imponer America/Bogota
+    if "TIME_ZONE" in settings_content:
+        # Reemplaza cualquier timezone que haya por la de Bogotá
+        new_settings = re.sub(r"TIME_ZONE\s*=\s*['\"].*['\"]", "TIME_ZONE = 'America/Bogota'", settings_content)
+        # Asegurar USE_TZ
+        if "USE_TZ = False" in new_settings:
+            new_settings = new_settings.replace("USE_TZ = False", "USE_TZ = True")
+        
+        write_file(settings_path, new_settings)
+        print("🇨🇴 Zona Horaria sintonizada con Bogotá.")
+    else:
+        print("⚠️ No encontré TIME_ZONE en settings.py. Agrégalo manualmente.")
+
+
+print("\n🔮 RITUAL COMPLETADO. Tu software está protegido contra el caos.")
+print("🚀 ¡Ve por esos clientes mañana!")

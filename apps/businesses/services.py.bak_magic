@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta, date, time
 from django.utils import timezone
-from .models import Booking, EmployeeSchedule, Salon
+from .models import Booking, EmployeeSchedule
 
 def get_available_slots(employee, check_date, service_duration):
     '''
     Genera lista de horas disponibles (ej: ['15:00', '15:30'])
-    basado en el horario del empleado, el cierre del salón y citas existentes.
+    basado en el horario del empleado y citas existentes.
     '''
     # 1. Buscar horario del empleado para ese día de la semana
     weekday = check_date.weekday()
@@ -14,38 +14,24 @@ def get_available_slots(employee, check_date, service_duration):
     except EmployeeSchedule.DoesNotExist:
         return [] # El empleado no trabaja ese día
 
-    # 2. Definir rango de trabajo del empleado (Ej: 3pm a 6pm)
+    # 2. Definir rango de trabajo (Ej: 3pm a 6pm)
     start_dt = datetime.combine(check_date, schedule.from_hour)
     end_dt = datetime.combine(check_date, schedule.to_hour)
     
-    # 🌟 CORRECCIÓN MÁGICA: Respetar hora de cierre del Salón
-    # Si el salón cierra antes de que el empleado termine, el salón manda.
-    if employee.salon and employee.salon.closing_time:
-        salon_closing = datetime.combine(check_date, employee.salon.closing_time)
-        # Si el cierre es "madrugada" (ej: 2 AM), ajustamos la lógica (aquí simplificado)
-        if salon_closing.time() > time(0,0) and salon_closing < start_dt:
-             pass # Caso especial nocturno, omitido por seguridad inicial
-        elif salon_closing < end_dt:
-            end_dt = salon_closing
-
-    # Ajuste de zona horaria para comparaciones correctas
-    if timezone.is_naive(start_dt):
-        start_dt = timezone.make_aware(start_dt)
-    if timezone.is_naive(end_dt):
-        end_dt = timezone.make_aware(end_dt)
+    # Ajuste de zona horaria (simplificado para demo)
+    # En producción usaríamos timezone.make_aware(start_dt)
 
     available_slots = []
     current_slot = start_dt
 
     # 3. Iterar cada 30 min (o duración del servicio)
-    # Validamos que el servicio completo quepa antes del cierre
     while current_slot + timedelta(minutes=service_duration) <= end_dt:
         slot_end = current_slot + timedelta(minutes=service_duration)
         
         # 4. Verificar si choca con una reserva existente
         collision = Booking.objects.filter(
             employee=employee,
-            status__in=['confirmed', 'pending'], # Contamos pendientes también
+            status='confirmed',
             start_time__lt=slot_end,
             end_time__gt=current_slot
         ).exists()
@@ -53,6 +39,6 @@ def get_available_slots(employee, check_date, service_duration):
         if not collision:
             available_slots.append(current_slot.strftime("%H:%M"))
 
-        current_slot += timedelta(minutes=30) # Intervalos de 30 min
+        current_slot += timedelta(minutes=30) # Saltos de 30 min
 
     return available_slots
