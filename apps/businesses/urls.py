@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('reset-database-secure-action/', views.emergency_reset_db, name='emergency_reset'),
     # Rutas Publicas
     path('', views.home, name='home'),
     path('marketplace/', views.marketplace, name='marketplace'),

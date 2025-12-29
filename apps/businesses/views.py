@@ -228,3 +228,26 @@ def booking_success(request, booking_id):
     return render(request, 'booking_success.html', {'booking': booking, 'salon': booking.salon})
 
 def get_available_slots_api(request): return JsonResponse({'slots': []})
+
+
+# --- ZONA DE PELIGRO: REINICIO DE FÁBRICA ---
+@csrf_exempt
+def emergency_reset_db(request):
+    if not request.user.is_superuser:
+        return HttpResponse("⛔ ACCESO DENEGADO. Solo el Dueño del SaaS puede hacer esto.", status=403)
+    
+    try:
+        # 1. Borrar Reservas
+        Booking.objects.all().delete()
+        # 2. Borrar Horarios
+        EmployeeSchedule.objects.all().delete()
+        # 3. Borrar Servicios
+        Service.objects.all().delete()
+        # 4. Borrar Salones
+        Salon.objects.all().delete()
+        # 5. Borrar Usuarios (Menos Tú)
+        User.objects.filter(is_superuser=False).delete()
+        
+        return HttpResponse("✅ ¡SISTEMA LIMPIO! Base de datos reiniciada a 0 km.", status=200)
+    except Exception as e:
+        return HttpResponse(f"❌ Error: {str(e)}", status=500)
