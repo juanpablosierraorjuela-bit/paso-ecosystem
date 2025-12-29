@@ -5,7 +5,7 @@ urlpatterns = [
     # Rutas Publicas
     path('', views.home, name='home'),
     path('marketplace/', views.marketplace, name='marketplace'),
-    path('registro-negocio/', views.register_owner, name='register_owner'),
+    path('registro-negocio/', views.register_owner, name='registro_owner'),
     
     # Dashboards
     path('panel/dueno/', views.owner_dashboard, name='admin_dashboard'),

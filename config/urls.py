@@ -7,7 +7,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Rutas de autenticación (Login y Logout) - VITALES PARA EL NAVBAR
+    # Rutas de autenticación (Login y Logout)
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
 
@@ -15,7 +15,7 @@ urlpatterns = [
     path('', include('apps.businesses.urls')),
 ]
 
-# Soporte para archivos estáticos en desarrollo y debug
+# Soporte para archivos estáticos en desarrollo
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
