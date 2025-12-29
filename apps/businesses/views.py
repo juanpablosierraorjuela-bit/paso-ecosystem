@@ -137,7 +137,6 @@ def owner_dashboard(request):
         if 'update_config' in request.POST:
             config_form = SalonIntegrationsForm(request.POST, request.FILES, instance=salon)
             if config_form.is_valid():
-                # Limpieza automática de URLs
                 s = config_form.save(commit=False)
                 if s.instagram_url and not s.instagram_url.startswith('http'):
                     s.instagram_url = f"https://instagram.com/{s.instagram_url.replace('@', '')}"
@@ -163,6 +162,7 @@ def owner_dashboard(request):
             if f.is_valid():
                 u = f.save(commit=False)
                 u.role = 'EMPLOYEE'
+                u.salon = salon  # <--- AQUÍ VINCULAMOS AL EMPLEADO CON EL SALÓN ACTUAL
                 u.set_password(f.cleaned_data['password'])
                 u.save()
                 # Horario por defecto
@@ -171,8 +171,11 @@ def owner_dashboard(request):
                 messages.success(request, 'Empleado creado.')
                 return redirect('admin_dashboard')
 
+    # FILTRAR EMPLEADOS SOLO DE ESTE SALÓN
     services = Service.objects.filter(salon=salon)
-    employees = User.objects.filter(role='EMPLOYEE')
+    # Corrección clave: filtrar por salon=salon
+    employees = User.objects.filter(role='EMPLOYEE', salon=salon)
+    
     webhook_url = request.build_absolute_uri(f'/api/webhooks/bold/{salon.id}/').replace('http://', 'https://')
     
     return render(request, 'owner_dashboard.html', {
@@ -209,7 +212,6 @@ def delete_service(request, service_id):
 
 # --- API Y WEBHOOKS ---
 def get_available_slots_api(request):
-    # (Mantener lógica original para brevedad, asegurar que exista)
     return JsonResponse({'slots': []}) 
 
 @login_required
@@ -233,7 +235,7 @@ def bold_webhook(request, salon_id):
 
 def booking_create(request, salon_slug):
     salon = get_object_or_404(Salon, slug=salon_slug)
-    services, employees = Service.objects.filter(salon=salon), User.objects.filter(role='EMPLOYEE')
+    services, employees = Service.objects.filter(salon=salon), User.objects.filter(role='EMPLOYEE', salon=salon)
     if request.method == 'POST': return redirect('booking_success', booking_id=1) 
     return render(request, 'booking_create.html', {'salon': salon, 'services': services, 'employees': employees})
 
