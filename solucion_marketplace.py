@@ -1,4 +1,250 @@
-import json
+import os
+import sys
+
+# --- 1. NUEVO DISEÑO DE LUJO PARA EL MARKETPLACE (home.html) ---
+# Este HTML incluye estilos CSS dorados, tarjetas elegantes y la lógica de etiquetas
+nuevo_home_html = """
+{% extends 'base_saas.html' %}
+{% load static %}
+
+{% block title %}Marketplace | Ecosistema PASO{% endblock %}
+
+{% block content %}
+<style>
+    /* ESTILOS LUXURY PASO */
+    :root {
+        --paso-gold: #D4AF37;
+        --paso-black: #1a1a1a;
+        --paso-gray: #f8f9fa;
+    }
+    
+    body {
+        background-color: #fcfcfc;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, var(--paso-black) 0%, #333 100%);
+        color: white;
+        padding: 4rem 0 6rem;
+        margin-bottom: -3rem;
+        border-radius: 0 0 50% 50% / 4%;
+    }
+
+    .search-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transform: translateY(-20px);
+    }
+
+    .search-input {
+        border: none;
+        font-size: 1.1rem;
+        padding: 0.5rem 1.5rem;
+    }
+    
+    .search-input:focus {
+        box-shadow: none;
+        outline: none;
+    }
+
+    .btn-search {
+        background-color: var(--paso-black);
+        color: var(--paso-gold);
+        border-radius: 30px;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-search:hover {
+        background-color: var(--paso-gold);
+        color: var(--paso-black);
+        transform: translateY(-2px);
+    }
+
+    /* TARJETA DE NEGOCIO LUXURY */
+    .salon-card {
+        background: white;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        height: 100%;
+        position: relative;
+    }
+
+    .salon-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(212, 175, 55, 0.15); /* Sombra dorada suave */
+    }
+
+    .salon-img-wrapper {
+        height: 200px;
+        overflow: hidden;
+        position: relative;
+        background-color: #f0f0f0;
+    }
+
+    .salon-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .salon-card:hover .salon-img {
+        transform: scale(1.05);
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        z-index: 2;
+    }
+
+    .status-open {
+        background-color: #ffffff;
+        color: #198754;
+        border: 2px solid #198754;
+    }
+
+    .status-closed {
+        background-color: #ffffff;
+        color: #dc3545;
+        border: 2px solid #dc3545;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .salon-name {
+        font-family: 'Playfair Display', serif; /* Fuente elegante */
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: var(--paso-black);
+        margin-bottom: 0.5rem;
+    }
+
+    .salon-location {
+        color: #6c757d;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 1rem;
+    }
+
+    .btn-book {
+        width: 100%;
+        background: transparent;
+        color: var(--paso-black);
+        border: 1px solid var(--paso-black);
+        padding: 0.6rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-book:hover {
+        background: var(--paso-black);
+        color: var(--paso-gold);
+        border-color: var(--paso-black);
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 4rem;
+        color: #6c757d;
+    }
+</style>
+
+<div class="hero-section text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">Encuentra tu estilo</h1>
+        <p class="lead mb-4 opacity-75">Los mejores profesionales de belleza en un solo lugar</p>
+    </div>
+</div>
+
+<div class="container mb-5" style="margin-top: -3rem;">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <form method="get" class="search-box d-flex gap-2">
+                <input type="text" name="q" class="form-control search-input" placeholder="¿Qué buscas? (Ej: Barbería, Uñas, Centro)" value="{{ request.GET.q }}">
+                <button type="submit" class="btn btn-search">
+                    <i class="fas fa-search me-2"></i> Buscar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row g-4">
+        {% for salon in salones %}
+        <div class="col-md-6 col-lg-4">
+            <div class="salon-card h-100">
+                
+                <div class="salon-img-wrapper">
+                    {% if salon.logo %}
+                        <img src="{{ salon.logo.url }}" alt="{{ salon.name }}" class="salon-img">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100 bg-dark text-white">
+                            <i class="fas fa-store fa-3x text-warning"></i>
+                        </div>
+                    {% endif %}
+
+                    {% if salon.is_open_now_dynamic %}
+                        <span class="status-badge status-open">
+                            <i class="fas fa-circle fa-xs me-1"></i> Abierto
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-closed">
+                            <i class="fas fa-clock fa-xs me-1"></i> Cerrado
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    <h3 class="salon-name">{{ salon.name }}</h3>
+                    <div class="salon-location">
+                        <i class="fas fa-map-marker-alt text-warning"></i>
+                        <span>{{ salon.address|default:"Sin dirección" }}, {{ salon.city|default:"Tunja" }}</span>
+                    </div>
+                    
+                    <a href="{% url 'booking_create' salon.slug %}" class="btn btn-book">
+                        Reservar Cita
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 no-results">
+            <i class="fas fa-search fa-3x mb-3 text-muted"></i>
+            <h3>No encontramos negocios con esa búsqueda</h3>
+            <p>Intenta con otra palabra clave o explora todos los negocios.</p>
+            <a href="{% url 'marketplace' %}" class="btn btn-link text-dark">Ver todos</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+"""
+
+# --- 2. LOGICA ROBUSTA PARA VIEWS.PY (Marketplace) ---
+# Mantiene todas las vistas existentes pero pule la lógica de horarios
+nuevo_views_py = """import json
 from decimal import Decimal
 import uuid
 import hashlib
@@ -246,3 +492,26 @@ def booking_success(request, booking_id):
 
 def get_available_slots_api(request):
     return JsonResponse({'slots': []})
+"""
+
+# --- EJECUCIÓN: ESCRIBIR ARCHIVOS ---
+
+# 1. Actualizar el diseño (home.html)
+path_html = os.path.join('templates', 'home.html')
+try:
+    with open(path_html, 'w', encoding='utf-8') as f:
+        f.write(nuevo_home_html)
+    print("✅ Diseño del Marketplace actualizado con estilo Luxury.")
+except Exception as e:
+    print(f"❌ Error escribiendo home.html: {e}")
+
+# 2. Actualizar la lógica (views.py)
+path_views = os.path.join('apps', 'businesses', 'views.py')
+try:
+    with open(path_views, 'w', encoding='utf-8') as f:
+        f.write(nuevo_views_py)
+    print("✅ Lógica de horarios actualizada correctamente.")
+except Exception as e:
+    print(f"❌ Error escribiendo views.py: {e}")
+
+print("\\n✨ SCRIPT TERMINADO: Sube los cambios a GitHub para ver la magia.")
