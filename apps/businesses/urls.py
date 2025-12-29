@@ -2,13 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # --- BOTÓN DE PÁNICO (Solo Admin) ---
     path('reset-database-secure-action/', views.emergency_reset_db, name='emergency_reset'),
+
     # Rutas Publicas
     path('', views.home, name='home'),
     path('marketplace/', views.marketplace, name='marketplace'),
-    
-    # --- CORRECCIÓN AQUÍ ---
-    # Cambiamos el 'name' de 'registro_owner' a 'register_owner' para que coincida con el HTML
     path('registro-negocio/', views.register_owner, name='register_owner'),
     
     # Dashboards
