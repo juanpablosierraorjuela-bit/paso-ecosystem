@@ -1,3 +1,19 @@
+import os
+import textwrap
+import subprocess
+
+def create_file(path, content):
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(textwrap.dedent(content).strip())
+    print(f"✅ Configuración Blindada: {path}")
+
+print("🚑 ARREGLANDO BUCLE DE REDIRECCIONES (ERR_TOO_MANY_REDIRECTS)...")
+
+# ==============================================================================
+# 1. REESCRIBIR SETTINGS.PY CON LA CONFIGURACIÓN CORRECTA PARA RENDER
+# ==============================================================================
+# Agregamos el bloque vital: SECURE_PROXY_SSL_HEADER
+settings_content = """
 from pathlib import Path
 import os
 import dj_database_url
@@ -22,12 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    
     # Librerías
     'django.contrib.humanize',
     'rest_framework',
     'corsheaders',
-
+    
     # Tus Apps
     'apps.core_saas',
     'apps.businesses',
@@ -99,3 +115,23 @@ AUTH_USER_MODEL = 'core_saas.User'
 LOGIN_URL = 'saas_login'
 LOGIN_REDIRECT_URL = 'owner_dashboard' # Por defecto vamos al panel del dueño
 LOGOUT_REDIRECT_URL = 'home'
+"""
+
+create_file('paso_ecosystem/settings.py', settings_content)
+
+# ==============================================================================
+# 2. SUBIDA AUTOMÁTICA
+# ==============================================================================
+print("🤖 Subiendo el parche de seguridad...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Add SECURE_PROXY_SSL_HEADER to solve redirect loop on Render"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print("🚀 ¡ENVIADO! Espera el deploy y prueba iniciar sesión de nuevo.")
+except Exception as e:
+    print(f"⚠️ Error git: {e}")
+
+print("💥 Limpiando...")
+try:
+    os.remove(__file__)
+except: pass
