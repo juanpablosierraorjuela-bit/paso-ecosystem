@@ -1,3 +1,20 @@
+import os
+import textwrap
+import subprocess
+
+def create_file(path, content):
+    directory = os.path.dirname(path)
+    if directory: os.makedirs(directory, exist_ok=True)
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(textwrap.dedent(content).strip())
+    print(f"✅ Archivo Corregido: {path}")
+
+print("🚑 APLICANDO PARCHE DE SEGURIDAD SSL PARA RENDER...")
+
+# ==============================================================================
+# SETTINGS.PY BLINDADO (Configuración explícita para Render)
+# ==============================================================================
+settings_content = """
 from pathlib import Path
 import os
 import dj_database_url
@@ -80,7 +97,7 @@ if IN_RENDER:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-
+    
     # Evitar error de CSRF (Origin checking failed)
     RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
     if RENDER_EXTERNAL_HOSTNAME:
@@ -102,3 +119,18 @@ AUTH_USER_MODEL = 'core_saas.User'
 LOGIN_URL = 'saas_login'
 LOGIN_REDIRECT_URL = 'owner_dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+"""
+
+create_file('paso_ecosystem/settings.py', settings_content)
+
+# ==============================================================================
+# SUBIDA AUTOMÁTICA
+# ==============================================================================
+print("🤖 Subiendo corrección a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Force SECURE_PROXY_SSL_HEADER to fix redirect loop"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print("🚀 ¡ENVIADO! Espera 2 minutos a que Render termine.")
+except Exception as e:
+    print(f"⚠️ Error git: {e}")
