@@ -2,16 +2,6 @@
 from apps.core_saas.models import User
 
 class Salon(models.Model):
-    # --- CAMPOS INYECTADOS ---
-    phone = models.CharField(max_length=50, verbose_name='Teléfono', blank=True, default='')
-    whatsapp = models.CharField(max_length=50, blank=True, verbose_name='WhatsApp')
-    instagram = models.CharField(max_length=100, blank=True, verbose_name='Instagram')
-    # -------------------------
-
-    # --- REDES SOCIALES (Agregado automáticamente) ---
-    whatsapp = models.CharField(max_length=50, blank=True, default='', verbose_name="WhatsApp", help_text="Ej: +57 300 123 4567")
-    instagram = models.CharField(max_length=100, blank=True, default='', verbose_name="Instagram", help_text="Usuario sin @")
-
     owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='salon')
     name = models.CharField(max_length=255, verbose_name="Nombre del Negocio")
     description = models.TextField(verbose_name="Descripción", blank=True)

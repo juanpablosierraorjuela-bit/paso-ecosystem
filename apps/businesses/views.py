@@ -130,3 +130,86 @@ class OwnerSettingsView(LoginRequiredMixin, UpdateView):
 
     def get_object(self):
         return self.request.user.salon
+
+
+# --- INYECCIÓN DEL SCRIPT REPARADOR ---
+from .forms import OwnerRegistrationForm
+
+class RegisterOwnerView(CreateView):
+    template_name = 'registration/register_owner.html'
+    form_class = OwnerRegistrationForm 
+    success_url = '/' # Redirige al home después de registrar
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'user_form' not in context:
+            context['user_form'] = OwnerRegistrationForm()
+        if 'salon_form' not in context:
+            context['salon_form'] = SalonForm()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        user_form = OwnerRegistrationForm(request.POST)
+        salon_form = SalonForm(request.POST)
+        
+        if user_form.is_valid() and salon_form.is_valid():
+            # 1. Crear Usuario
+            user = user_form.save(commit=False)
+            user.set_password(user_form.cleaned_data['password'])
+            user.save()
+            
+            # 2. Crear Salón vinculado
+            salon = salon_form.save(commit=False)
+            salon.owner = user
+            salon.save()
+            
+            # 3. Iniciar sesión y redirigir
+            from django.contrib.auth import login
+            login(request, user)
+            return redirect('home')
+        
+        return render(request, self.template_name, {
+            'user_form': user_form,
+            'salon_form': salon_form
+        })
+
+
+# --- INYECCIÓN FINAL ---
+from django.shortcuts import render, redirect
+from django.views.generic import CreateView
+from .forms import OwnerRegistrationForm, SalonForm
+
+class RegisterOwnerView(CreateView):
+    template_name = 'registration/register_owner.html'
+    form_class = OwnerRegistrationForm 
+    success_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'user_form' not in context:
+            context['user_form'] = OwnerRegistrationForm()
+        if 'salon_form' not in context:
+            context['salon_form'] = SalonForm()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        user_form = OwnerRegistrationForm(request.POST)
+        salon_form = SalonForm(request.POST)
+        
+        if user_form.is_valid() and salon_form.is_valid():
+            user = user_form.save(commit=False)
+            user.set_password(user_form.cleaned_data['password'])
+            user.save()
+            
+            salon = salon_form.save(commit=False)
+            salon.owner = user
+            salon.save()
+            
+            from django.contrib.auth import login
+            login(request, user)
+            return redirect('home')
+        
+        return render(request, self.template_name, {
+            'user_form': user_form,
+            'salon_form': salon_form
+        })

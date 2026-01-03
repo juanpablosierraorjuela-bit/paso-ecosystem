@@ -1,49 +1,45 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-header bg-dark text-white text-center py-5" style="background: linear-gradient(135deg, #000000 0%, #333333 100%);">
-                    <img src="{% static 'images/favicon.svg' %}" alt="Logo" width="50" height="50" class="mb-3 opacity-75">
-                    <h3 class="fw-bold mb-1">Bienvenido de Nuevo</h3>
-                    <p class="text-white-50 small mb-0">Ingresa a tu ecosistema.</p>
-                </div>
-
-                <div class="card-body p-5">
-                    <form method="POST">
-                        {% csrf_token %}
-
-                        <div class="form-floating mb-3">
-                            {{ form.username }}
-                            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
-                        </div>
-
-                        <div class="form-floating mb-4">
-                            {{ form.password }}
-                            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-dark btn-lg py-3 rounded-3 fw-bold shadow-sm">
-                                Iniciar Sesión <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="card-footer bg-light text-center py-3">
-                    <p class="mb-0 text-muted small">
-                        ¿Nuevo aquí? <a href="{% url 'register_owner' %}" class="fw-bold text-dark text-decoration-none">Registra tu Negocio</a>
-                    </p>
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="card shadow-lg border-0 rounded-4 overflow-hidden" style="max-width: 900px; width: 100%;">
+        <div class="row g-0">
+            <div class="col-md-6 bg-primary d-none d-md-flex align-items-center justify-content-center text-white p-5">
+                <div class="text-center">
+                    <i class="bi bi-calendar-check display-1 mb-4"></i>
+                    <h2 class="fw-bold">Bienvenido de nuevo</h2>
+                    <p class="lead">Gestiona tu negocio de belleza de manera inteligente.</p>
                 </div>
             </div>
-
-            <p class="text-center text-muted mt-4 small">
-                <i class="fas fa-shield-alt me-1"></i> Acceso Seguro SSL
-            </p>
+            <div class="col-md-6 p-5 bg-white">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold text-dark">Iniciar Sesión</h3>
+                    <p class="text-muted small">Ingresa tus credenciales para acceder</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.errors %}
+                        <div class="alert alert-danger py-2 small rounded-3" role="alert">
+                            Usuario o contraseña incorrectos.
+                        </div>
+                    {% endif %}
+                    <div class="form-floating mb-3">
+                        <input type="text" name="username" class="form-control" id="floatingInput" placeholder="Usuario" required>
+                        <label for="floatingInput">Nombre de Usuario</label>
+                    </div>
+                    <div class="form-floating mb-4">
+                        <input type="password" name="password" class="form-control" id="floatingPassword" placeholder="Contraseña" required>
+                        <label for="floatingPassword">Contraseña</label>
+                    </div>
+                    <div class="d-grid mb-4">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold">Ingresar</button>
+                    </div>
+                    <div class="text-center">
+                        <p class="small text-muted">¿Aún no tienes cuenta? <a href="{% url 'register_owner' %}" class="text-decoration-none fw-bold">Registra tu empresa aquí</a></p>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
