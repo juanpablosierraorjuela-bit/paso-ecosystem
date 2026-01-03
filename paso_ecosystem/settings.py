@@ -44,6 +44,8 @@ TEMPLATES = [
                 'django.template.context_processors.debug', 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages',
                 'apps.businesses.context_processors.owner_check',
+                # --- NUEVO: Permite usar global_settings en el HTML ---
+                'apps.core_saas.context_processors.platform_settings',
             ],
         },
     },
@@ -76,5 +78,5 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 AUTH_USER_MODEL = 'core_saas.User'
 LOGIN_URL = 'saas_login'
-LOGIN_REDIRECT_URL = 'owner_dashboard' # Por defecto intentamos dueño, pero views.py lo corrige
+LOGIN_REDIRECT_URL = 'owner_dashboard' 
 LOGOUT_REDIRECT_URL = 'home'

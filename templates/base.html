@@ -168,8 +168,12 @@
                     <small class="text-muted">&copy; 2026 Paso Ecosystem.</small>
                 </div>
                 <div class="col-md-4 text-center text-md-end">
-                    <a href="#" class="text-muted me-3"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="text-muted"><i class="fab fa-whatsapp"></i></a>
+                    {% if global_settings.instagram_link %}
+                    <a href="{{ global_settings.instagram_link }}" target="_blank" class="text-muted me-3"><i class="fab fa-instagram"></i></a>
+                    {% endif %}
+                    {% if global_settings.whatsapp_number %}
+                    <a href="https://wa.me/{{ global_settings.whatsapp_number }}" target="_blank" class="text-muted"><i class="fab fa-whatsapp"></i></a>
+                    {% endif %}
                 </div>
             </div>
         </div>
