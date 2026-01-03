@@ -1,4 +1,34 @@
-{% extends 'base.html' %}
+import os
+import subprocess
+
+# --- CONFIGURACIÓN DE RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_HTML = os.path.join(BASE_DIR, "templates", "base.html")
+MARKET_HTML = os.path.join(BASE_DIR, "templates", "marketplace.html")
+
+def upgrade_base_navbar():
+    print("🛠️ Corrigiendo Logout y Navbar...")
+    if not os.path.exists(BASE_HTML): return
+    
+    with open(BASE_HTML, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Reemplazo del botón de Logout simple por el formulario POST requerido por Django 5
+    old_logout = '<a class="nav-link" href="{% url \'logout\' %}">Salir</a>'
+    new_logout = """<form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link border-0 bg-transparent" style="cursor:pointer;">Salir</button>
+                    </form>"""
+    
+    if old_logout in content:
+        content = content.replace(old_logout, new_logout)
+        with open(BASE_HTML, "w", encoding="utf-8") as f:
+            f.write(content)
+
+def upgrade_marketplace():
+    print("💎 Rediseñando Marketplace a Estilo Premium...")
+    
+    premium_market = """{% extends 'base.html' %}
 {% block content %}
 <div class="container py-5">
     <div class="text-center mb-5">
@@ -42,4 +72,24 @@
 <style>
     .card:hover { transform: translateY(-10px); }
 </style>
-{% endblock %}
+{% endblock %}"""
+    
+    with open(MARKET_HTML, "w", encoding="utf-8") as f:
+        f.write(premium_market)
+
+def push_to_github():
+    print("🚀 Subiendo cambios a GitHub...")
+    try:
+        subprocess.run(["git", "add", "."], check=True)
+        subprocess.run(["git", "commit", "-m", "Diseño Premium y fix de Logout"], check=True)
+        subprocess.run(["git", "push", "origin", "main"], check=True)
+        print("✅ ¡Sincronizado con éxito!")
+    except Exception as e:
+        print(f"❌ Error en Git: {e}")
+
+if __name__ == "__main__":
+    upgrade_base_navbar()
+    upgrade_marketplace()
+    push_to_github()
+    print("\n✨ Proceso terminado. Auto-destruyendo script...")
+    os.remove(__file__)
