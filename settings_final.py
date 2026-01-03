@@ -5,15 +5,12 @@ import subprocess
 def create_file(path, content):
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(textwrap.dedent(content).strip())
-    print(f"✅ Configuración Blindada: {path}")
+    print(f"✅ Settings Blindados: {path}")
 
-print("🚑 ARREGLANDO BUCLE DE REDIRECCIONES (ERR_TOO_MANY_REDIRECTS)...")
+print("🛡️ APLICANDO CORRECCIÓN DE SSL Y REDIRECCIONES...")
 
-# ==============================================================================
-# 1. REESCRIBIR SETTINGS.PY CON LA CONFIGURACIÓN CORRECTA PARA RENDER
-# ==============================================================================
-# Agregamos el bloque vital: SECURE_PROXY_SSL_HEADER
-settings_content = """
+# Reescribimos settings.py con la configuración exacta que pide la documentación de Render
+create_file('paso_ecosystem/settings.py', """
 from pathlib import Path
 import os
 import dj_database_url
@@ -22,14 +19,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-genesis-key-2026')
 
-# Detectamos si estamos en Render
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
+# CONFIGURACIÓN DE ENTORNO
+# Si la variable RENDER existe, estamos en producción
+IN_RENDER = 'RENDER' in os.environ
+
+if IN_RENDER:
     DEBUG = False
+    ALLOWED_HOSTS = ['*'] # Render maneja los dominios
 else:
     DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+    ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -39,19 +38,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Librerías
     'django.contrib.humanize',
     'rest_framework',
     'corsheaders',
     
-    # Tus Apps
     'apps.core_saas',
     'apps.businesses',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Vital para estáticos en Render
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -82,6 +79,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'paso_ecosystem.wsgi.application'
 
+# BASE DE DATOS
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///db.sqlite3',
@@ -89,15 +87,20 @@ DATABASES = {
     )
 }
 
-# --- CONFIGURACIÓN DE SEGURIDAD VITAL PARA RENDER ---
-if not DEBUG:
-    # Esto soluciona el error de redirecciones infinitas
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# --- SEGURIDAD CRÍTICA PARA RENDER ---
+# Esta línea le dice a Django: "Confía en que Render ya hizo el trabajo de seguridad SSL"
+# Se pone SIEMPRE, no solo si DEBUG es False, para evitar errores híbridos.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if IN_RENDER:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    # Evita error CSRF al enviar formularios
-    CSRF_TRUSTED_ORIGINS = ['https://' + RENDER_EXTERNAL_HOSTNAME] if RENDER_EXTERNAL_HOSTNAME else []
+    
+    # Configuración de CSRF para evitar error "Origin checking failed"
+    RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+    if RENDER_EXTERNAL_HOSTNAME:
+        CSRF_TRUSTED_ORIGINS = ['https://' + RENDER_EXTERNAL_HOSTNAME]
 
 AUTH_PASSWORD_VALIDATORS = [] 
 
@@ -106,32 +109,26 @@ TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
+# ESTÁTICOS
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 AUTH_USER_MODEL = 'core_saas.User'
 LOGIN_URL = 'saas_login'
-LOGIN_REDIRECT_URL = 'owner_dashboard' # Por defecto vamos al panel del dueño
+LOGIN_REDIRECT_URL = 'owner_dashboard'
 LOGOUT_REDIRECT_URL = 'home'
-"""
-
-create_file('paso_ecosystem/settings.py', settings_content)
+""")
 
 # ==============================================================================
-# 2. SUBIDA AUTOMÁTICA
+# SUBIDA AUTOMÁTICA
 # ==============================================================================
-print("🤖 Subiendo el parche de seguridad...")
+print("🤖 Subiendo la corrección final a GitHub...")
 try:
     subprocess.run(["git", "add", "."], check=True)
-    subprocess.run(["git", "commit", "-m", "Fix: Add SECURE_PROXY_SSL_HEADER to solve redirect loop on Render"], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Enforce SECURE_PROXY_SSL_HEADER to prevent redirect loops"], check=True)
     subprocess.run(["git", "push", "origin", "main"], check=True)
-    print("🚀 ¡ENVIADO! Espera el deploy y prueba iniciar sesión de nuevo.")
+    print("🚀 ¡ENVIADO! Espera a que Render termine el deploy.")
 except Exception as e:
     print(f"⚠️ Error git: {e}")
-
-print("💥 Limpiando...")
-try:
-    os.remove(__file__)
-except: pass
