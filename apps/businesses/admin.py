@@ -1,46 +1,24 @@
-from django.contrib import admin
-from .models import Salon, Service, Employee, Booking, Schedule, OpeningHours
+﻿from django.contrib import admin
+from .models import Salon, Service, Employee, Booking, Schedule
+
+class ServiceInline(admin.TabularInline):
+    model = Service
+    extra = 0
+
+class EmployeeInline(admin.TabularInline):
+    model = Employee
+    extra = 0
 
 @admin.register(Salon)
 class SalonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'owner', 'phone', 'deposit_percentage', 'created_at')
-    list_filter = ('city', 'created_at')
-    search_fields = ('name', 'owner__email', 'owner__username', 'phone')
-    ordering = ('-created_at',)
-    list_per_page = 20
+    list_display = ('name', 'city', 'owner_email')
+    search_fields = ('name', 'city', 'owner__email')
+    inlines = [ServiceInline, EmployeeInline]
+
+    def owner_email(self, obj):
+        return obj.owner.email
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer_name', 'salon', 'service', 'date', 'time', 'status_colored')
-    list_filter = ('status', 'date', 'salon')
-    search_fields = ('customer_name', 'customer_email', 'salon__name')
-    date_hierarchy = 'date'
-
-    # Colores para los estados
-    from django.utils.html import format_html
-    def status_colored(self, obj):
-        colors = {
-            'pending_payment': 'orange',
-            'confirmed': 'green',
-            'cancelled': 'red',
-            'expired': 'gray',
-            'in_review': 'blue',
-        }
-        color = colors.get(obj.status, 'black')
-        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_status_display())
-    status_colored.short_description = 'Estado'
-
-@admin.register(Service)
-class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'salon', 'price', 'duration_minutes')
-    list_filter = ('salon',)
-    search_fields = ('name', 'salon__name')
-
-@admin.register(Employee)
-class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'salon', 'is_active')
-    list_filter = ('salon', 'is_active')
-
-# Registros simples para horarios
-admin.site.register(Schedule)
-admin.site.register(OpeningHours)
+    list_display = ('customer_name', 'salon', 'service', 'date_time', 'status')
+    list_filter = ('status', 'date_time', 'salon')
