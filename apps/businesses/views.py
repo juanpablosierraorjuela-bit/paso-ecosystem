@@ -1,10 +1,14 @@
-﻿from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView
+﻿from django.shortcuts import render, redirect
+from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.db.models import Q
-from django.shortcuts import redirect
 from .models import Salon, Service, Employee, Booking
 from .forms import SalonForm, ServiceForm, EmployeeForm
+
+# --- VISTA DE INICIO (LA QUE FALTABA) ---
+def home(request):
+    return render(request, 'home.html')
 
 class LandingBusinessesView(TemplateView):
     template_name = 'landing_businesses.html'
@@ -37,7 +41,7 @@ class MarketplaceView(ListView):
         context = super().get_context_data(**kwargs)
         # Obtener ciudades únicas que tengan negocios registrados
         cities = Salon.objects.values_list('city', flat=True).distinct()
-        context['cities'] = sorted(list(set(cities))) # Eliminar duplicados y ordenar
+        context['cities'] = sorted(list(set(cities)))
         return context
 
 class SalonDetailView(DetailView):
