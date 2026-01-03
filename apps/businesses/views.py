@@ -104,3 +104,8 @@ class OwnerSettingsView(UpdateView):
         salon = self.request.user.salon
         schedule, created = SalonSchedule.objects.get_or_create(salon=salon)
         return schedule
+
+
+# --- VISTA RECUPERADA ---
+def landing_businesses(request):
+    return render(request, 'landing_businesses.html')

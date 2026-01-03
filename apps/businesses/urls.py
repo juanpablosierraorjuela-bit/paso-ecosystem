@@ -5,6 +5,7 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     # Públicas
     path('', views.home, name='home'),
+    path('negocios/', views.landing_businesses, name='landing_businesses'),
     path('marketplace/', views.marketplace, name='marketplace'),
     path('salon/<int:salon_id>/', views.salon_detail, name='salon_detail'),
     
