@@ -28,5 +28,6 @@ urlpatterns = [
     # Auth
     path('login/', views.saas_login, name='saas_login'),
     path('logout/', views.saas_logout, name='saas_logout'),
+        path('negocios/', views.landing_businesses, name='landing_businesses'),
     path('registro-negocio/', views.register_owner, name='register_owner'),
 ]

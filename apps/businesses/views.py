@@ -270,3 +270,6 @@ def booking_create(request):
     emp_id=d.get('emp_id'); emp=Employee.objects.get(id=emp_id) if emp_id and emp_id!='any' else s.employees.first()
     for sid in d['service_ids']: Booking.objects.create(salon=s,service_id=sid,employee=emp,customer_name=request.POST['customer_name'],customer_email=email,customer_phone=request.POST['customer_phone'],date=d['date'],time=d['time'])
     return redirect('client_dashboard')
+# --- LANDING PAGES ---
+def landing_businesses(request):
+    return render(request, 'landing_businesses.html')

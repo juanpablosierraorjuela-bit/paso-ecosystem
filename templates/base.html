@@ -120,7 +120,7 @@
                         <a class="nav-link" href="{% url 'marketplace' %}">Explorar</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'register_owner' %}">Negocios</a>
+                        <a class="nav-link" href="{% url 'landing_businesses' %}">Negocios</a>
                     </li>
                 </ul>
 
@@ -134,7 +134,7 @@
                         <a href="{% url 'saas_logout' %}" class="text-muted text-decoration-none small fw-bold px-2">Salir</a>
                     {% else %}
                         <a href="{% url 'saas_login' %}" class="fw-bold text-dark text-decoration-none me-2">Entrar</a>
-                        <a href="{% url 'register_owner' %}" class="btn btn-dark btn-sm">Crear Cuenta</a>
+                        <a href="{% url 'landing_businesses' %}" class="btn btn-dark btn-sm">Crear Cuenta</a>
                     {% endif %}
                 </div>
             </div>
