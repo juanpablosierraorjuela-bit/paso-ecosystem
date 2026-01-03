@@ -1,20 +1,21 @@
-﻿from django.urls import path
+from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    # Públicas
     path('', views.home, name='home'),
-    path('marketplace/', views.MarketplaceView.as_view(), name='marketplace'),
-    path('negocios/', views.LandingBusinessesView.as_view(), name='landing_businesses'),
-    path('registro-dueno/', views.RegisterOwnerView.as_view(), name='register_owner'),
-    path('salon/<int:pk>/', views.SalonDetailView.as_view(), name='salon_detail'),
+    path('marketplace/', views.marketplace, name='marketplace'),
+    path('salon/<int:salon_id>/', views.salon_detail, name='salon_detail'),
+    
+    # Autenticación
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/register_owner/', views.RegisterOwnerView.as_view(), name='register_owner'),
+
+    # Dashboard Dueño (Aquí arreglamos los botones caídos)
     path('dashboard/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
-    path('dashboard/servicios/', views.OwnerServicesView.as_view(), name='owner_services'),
-    path('dashboard/servicios/nuevo/', views.ServiceCreateView.as_view(), name='service_create'),
-    path('dashboard/servicios/<int:pk>/editar/', views.ServiceUpdateView.as_view(), name='service_update'),
-    path('dashboard/servicios/<int:pk>/eliminar/', views.ServiceDeleteView.as_view(), name='service_delete'),
-    path('dashboard/empleados/', views.OwnerEmployeesView.as_view(), name='owner_employees'),
-    path('dashboard/empleados/nuevo/', views.EmployeeCreateView.as_view(), name='employee_create'),
-    path('dashboard/empleados/<int:pk>/editar/', views.EmployeeUpdateView.as_view(), name='employee_update'),
-    path('dashboard/empleados/<int:pk>/eliminar/', views.EmployeeDeleteView.as_view(), name='employee_delete'),
-    path('dashboard/configuracion/', views.OwnerSettingsView.as_view(), name='owner_settings'),
+    path('dashboard/services/', views.OwnerServicesView.as_view(), name='owner_services'),
+    path('dashboard/employees/', views.OwnerEmployeesView.as_view(), name='owner_employees'),
+    path('dashboard/settings/', views.OwnerSettingsView.as_view(), name='owner_settings'),
 ]

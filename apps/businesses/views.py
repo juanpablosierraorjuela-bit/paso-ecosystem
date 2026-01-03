@@ -1,58 +1,81 @@
-﻿from django.shortcuts import render, redirect
-from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import CreateView, TemplateView, UpdateView, ListView
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth import login
 from django.urls import reverse_lazy
-from django.db.models import Q
-from .models import Salon, Service, Employee, Booking
-from .forms import SalonForm, ServiceForm, EmployeeForm
+from .models import Salon, Service, Employee, SalonSchedule
+from .forms import OwnerRegistrationForm, SalonForm, ServiceForm, EmployeeForm
 
-# --- VISTA DE INICIO (LA QUE FALTABA) ---
+# --- PÚBLICO ---
+
 def home(request):
     return render(request, 'home.html')
 
-class LandingBusinessesView(TemplateView):
-    template_name = 'landing_businesses.html'
+def marketplace(request):
+    salons = Salon.objects.all()
+    return render(request, 'marketplace.html', {'salons': salons})
 
-class RegisterOwnerView(TemplateView):
+def salon_detail(request, salon_id):
+    salon = get_object_or_404(Salon, id=salon_id)
+    return render(request, 'salon_detail.html', {'salon': salon})
+
+# --- REGISTRO (ARREGLADO: Redirige al Dashboard) ---
+
+class RegisterOwnerView(CreateView):
     template_name = 'registration/register_owner.html'
-
-class MarketplaceView(ListView):
-    model = Salon
-    template_name = 'marketplace.html'
-    context_object_name = 'salons'
-
-    def get_queryset(self):
-        query = self.request.GET.get('q')
-        city = self.request.GET.get('city')
-        
-        queryset = Salon.objects.all()
-
-        if city and city != 'Todas':
-            queryset = queryset.filter(city__iexact=city)
-
-        if query:
-            queryset = queryset.filter(
-                Q(name__icontains=query) | 
-                Q(description__icontains=query)
-            )
-        return queryset
+    form_class = OwnerRegistrationForm
+    success_url = '/dashboard/'  # <--- AQUÍ ESTÁ EL CAMBIO CLAVE
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Obtener ciudades únicas que tengan negocios registrados
-        cities = Salon.objects.values_list('city', flat=True).distinct()
-        context['cities'] = sorted(list(set(cities)))
+        if 'user_form' not in context:
+            context['user_form'] = OwnerRegistrationForm()
+        if 'salon_form' not in context:
+            context['salon_form'] = SalonForm()
         return context
 
-class SalonDetailView(DetailView):
-    model = Salon
-    template_name = 'salon_detail.html'
-    context_object_name = 'salon'
+    def post(self, request, *args, **kwargs):
+        user_form = OwnerRegistrationForm(request.POST)
+        salon_form = SalonForm(request.POST)
+        
+        if user_form.is_valid() and salon_form.is_valid():
+            user = user_form.save(commit=False)
+            user.set_password(user_form.cleaned_data['password'])
+            user.save()
+            
+            salon = salon_form.save(commit=False)
+            salon.owner = user
+            salon.save()
+            
+            # Crear horario por defecto
+            SalonSchedule.objects.create(salon=salon)
+            
+            login(request, user)
+            return redirect('owner_dashboard') # Redirección explícita
+        
+        return render(request, self.template_name, {
+            'user_form': user_form,
+            'salon_form': salon_form
+        })
 
-class OwnerDashboardView(LoginRequiredMixin, TemplateView):
+# --- PANEL DE DUEÑO (DASHBOARD) ---
+
+@method_decorator(login_required, name='dispatch')
+class OwnerDashboardView(TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
 
-class OwnerServicesView(LoginRequiredMixin, ListView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Intentar obtener el salón del usuario actual
+        try:
+            context['salon'] = self.request.user.salon
+        except Salon.DoesNotExist:
+            context['salon'] = None
+        return context
+
+@method_decorator(login_required, name='dispatch')
+class OwnerServicesView(ListView):
     model = Service
     template_name = 'dashboard/owner_services.html'
     context_object_name = 'services'
@@ -60,34 +83,8 @@ class OwnerServicesView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Service.objects.filter(salon__owner=self.request.user)
 
-class ServiceCreateView(LoginRequiredMixin, CreateView):
-    model = Service
-    form_class = ServiceForm
-    template_name = 'dashboard/service_form.html'
-    success_url = reverse_lazy('owner_services')
-
-    def form_valid(self, form):
-        form.instance.salon = self.request.user.salon
-        return super().form_valid(form)
-
-class ServiceUpdateView(LoginRequiredMixin, UpdateView):
-    model = Service
-    form_class = ServiceForm
-    template_name = 'dashboard/service_form.html'
-    success_url = reverse_lazy('owner_services')
-    
-    def get_queryset(self):
-        return Service.objects.filter(salon__owner=self.request.user)
-
-class ServiceDeleteView(LoginRequiredMixin, DeleteView):
-    model = Service
-    template_name = 'dashboard/service_confirm_delete.html'
-    success_url = reverse_lazy('owner_services')
-    
-    def get_queryset(self):
-        return Service.objects.filter(salon__owner=self.request.user)
-
-class OwnerEmployeesView(LoginRequiredMixin, ListView):
+@method_decorator(login_required, name='dispatch')
+class OwnerEmployeesView(ListView):
     model = Employee
     template_name = 'dashboard/owner_employees.html'
     context_object_name = 'employees'
@@ -95,121 +92,15 @@ class OwnerEmployeesView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Employee.objects.filter(salon__owner=self.request.user)
 
-class EmployeeCreateView(LoginRequiredMixin, CreateView):
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'dashboard/employee_form.html'
-    success_url = reverse_lazy('owner_employees')
-
-    def form_valid(self, form):
-        form.instance.salon = self.request.user.salon
-        return super().form_valid(form)
-
-class EmployeeUpdateView(LoginRequiredMixin, UpdateView):
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'dashboard/employee_form.html'
-    success_url = reverse_lazy('owner_employees')
-    
-    def get_queryset(self):
-        return Employee.objects.filter(salon__owner=self.request.user)
-
-class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
-    model = Employee
-    template_name = 'dashboard/employee_confirm_delete.html'
-    success_url = reverse_lazy('owner_employees')
-    
-    def get_queryset(self):
-        return Employee.objects.filter(salon__owner=self.request.user)
-
-class OwnerSettingsView(LoginRequiredMixin, UpdateView):
-    model = Salon
-    form_class = SalonForm
+@method_decorator(login_required, name='dispatch')
+class OwnerSettingsView(UpdateView):
+    model = SalonSchedule
     template_name = 'dashboard/owner_settings.html'
-    success_url = reverse_lazy('owner_dashboard')
+    fields = ['monday_open', 'tuesday_open', 'wednesday_open', 'thursday_open', 'friday_open', 'saturday_open', 'sunday_open']
+    success_url = reverse_lazy('owner_settings')
 
-    def get_object(self):
-        return self.request.user.salon
-
-
-# --- INYECCIÓN DEL SCRIPT REPARADOR ---
-from .forms import OwnerRegistrationForm
-
-class RegisterOwnerView(CreateView):
-    template_name = 'registration/register_owner.html'
-    form_class = OwnerRegistrationForm 
-    success_url = '/' # Redirige al home después de registrar
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if 'user_form' not in context:
-            context['user_form'] = OwnerRegistrationForm()
-        if 'salon_form' not in context:
-            context['salon_form'] = SalonForm()
-        return context
-
-    def post(self, request, *args, **kwargs):
-        user_form = OwnerRegistrationForm(request.POST)
-        salon_form = SalonForm(request.POST)
-        
-        if user_form.is_valid() and salon_form.is_valid():
-            # 1. Crear Usuario
-            user = user_form.save(commit=False)
-            user.set_password(user_form.cleaned_data['password'])
-            user.save()
-            
-            # 2. Crear Salón vinculado
-            salon = salon_form.save(commit=False)
-            salon.owner = user
-            salon.save()
-            
-            # 3. Iniciar sesión y redirigir
-            from django.contrib.auth import login
-            login(request, user)
-            return redirect('home')
-        
-        return render(request, self.template_name, {
-            'user_form': user_form,
-            'salon_form': salon_form
-        })
-
-
-# --- INYECCIÓN FINAL ---
-from django.shortcuts import render, redirect
-from django.views.generic import CreateView
-from .forms import OwnerRegistrationForm, SalonForm
-
-class RegisterOwnerView(CreateView):
-    template_name = 'registration/register_owner.html'
-    form_class = OwnerRegistrationForm 
-    success_url = '/'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if 'user_form' not in context:
-            context['user_form'] = OwnerRegistrationForm()
-        if 'salon_form' not in context:
-            context['salon_form'] = SalonForm()
-        return context
-
-    def post(self, request, *args, **kwargs):
-        user_form = OwnerRegistrationForm(request.POST)
-        salon_form = SalonForm(request.POST)
-        
-        if user_form.is_valid() and salon_form.is_valid():
-            user = user_form.save(commit=False)
-            user.set_password(user_form.cleaned_data['password'])
-            user.save()
-            
-            salon = salon_form.save(commit=False)
-            salon.owner = user
-            salon.save()
-            
-            from django.contrib.auth import login
-            login(request, user)
-            return redirect('home')
-        
-        return render(request, self.template_name, {
-            'user_form': user_form,
-            'salon_form': salon_form
-        })
+    def get_object(self, queryset=None):
+        # Obtiene o crea el horario del salón del usuario
+        salon = self.request.user.salon
+        schedule, created = SalonSchedule.objects.get_or_create(salon=salon)
+        return schedule

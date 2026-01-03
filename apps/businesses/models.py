@@ -87,3 +87,16 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"Cita de {self.customer_name} en {self.salon.name}"
+
+class SalonSchedule(models.Model):
+    salon = models.OneToOneField(Salon, on_delete=models.CASCADE, related_name='schedule')
+    monday_open = models.BooleanField(default=True, verbose_name="Lunes")
+    tuesday_open = models.BooleanField(default=True, verbose_name="Martes")
+    wednesday_open = models.BooleanField(default=True, verbose_name="Miércoles")
+    thursday_open = models.BooleanField(default=True, verbose_name="Jueves")
+    friday_open = models.BooleanField(default=True, verbose_name="Viernes")
+    saturday_open = models.BooleanField(default=True, verbose_name="Sábado")
+    sunday_open = models.BooleanField(default=False, verbose_name="Domingo")
+
+    def __str__(self):
+        return f"Horario de {self.salon.name}"
