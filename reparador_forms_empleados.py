@@ -1,4 +1,11 @@
-from django import forms
+import os
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FORMS_PATH = os.path.join(BASE_DIR, "apps", "businesses", "forms.py")
+
+# --- CONTENIDO CORREGIDO DE FORMS.PY (INCLUYE EmployeeForm y EmployeeCreationForm) ---
+CONTENIDO_FORMS = """from django import forms
 from django.contrib.auth import get_user_model
 from .models import Salon, Service, Employee
 
@@ -70,3 +77,13 @@ class EmployeeCreationForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
+"""
+
+def reparar_forms():
+    print("🚑 Reparando forms.py...")
+    with open(FORMS_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_FORMS)
+    print("✅ ¡forms.py arreglado! Se han incluido todos los formularios necesarios.")
+
+if __name__ == "__main__":
+    reparar_forms()
