@@ -3,13 +3,9 @@ import os
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-genesis-key-2026')
 
-# --- DETECCIÓN DE ENTORNO ---
-# Si la variable 'RENDER' existe, estamos en producción
 IN_RENDER = 'RENDER' in os.environ
-
 if IN_RENDER:
     DEBUG = False
     ALLOWED_HOSTS = ['*']
@@ -18,22 +14,15 @@ else:
     ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.humanize',
-    'rest_framework',
-    'corsheaders',
-    'apps.core_saas',
-    'apps.businesses',
+    'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
+    'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
+    'django.contrib.humanize', 'rest_framework', 'corsheaders',
+    'apps.core_saas', 'apps.businesses',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # ¡VITAL!
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -52,10 +41,8 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.debug', 'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages',
                 'apps.businesses.context_processors.owner_check',
             ],
         },
@@ -64,30 +51,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'paso_ecosystem.wsgi.application'
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
-        conn_max_age=600
-    )
-}
+DATABASES = {'default': dj_database_url.config(default='sqlite:///db.sqlite3', conn_max_age=600)}
 
-# --- SEGURIDAD SSL (LA SOLUCIÓN AL BUCLE) ---
-# Esta línea le dice a Django que confíe en Render para el SSL.
-# Debe estar SIEMPRE presente, no dentro de un 'if'.
+# --- SEGURIDAD SSL (FIX DEFINITIVO) ---
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
 if IN_RENDER:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-
-    # Evitar error de CSRF (Origin checking failed)
     RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
     if RENDER_EXTERNAL_HOSTNAME:
         CSRF_TRUSTED_ORIGINS = ['https://' + RENDER_EXTERNAL_HOSTNAME]
 
 AUTH_PASSWORD_VALIDATORS = [] 
-
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
@@ -100,5 +76,5 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 AUTH_USER_MODEL = 'core_saas.User'
 LOGIN_URL = 'saas_login'
-LOGIN_REDIRECT_URL = 'owner_dashboard'
+LOGIN_REDIRECT_URL = 'owner_dashboard' # Por defecto intentamos dueño, pero views.py lo corrige
 LOGOUT_REDIRECT_URL = 'home'
