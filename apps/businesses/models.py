@@ -1,90 +1,79 @@
-from django.db import models
-from django.conf import settings
-from django.utils.text import slugify
-from django.utils import timezone
+﻿from django.db import models
+from apps.core_saas.models import User
 
 class Salon(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_salons')
+    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='salon')
     name = models.CharField(max_length=255, verbose_name="Nombre del Negocio")
-    slug = models.SlugField(unique=True, blank=True)
-    city = models.CharField(max_length=100, verbose_name="Ciudad")
-    address = models.CharField(max_length=255, blank=True, verbose_name="Dirección")
-    phone = models.CharField(max_length=50, verbose_name="WhatsApp del Negocio")
-    instagram_link = models.URLField(blank=True, null=True, verbose_name="Link de Instagram")
-    deposit_percentage = models.IntegerField(default=30, verbose_name="% de Abono")
-    description = models.TextField(blank=True, verbose_name="Descripción")
+    description = models.TextField(verbose_name="Descripción", blank=True)
+    address = models.CharField(max_length=255, verbose_name="Dirección Física")
+    
+    # --- NUEVOS CAMPOS DE LUJO Y REDES ---
+    city = models.CharField(max_length=100, verbose_name="Ciudad", default="Tunja")
+    whatsapp_number = models.CharField(max_length=20, blank=True, verbose_name="WhatsApp (sin +)")
+    instagram_link = models.URLField(blank=True, verbose_name="Link de Instagram")
+    maps_link = models.URLField(blank=True, verbose_name="Link de Google Maps")
+    
+    # Para la foto de perfil
+    image = models.ImageField(upload_to='salons/', blank=True, null=True, verbose_name="Logo del Negocio")
 
-    # Horarios Generales (Usados para validación rápida)
-    open_time = models.TimeField(default='08:00', verbose_name="Apertura")
-    close_time = models.TimeField(default='20:00', verbose_name="Cierre")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name) + '-' + str(self.owner.id)[:4]
-        super().save(*args, **kwargs)
-
-    def __str__(self): return self.name
+    def __str__(self):
+        return self.name
 
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=255)
-    duration_minutes = models.IntegerField(default=60)
+    description = models.TextField(blank=True)
+    duration = models.IntegerField(help_text="Duración en minutos")
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
 
-    def __str__(self): return f"{self.name} (${self.price})"
+    def __str__(self):
+        return f"{self.name} - {self.salon.name}"
 
 class Employee(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
-    instagram_link = models.URLField(blank=True, null=True)
 
-    # Horario Almuerzo
-    lunch_start = models.TimeField(null=True, blank=True)
-    lunch_end = models.TimeField(null=True, blank=True)
+    def __str__(self):
+        return self.name
 
-    def __str__(self): return self.name
-
-class Booking(models.Model):
-    STATUS_CHOICES = [
-        ('pending_payment', '🟡 Pendiente Abono'),
-        ('in_review', '🟠 En Revisión'),
-        ('confirmed', '🟢 Confirmada'),
-        ('cancelled', '🔴 Cancelada'),
-        ('expired', '⚫ Expirada'),
-    ]
-    salon = models.ForeignKey(Salon, on_delete=models.CASCADE)
-    service = models.ForeignKey(Service, on_delete=models.CASCADE)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    customer_name = models.CharField(max_length=255)
-    customer_email = models.EmailField()
-    customer_phone = models.CharField(max_length=50)
-    date = models.DateField()
-    time = models.TimeField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self): return f"Cita #{self.id} - {self.customer_name}"
-
-# --- MODELOS RESTAURADOS (Requeridos por el Admin) ---
-# Se agregan al final. No afectan a los modelos de arriba.
 class Schedule(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    day_of_week = models.IntegerField()
-    start_time = models.TimeField(default='09:00')
-    end_time = models.TimeField(default='18:00')
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='schedules')
+    day_of_week = models.IntegerField(choices=[
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), 
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')
+    ])
+    start_time = models.TimeField()
+    end_time = models.TimeField()
     is_active = models.BooleanField(default=True)
-
-    def __str__(self): return f"Horario {self.employee.name} - Dia {self.day_of_week}"
 
 class OpeningHours(models.Model):
+    # Modelo legado para compatibilidad si existía antes, 
+    # pero Schedule es el principal ahora.
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE)
-    day_of_week = models.IntegerField()
-    start_time = models.TimeField(default='08:00')
-    end_time = models.TimeField(default='20:00')
-    is_closed = models.BooleanField(default=False)
+    weekday = models.IntegerField()
+    from_hour = models.TimeField()
+    to_hour = models.TimeField()
 
-    def __str__(self): return f"Apertura {self.salon.name} - Dia {self.day_of_week}"
+class Booking(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pendiente'),
+        ('CONFIRMED', 'Confirmada'),
+        ('COMPLETED', 'Completada'),
+        ('CANCELLED', 'Cancelada'),
+    )
+    
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True, blank=True)
+    customer_name = models.CharField(max_length=255)
+    customer_phone = models.CharField(max_length=20)
+    customer_email = models.EmailField(blank=True)
+    date_time = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Cita de {self.customer_name} en {self.salon.name}"
