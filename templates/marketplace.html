@@ -1,19 +1,55 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-5">
-    <h2 class="fw-bold mb-4">Salones Destacados</h2>
-    <div class="row g-4">
-        {% for salon in salons %}
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="fw-bold">{{ salon.name }}</h5>
-                    <p class="text-muted small"><i class="fas fa-map-marker-alt"></i> {{ salon.city }}</p>
-                    <a href="{% url 'salon_detail' salon.slug %}" class="btn btn-outline-dark w-100">Ver Servicios</a>
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold m-0">Explorar Negocios 💈</h2>
+
+            <form class="d-flex" method="GET">
+                <select name="city" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="">Todas las ciudades</option>
+                    {% for city in cities %}
+                    <option value="{{ city }}" {% if current_city == city %}selected{% endif %}>{{ city }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        <div class="row g-4">
+            {% for salon in salons %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h4 class="card-title fw-bold mb-0">{{ salon.name }}</h4>
+                            {% if salon.instagram_link %}
+                            <a href="{{ salon.instagram_link }}" target="_blank" class="text-danger fs-4"><i class="fab fa-instagram"></i></a>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1"></i> {{ salon.city }}</p>
+                        <p class="text-muted small"><i class="fas fa-clock me-1"></i> {{ salon.open_time }} - {{ salon.close_time }}</p>
+
+                        <hr>
+                        <a href="{% url 'salon_detail' salon.slug %}" class="btn btn-dark w-100 fw-bold">Ver Servicios y Reservar</a>
+                    </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <h3 class="text-muted">No encontramos negocios aquí aún. 😢</h3>
+                <p>¡Sé el primero en registrar el tuyo!</p>
+                <a href="{% url 'register_owner' %}" class="btn btn-primary mt-3">Registrar Negocio</a>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
+<script>
+    // Geolocalización Simulada (Mejora futura)
+    document.addEventListener("DOMContentLoaded", function() {
+        if (!"{{ current_city }}") {
+            // Aquí podríamos preguntar al usuario su ubicación
+        }
+    });
+</script>
 {% endblock %}

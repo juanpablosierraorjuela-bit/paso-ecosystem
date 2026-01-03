@@ -1,8 +1,24 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container text-center py-5">
-    <h1 class="display-4 fw-bold mb-3">Reserva tu belleza en segundos</h1>
-    <p class="lead text-muted mb-4">Encuentra los mejores salones y barberías de tu ciudad.</p>
-    <a href="{% url 'marketplace' %}" class="btn btn-gradient btn-lg px-5 py-3 rounded-pill shadow">Explorar Servicios ✂️</a>
+<div class="container text-center d-flex flex-column align-items-center justify-content-center" style="height: 70vh;">
+    <h1 class="display-3 fw-bold mb-3" style="letter-spacing: -2px;">Belleza a un clic.</h1>
+    <p class="lead text-muted mb-5" style="max-width: 600px;">
+        Reserva en los mejores salones, barberías y spas de tu ciudad sin llamadas ni esperas.
+    </p>
+
+    <div class="d-flex gap-3">
+        <a href="{% url 'marketplace' %}" class="btn btn-primary btn-lg px-5 py-3 shadow-lg">
+            <i class="fas fa-search me-2"></i> Buscar Servicios
+        </a>
+        <a href="{% url 'register_owner' %}" class="btn btn-outline-dark btn-lg px-5 py-3">
+            Registrar mi Negocio
+        </a>
+    </div>
+
+    <div class="mt-5 pt-5 text-muted small">
+        <i class="fas fa-check-circle text-success me-1"></i> Reserva 24/7 &nbsp;&nbsp;
+        <i class="fas fa-check-circle text-success me-1"></i> Pagos Seguros &nbsp;&nbsp;
+        <i class="fas fa-check-circle text-success me-1"></i> Confirmación Inmediata
+    </div>
 </div>
 {% endblock %}
