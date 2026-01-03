@@ -19,4 +19,7 @@ urlpatterns = [
     path('dashboard/services/', views.OwnerServicesView.as_view(), name='owner_services'),
     path('dashboard/employees/', views.OwnerEmployeesView.as_view(), name='owner_employees'),
     path('dashboard/settings/', views.OwnerSettingsView.as_view(), name='owner_settings'),
+    path('dashboard/services/add/', views.ServiceCreateView.as_view(), name='service_add'),
+    path('dashboard/services/edit/<int:pk>/', views.ServiceUpdateView.as_view(), name='service_edit'),
+    path('dashboard/services/delete/<int:pk>/', views.ServiceDeleteView.as_view(), name='service_delete'),
 ]

@@ -53,7 +53,19 @@ class SalonForm(forms.ModelForm):
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = '__all__'
+        fields = ['name', 'description', 'duration_minutes', 'price']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Corte de Cabello'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalles del servicio...'}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 30'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 25000'}),
+        }
+        labels = {
+            'name': 'Nombre del Servicio',
+            'description': 'Descripción',
+            'duration_minutes': 'Duración (minutos)',
+            'price': 'Precio ($)',
+        }
 
 class EmployeeForm(forms.ModelForm):
     class Meta:

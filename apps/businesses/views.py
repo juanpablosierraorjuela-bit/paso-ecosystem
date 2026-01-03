@@ -109,3 +109,39 @@ class OwnerSettingsView(UpdateView):
 # --- VISTA RECUPERADA ---
 def landing_businesses(request):
     return render(request, 'landing_businesses.html')
+
+
+# --- GESTIÓN DE SERVICIOS (Agregado por activador_servicios.py) ---
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, UpdateView, DeleteView
+
+class ServiceCreateView(CreateView):
+    model = Service
+    form_class = ServiceForm
+    template_name = 'dashboard/service_form.html'
+    success_url = reverse_lazy('owner_services')
+
+    def form_valid(self, form):
+        service = form.save(commit=False)
+        service.salon = self.request.user.salon  # Asigna el servicio al salón del dueño
+        service.save()
+        return super().form_valid(form)
+
+class ServiceUpdateView(UpdateView):
+    model = Service
+    form_class = ServiceForm
+    template_name = 'dashboard/service_form.html'
+    success_url = reverse_lazy('owner_services')
+
+    def get_queryset(self):
+        # Seguridad: Solo editar servicios propios
+        return Service.objects.filter(salon__owner=self.request.user)
+
+class ServiceDeleteView(DeleteView):
+    model = Service
+    template_name = 'dashboard/service_confirm_delete.html'
+    success_url = reverse_lazy('owner_services')
+
+    def get_queryset(self):
+        # Seguridad: Solo borrar servicios propios
+        return Service.objects.filter(salon__owner=self.request.user)
