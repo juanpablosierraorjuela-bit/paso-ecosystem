@@ -30,6 +30,7 @@ class Salon(models.Model):
         return self.name
 
 class Service(models.Model):
+    duration_minutes = models.IntegerField(default=30, verbose_name='Duración (min)')
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
