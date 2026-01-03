@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
-# Exit on error
 set -o errexit
 
-echo "🚀 Iniciando Deploy de Producción..."
+echo "🛡️  Iniciando Deploy Seguro (Fix Admin Models)..."
 
-# 1. Instalar librerías
+# 1. Instalar dependencias
 pip install -r requirements.txt
 
-# 2. Recopilar archivos estáticos (CSS, Imágenes)
+# 2. Estáticos
 python manage.py collectstatic --no-input
 
-# 3. Aplicar migraciones (Solo actualiza, NO borra nada)
-# Nota: Ya no usamos makemigrations aquí, confiamos en los archivos del repo.
+# 3. MIGRACIONES INTELIGENTES
+# Primero, detectamos cambios solo en la app que tocamos
+echo "🔍 Detectando cambios en modelos..."
+python manage.py makemigrations businesses
+
+# Luego aplicamos todo
+echo "💾 Guardando cambios en base de datos..."
 python manage.py migrate
 
-echo "✅ Deploy Finalizado Exitosamente."
+echo "✅ Sistema Estabilizado y Listo."
