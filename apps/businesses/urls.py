@@ -14,14 +14,23 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/register_owner/', views.RegisterOwnerView.as_view(), name='register_owner'),
 
-    # Dashboard Dueño
-    path('dashboard/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
+    # Redirección inteligente (Dueño vs Empleado)
+    path('dashboard/', views.dashboard_redirect, name='dashboard_redirect'),
+
+    # Rutas Dueño
+    path('dashboard/owner/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
     path('dashboard/services/', views.OwnerServicesView.as_view(), name='owner_services'),
     path('dashboard/employees/', views.OwnerEmployeesView.as_view(), name='owner_employees'),
     path('dashboard/settings/', views.OwnerSettingsView.as_view(), name='owner_settings'),
 
-    # CRUD Servicios
+    # Rutas Servicios
     path('dashboard/services/add/', views.ServiceCreateView.as_view(), name='service_add'),
     path('dashboard/services/edit/<int:pk>/', views.ServiceUpdateView.as_view(), name='service_edit'),
     path('dashboard/services/delete/<int:pk>/', views.ServiceDeleteView.as_view(), name='service_delete'),
+
+    # Rutas Empleados (Dueño creando empleados)
+    path('dashboard/employees/add/', views.EmployeeCreateView.as_view(), name='employee_add'),
+
+    # Rutas Panel Empleado
+    path('dashboard/employee/', views.employee_dashboard, name='employee_dashboard'),
 ]

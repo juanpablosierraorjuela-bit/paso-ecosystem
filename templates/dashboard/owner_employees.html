@@ -1,42 +1,52 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container py-5">
-    <a href="{% url 'owner_dashboard' %}" class="text-decoration-none text-muted mb-3 d-block"><i class="fas fa-arrow-left"></i> Volver al Panel</a>
-    <h2 class="fw-bold mb-4">Mi Equipo de Trabajo</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark">Mis Empleados</h2>
+        <a href="{% url 'employee_add' %}" class="btn btn-dark">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Empleado
+        </a>
+    </div>
 
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card border-0 shadow-sm p-4">
-                <h5 class="fw-bold mb-3">Registrar Empleado</h5>
-                <p class="small text-muted">Se creará un usuario para que él gestione su agenda.</p>
-                <form method="POST">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit" class="btn btn-dark w-100 mt-2">Crear Credenciales</button>
-                </form>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Nombre</th>
+                            <th>Usuario</th>
+                            <th>Teléfono</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in employees %}
+                        <tr>
+                            <td class="ps-4 fw-bold">{{ employee.first_name }} {{ employee.last_name }}</td>
+                            <td><span class="badge bg-secondary">{{ employee.user.username }}</span></td>
+                            <td>{{ employee.phone }}</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-dark" title="Editar (Próximamente)"><i class="bi bi-pencil"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-people display-4 d-block mb-3"></i>
+                                No tienes empleados registrados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-
-        <div class="col-md-8">
-            <div class="row g-3">
-                {% for emp in employees %}
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body text-center">
-                            <div class="bg-light rounded-circle mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
-                                <i class="fas fa-user fs-4 text-muted"></i>
-                            </div>
-                            <h5 class="fw-bold">{{ emp.name }}</h5>
-                            <p class="text-muted small text-truncate">{{ emp.user.email }}</p>
-                            <span class="badge bg-success">Activo</span>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="col-12 text-center text-muted py-5">No tienes empleados registrados.</div>
-                {% endfor %}
-            </div>
-        </div>
+    </div>
+     <div class="mt-4">
+        <a href="{% url 'owner_dashboard' %}" class="text-muted text-decoration-none">
+            <i class="bi bi-arrow-left"></i> Volver al Panel
+        </a>
     </div>
 </div>
 {% endblock %}

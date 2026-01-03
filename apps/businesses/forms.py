@@ -5,31 +5,20 @@ from .models import Salon, Service, Employee
 User = get_user_model()
 
 class OwnerRegistrationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Crea una contraseña segura'
-    }), label="Contraseña")
-    
-    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Repite la contraseña'
-    }), label="Confirmar Contraseña")
-
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Contraseña")
+    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Confirmar")
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'username']
         widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu nombre'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu apellido'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'tu@email.com'}),
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario para iniciar sesión'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
         }
-
     def clean(self):
         cleaned_data = super().clean()
-        password = cleaned_data.get("password")
-        password_confirm = cleaned_data.get("password_confirm")
-        if password != password_confirm:
+        if cleaned_data.get("password") != cleaned_data.get("password_confirm"):
             raise forms.ValidationError("Las contraseñas no coinciden.")
 
 class SalonForm(forms.ModelForm):
@@ -37,11 +26,11 @@ class SalonForm(forms.ModelForm):
         model = Salon
         fields = ['name', 'address', 'phone', 'whatsapp', 'instagram']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Estética Divina'}),
-            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Calle 123 # 45-67, Bogotá'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono fijo o celular'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+57 300 123 4567'}),
-            'instagram': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'tu_usuario_instagram'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
+            'instagram': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class ServiceForm(forms.ModelForm):
@@ -49,13 +38,23 @@ class ServiceForm(forms.ModelForm):
         model = Service
         fields = ['name', 'description', 'duration_minutes', 'price']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Corte de Cabello'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalles del servicio...'}),
-            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minutos (Ej: 30)'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Precio (Ej: 25000)'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-class EmployeeForm(forms.ModelForm):
+# --- FORMULARIO ESPECIAL DE EMPLEADO (CREA USUARIO TAMBIÉN) ---
+class EmployeeCreationForm(forms.ModelForm):
+    username = forms.CharField(label="Usuario de Acceso", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    password = forms.CharField(label="Contraseña Temporal", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    
     class Meta:
         model = Employee
-        fields = '__all__'
+        fields = ['first_name', 'last_name', 'phone', 'email']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
