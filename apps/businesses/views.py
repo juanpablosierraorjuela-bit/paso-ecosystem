@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import CreateView, TemplateView, UpdateView, ListView
+from django.views.generic import CreateView, TemplateView, UpdateView, ListView, DeleteView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth import login
@@ -8,7 +8,6 @@ from .models import Salon, Service, Employee, SalonSchedule
 from .forms import OwnerRegistrationForm, SalonForm, ServiceForm, EmployeeForm
 
 # --- PÚBLICO ---
-
 def home(request):
     return render(request, 'home.html')
 
@@ -20,12 +19,14 @@ def salon_detail(request, salon_id):
     salon = get_object_or_404(Salon, id=salon_id)
     return render(request, 'salon_detail.html', {'salon': salon})
 
-# --- REGISTRO (ARREGLADO: Redirige al Dashboard) ---
+def landing_businesses(request):
+    return render(request, 'landing_businesses.html')
 
+# --- REGISTRO ---
 class RegisterOwnerView(CreateView):
     template_name = 'registration/register_owner.html'
     form_class = OwnerRegistrationForm
-    success_url = '/dashboard/'  # <--- AQUÍ ESTÁ EL CAMBIO CLAVE
+    success_url = '/dashboard/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -48,26 +49,22 @@ class RegisterOwnerView(CreateView):
             salon.owner = user
             salon.save()
             
-            # Crear horario por defecto
             SalonSchedule.objects.create(salon=salon)
             
             login(request, user)
-            return redirect('owner_dashboard') # Redirección explícita
+            return redirect('owner_dashboard')
         
         return render(request, self.template_name, {
             'user_form': user_form,
             'salon_form': salon_form
         })
 
-# --- PANEL DE DUEÑO (DASHBOARD) ---
-
+# --- DASHBOARD DUEÑO ---
 @method_decorator(login_required, name='dispatch')
 class OwnerDashboardView(TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Intentar obtener el salón del usuario actual
         try:
             context['salon'] = self.request.user.salon
         except Salon.DoesNotExist:
@@ -79,7 +76,6 @@ class OwnerServicesView(ListView):
     model = Service
     template_name = 'dashboard/owner_services.html'
     context_object_name = 'services'
-
     def get_queryset(self):
         return Service.objects.filter(salon__owner=self.request.user)
 
@@ -88,7 +84,6 @@ class OwnerEmployeesView(ListView):
     model = Employee
     template_name = 'dashboard/owner_employees.html'
     context_object_name = 'employees'
-
     def get_queryset(self):
         return Employee.objects.filter(salon__owner=self.request.user)
 
@@ -98,23 +93,13 @@ class OwnerSettingsView(UpdateView):
     template_name = 'dashboard/owner_settings.html'
     fields = ['monday_open', 'tuesday_open', 'wednesday_open', 'thursday_open', 'friday_open', 'saturday_open', 'sunday_open']
     success_url = reverse_lazy('owner_settings')
-
     def get_object(self, queryset=None):
-        # Obtiene o crea el horario del salón del usuario
         salon = self.request.user.salon
         schedule, created = SalonSchedule.objects.get_or_create(salon=salon)
         return schedule
 
-
-# --- VISTA RECUPERADA ---
-def landing_businesses(request):
-    return render(request, 'landing_businesses.html')
-
-
-# --- GESTIÓN DE SERVICIOS (Agregado por activador_servicios.py) ---
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, UpdateView, DeleteView
-
+# --- CRUD SERVICIOS ---
+@method_decorator(login_required, name='dispatch')
 class ServiceCreateView(CreateView):
     model = Service
     form_class = ServiceForm
@@ -123,25 +108,23 @@ class ServiceCreateView(CreateView):
 
     def form_valid(self, form):
         service = form.save(commit=False)
-        service.salon = self.request.user.salon  # Asigna el servicio al salón del dueño
+        service.salon = self.request.user.salon
         service.save()
         return super().form_valid(form)
 
+@method_decorator(login_required, name='dispatch')
 class ServiceUpdateView(UpdateView):
     model = Service
     form_class = ServiceForm
     template_name = 'dashboard/service_form.html'
     success_url = reverse_lazy('owner_services')
-
     def get_queryset(self):
-        # Seguridad: Solo editar servicios propios
         return Service.objects.filter(salon__owner=self.request.user)
 
+@method_decorator(login_required, name='dispatch')
 class ServiceDeleteView(DeleteView):
     model = Service
     template_name = 'dashboard/service_confirm_delete.html'
     success_url = reverse_lazy('owner_services')
-
     def get_queryset(self):
-        # Seguridad: Solo borrar servicios propios
         return Service.objects.filter(salon__owner=self.request.user)

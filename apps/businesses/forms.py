@@ -40,14 +40,8 @@ class SalonForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Estética Divina'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Calle 123 # 45-67, Bogotá'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono fijo o celular'}),
-            'whatsapp': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': '+57 300 123 4567'
-            }),
-            'instagram': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'tu_usuario_instagram'
-            }),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+57 300 123 4567'}),
+            'instagram': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'tu_usuario_instagram'}),
         }
 
 class ServiceForm(forms.ModelForm):
