@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <a href="{% url 'owner_dashboard' %}" class="text-decoration-none text-muted mb-3 d-block"><i class="fas fa-arrow-left"></i> Volver al Panel</a>
+    <h2 class="fw-bold mb-4">Gestión de Servicios</h2>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-3">Nuevo Servicio</h5>
+                <form method="POST">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-dark w-100 mt-2">Agregar Servicio</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="list-group shadow-sm border-0">
+                {% for srv in services %}
+                <div class="list-group-item border-0 border-bottom p-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ srv.name }}</h5>
+                        <p class="mb-0 text-muted small">{{ srv.duration_minutes }} min • ${{ srv.price }}</p>
+                    </div>
+                    <form method="POST" onsubmit="return confirm('¿Borrar servicio?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="delete_id" value="{{ srv.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                    </form>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">Aún no has creado servicios.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
