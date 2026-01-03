@@ -1,4 +1,15 @@
-{% extends 'base.html' %}
+import os
+import sys
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REGISTER_HTML = os.path.join(BASE_DIR, "templates", "registration", "register_owner.html")
+LOGIN_HTML = os.path.join(BASE_DIR, "templates", "registration", "login.html")
+
+# --- NUEVO DISEÑO: "BLACK & WHITE BUSINESS PREMIUM" ---
+
+# 1. REGISTRO (Sin azul, todo en escala de grises y negro elegante)
+CONTENIDO_REGISTER = """{% extends 'base.html' %}
 {% load static %}
 
 {% block content %}
@@ -103,3 +114,78 @@
     </div>
 </div>
 {% endblock %}
+"""
+
+# 2. LOGIN (Fondo oscuro elegante a la izquierda, formulario limpio a la derecha)
+CONTENIDO_LOGIN = """{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 85vh;">
+    <div class="card shadow-lg border-0 rounded-0 overflow-hidden" style="max-width: 1000px; width: 100%;">
+        <div class="row g-0">
+            <div class="col-md-6 bg-dark d-none d-md-flex align-items-center justify-content-center text-white p-5">
+                <div class="text-center">
+                    <div class="mb-4">
+                         <i class="bi bi-gem display-4"></i>
+                    </div>
+                    <h2 class="fw-light text-uppercase tracking-wider mb-3">Bienvenido</h2>
+                    <p class="text-white-50 lead fs-6">Gestión inteligente para negocios de alto nivel.</p>
+                </div>
+            </div>
+
+            <div class="col-md-6 p-5 bg-white">
+                <div class="text-center mb-5">
+                    <h3 class="fw-bold text-dark text-uppercase small" style="letter-spacing: 2px;">Iniciar Sesión</h3>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-dark py-2 small rounded-0 mb-4" role="alert">
+                            Credenciales incorrectas.
+                        </div>
+                    {% endif %}
+
+                    <div class="form-floating mb-3">
+                        <input type="text" name="username" class="form-control border-0 border-bottom rounded-0 ps-0" id="floatingInput" placeholder="Usuario" required style="box-shadow: none; border-color: #333;">
+                        <label for="floatingInput" class="ps-0 text-muted">Usuario</label>
+                    </div>
+                    
+                    <div class="form-floating mb-5">
+                        <input type="password" name="password" class="form-control border-0 border-bottom rounded-0 ps-0" id="floatingPassword" placeholder="Contraseña" required style="box-shadow: none; border-color: #333;">
+                        <label for="floatingPassword" class="ps-0 text-muted">Contraseña</label>
+                    </div>
+
+                    <div class="d-grid mb-4">
+                        <button type="submit" class="btn btn-dark rounded-0 py-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Ingresar</button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <p class="small text-muted">¿No tienes cuenta? <a href="{% url 'register_owner' %}" class="text-dark fw-bold text-decoration-none">Regístrate aquí</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+"""
+
+def aplicar_estilo_elegante():
+    print("🎨 Aplicando diseño 'Business Elegant'...")
+    
+    # Escribir Registro
+    with open(REGISTER_HTML, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_REGISTER)
+    print("   -> Registro actualizado: Estilo sobrio, tarjetas limpias, sin azul chillón.")
+
+    # Escribir Login
+    with open(LOGIN_HTML, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_LOGIN)
+    print("   -> Login actualizado: Fondo negro/blanco, inputs minimalistas, botones oscuros.")
+
+if __name__ == "__main__":
+    aplicar_estilo_elegante()
+    print("\n✅ ¡Diseño actualizado! Ahora se ve como una plataforma profesional.")

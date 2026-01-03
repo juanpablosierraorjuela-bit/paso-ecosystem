@@ -2,41 +2,49 @@
 {% load static %}
 
 {% block content %}
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
-    <div class="card shadow-lg border-0 rounded-4 overflow-hidden" style="max-width: 900px; width: 100%;">
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 85vh;">
+    <div class="card shadow-lg border-0 rounded-0 overflow-hidden" style="max-width: 1000px; width: 100%;">
         <div class="row g-0">
-            <div class="col-md-6 bg-primary d-none d-md-flex align-items-center justify-content-center text-white p-5">
+            <div class="col-md-6 bg-dark d-none d-md-flex align-items-center justify-content-center text-white p-5">
                 <div class="text-center">
-                    <i class="bi bi-calendar-check display-1 mb-4"></i>
-                    <h2 class="fw-bold">Bienvenido de nuevo</h2>
-                    <p class="lead">Gestiona tu negocio de belleza de manera inteligente.</p>
+                    <div class="mb-4">
+                         <i class="bi bi-gem display-4"></i>
+                    </div>
+                    <h2 class="fw-light text-uppercase tracking-wider mb-3">Bienvenido</h2>
+                    <p class="text-white-50 lead fs-6">Gestión inteligente para negocios de alto nivel.</p>
                 </div>
             </div>
+
             <div class="col-md-6 p-5 bg-white">
-                <div class="text-center mb-4">
-                    <h3 class="fw-bold text-dark">Iniciar Sesión</h3>
-                    <p class="text-muted small">Ingresa tus credenciales para acceder</p>
+                <div class="text-center mb-5">
+                    <h3 class="fw-bold text-dark text-uppercase small" style="letter-spacing: 2px;">Iniciar Sesión</h3>
                 </div>
+
                 <form method="post">
                     {% csrf_token %}
+                    
                     {% if form.errors %}
-                        <div class="alert alert-danger py-2 small rounded-3" role="alert">
-                            Usuario o contraseña incorrectos.
+                        <div class="alert alert-dark py-2 small rounded-0 mb-4" role="alert">
+                            Credenciales incorrectas.
                         </div>
                     {% endif %}
+
                     <div class="form-floating mb-3">
-                        <input type="text" name="username" class="form-control" id="floatingInput" placeholder="Usuario" required>
-                        <label for="floatingInput">Nombre de Usuario</label>
+                        <input type="text" name="username" class="form-control border-0 border-bottom rounded-0 ps-0" id="floatingInput" placeholder="Usuario" required style="box-shadow: none; border-color: #333;">
+                        <label for="floatingInput" class="ps-0 text-muted">Usuario</label>
                     </div>
-                    <div class="form-floating mb-4">
-                        <input type="password" name="password" class="form-control" id="floatingPassword" placeholder="Contraseña" required>
-                        <label for="floatingPassword">Contraseña</label>
+                    
+                    <div class="form-floating mb-5">
+                        <input type="password" name="password" class="form-control border-0 border-bottom rounded-0 ps-0" id="floatingPassword" placeholder="Contraseña" required style="box-shadow: none; border-color: #333;">
+                        <label for="floatingPassword" class="ps-0 text-muted">Contraseña</label>
                     </div>
+
                     <div class="d-grid mb-4">
-                        <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold">Ingresar</button>
+                        <button type="submit" class="btn btn-dark rounded-0 py-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Ingresar</button>
                     </div>
-                    <div class="text-center">
-                        <p class="small text-muted">¿Aún no tienes cuenta? <a href="{% url 'register_owner' %}" class="text-decoration-none fw-bold">Registra tu empresa aquí</a></p>
+
+                    <div class="text-center mt-4">
+                        <p class="small text-muted">¿No tienes cuenta? <a href="{% url 'register_owner' %}" class="text-dark fw-bold text-decoration-none">Regístrate aquí</a></p>
                     </div>
                 </form>
             </div>
