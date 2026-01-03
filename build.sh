@@ -9,7 +9,7 @@ python manage.py collectstatic --no-input
 
 echo "🧨 LIMPIEZA DE BASE DE DATOS (Fix Error 500)..."
 # Ejecutamos el comando que acabamos de crear
-python manage.py force_reset
+# python manage.py force_reset (DESACTIVADO PARA PRODUCCION)
 
 echo "🔧 Regenerando Migraciones..."
 # Borramos migraciones locales del servidor (si existen)

@@ -5,7 +5,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-genesis-key-2026')
-DEBUG = True # MODO REPARACION ACTIVADO
+DEBUG = 'RENDER' not in os.environ
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
