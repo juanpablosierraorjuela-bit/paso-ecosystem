@@ -1,24 +1,46 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container text-center d-flex flex-column align-items-center justify-content-center" style="height: 70vh;">
-    <h1 class="display-3 fw-bold mb-3" style="letter-spacing: -2px;">Belleza a un clic.</h1>
-    <p class="lead text-muted mb-5" style="max-width: 600px;">
-        Reserva en los mejores salones, barberías y spas de tu ciudad sin llamadas ni esperas.
-    </p>
+<div class="container">
+    <div class="row align-items-center justify-content-center" style="min-height: 80vh;">
+        <div class="col-lg-8 text-center">
 
-    <div class="d-flex gap-3">
-        <a href="{% url 'marketplace' %}" class="btn btn-primary btn-lg px-5 py-3 shadow-lg">
-            <i class="fas fa-search me-2"></i> Buscar Servicios
-        </a>
-        <a href="{% url 'register_owner' %}" class="btn btn-outline-dark btn-lg px-5 py-3">
-            Registrar mi Negocio
-        </a>
-    </div>
+            <div class="mb-4">
+                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 mb-3 tracking-wide fw-bold">
+                    🚀 El futuro de la belleza
+                </span>
+            </div>
 
-    <div class="mt-5 pt-5 text-muted small">
-        <i class="fas fa-check-circle text-success me-1"></i> Reserva 24/7 &nbsp;&nbsp;
-        <i class="fas fa-check-circle text-success me-1"></i> Pagos Seguros &nbsp;&nbsp;
-        <i class="fas fa-check-circle text-success me-1"></i> Confirmación Inmediata
+            <h1 class="display-3 fw-bold mb-4 lh-sm text-gradient" style="letter-spacing: -2px;">
+                Tu estilo, tu tiempo,<br>
+                <span class="text-dark">en un solo lugar.</span>
+            </h1>
+
+            <p class="lead text-muted mb-5 mx-auto" style="max-width: 600px; font-weight: 400;">
+                Reserva en los mejores salones, barberías y spas de tu ciudad sin llamadas ni esperas. 
+                Simple, rápido y exclusivo.
+            </p>
+
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="{% url 'marketplace' %}" class="btn btn-dark btn-lg px-5 py-3 shadow-lg rounded-pill">
+                    <i class="fas fa-search me-2"></i> Buscar Servicios
+                </a>
+                <a href="{% url 'register_owner' %}" class="btn btn-outline-dark btn-lg px-5 py-3 rounded-pill">
+                    Registrar mi Negocio
+                </a>
+            </div>
+
+            <div class="row mt-5 pt-4 g-4 justify-content-center text-muted small">
+                <div class="col-auto d-flex align-items-center gap-2">
+                    <i class="fas fa-check-circle text-success"></i> Reserva 24/7
+                </div>
+                <div class="col-auto d-flex align-items-center gap-2">
+                    <i class="fas fa-shield-alt text-success"></i> Pagos Seguros
+                </div>
+                <div class="col-auto d-flex align-items-center gap-2">
+                    <i class="fas fa-bolt text-success"></i> Confirmación Inmediata
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
