@@ -1,109 +1,36 @@
 {% extends 'base.html' %}
-
+{% load humanize %}
 {% block content %}
 <div class="container py-5">
     <div class="row">
         <div class="col-md-4 mb-4">
-            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-body text-center">
-                    {% if salon.logo %}
-                        <img src="{{ salon.logo.url }}" class="rounded-circle mb-3 shadow-sm" width="120" height="120" style="object-fit: cover;">
-                    {% else %}
-                        <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center text-white mb-3 shadow-sm" style="width: 120px; height: 120px; font-size: 3rem;">
-                            {{ salon.name|slice:":1"|upper }}
-                        </div>
-                    {% endif %}
-
-                    <h2 class="fw-bold mb-1">{{ salon.name }}</h2>
-                    <p class="text-muted mb-3"><i class="bi bi-geo-alt-fill"></i> {{ salon.city }}</p>
-
-                    <div class="mb-4">
-                        {% if is_open %}
-                            <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">
-                                <i class="bi bi-check-circle-fill"></i> Abierto Ahora
-                            </span>
-                        {% else %}
-                            <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill">
-                                <i class="bi bi-slash-circle-fill"></i> Cerrado Ahora
-                            </span>
-                        {% endif %}
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        {% if salon.instagram %}
-                            <a href="{{ salon.instagram }}" class="btn btn-outline-danger btn-sm" target="_blank"><i class="bi bi-instagram"></i> Instagram</a>
-                        {% endif %}
-                        <a href="https://wa.me/{{ salon.phone }}" class="btn btn-success btn-sm" target="_blank"><i class="bi bi-whatsapp"></i> WhatsApp</a>
-                    </div>
-                </div>
+            <div class="card border-0 shadow-sm p-4 text-center">
+                <h2 class="fw-bold">{{ salon.name }}</h2>
+                <p class="text-muted">{{ salon.address }}</p>
+                {% if salon.instagram_link %}
+                <a href="{{ salon.instagram_link }}" target="_blank" class="btn btn-sm btn-outline-danger"><i class="fab fa-instagram"></i> Instagram</a>
+                {% endif %}
             </div>
         </div>
-
         <div class="col-md-8">
-            <h3 class="fw-bold mb-4">Nuestros Servicios</h3>
-            
-            <div class="row g-3">
-                {% for service in services %}
-                <div class="col-md-6">
-                    <div class="card h-100 border-0 shadow-sm hover-card">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="fw-bold text-dark">{{ service.name }}</h5>
-                                <span class="badge bg-light text-dark border">${{ service.price }}</span>
-                            </div>
-                            <p class="text-muted small mb-3 flex-grow-1">
-                                <i class="bi bi-clock"></i> Duración aprox: {{ service.duration_minutes }} min
-                            </p>
-                            <a href="?service={{ service.id }}" class="btn btn-primary w-100 fw-bold">
-                                Reservar Cita
-                            </a>
+            <h3 class="fw-bold mb-3">Servicios</h3>
+            <form action="{% url 'booking_wizard_start' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="salon_slug" value="{{ salon.slug }}">
+                <div class="list-group mb-4">
+                    {% for service in services %}
+                    <label class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <input class="form-check-input me-2" type="checkbox" name="service_ids" value="{{ service.id }}">
+                            <span class="fw-bold">{{ service.name }}</span>
+                            <small class="d-block text-muted">{{ service.duration_minutes }} min</small>
                         </div>
-                    </div>
+                        <span class="fw-bold text-success">${{ service.price|intcomma }}</span>
+                    </label>
+                    {% endfor %}
                 </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info border-0 shadow-sm">
-                        <i class="bi bi-info-circle-fill me-2"></i> Este salón aún no ha publicado sus servicios.
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            {% if selected_service %}
-            <div id="booking-section" class="card border-0 shadow mt-5 border-start border-5 border-primary">
-                <div class="card-body p-4">
-                    <h4 class="fw-bold mb-3">Reservar: <span class="text-primary">{{ selected_service.name }}</span></h4>
-                    <form method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="service" value="{{ selected_service.id }}">
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Elige un Profesional</label>
-                            {{ form.employee }}
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Tu Nombre</label>
-                                {{ form.customer_name }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Tu Teléfono</label>
-                                {{ form.customer_phone }}
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Fecha y Hora</label>
-                            {{ form.start_time }}
-                            <div class="form-text">Horario de atención: {{ salon.opening_hours.first.from_hour }} - {{ salon.opening_hours.first.to_hour }}</div>
-                        </div>
-
-                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold fs-5">Confirmar Reserva</button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
+                <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill fw-bold">Reservar Ahora</button>
+            </form>
         </div>
     </div>
 </div>

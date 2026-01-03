@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4">Salones Destacados</h2>
+    <div class="row g-4">
+        {% for salon in salons %}
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold">{{ salon.name }}</h5>
+                    <p class="text-muted small"><i class="fas fa-map-marker-alt"></i> {{ salon.city }}</p>
+                    <a href="{% url 'salon_detail' salon.slug %}" class="btn btn-outline-dark w-100">Ver Servicios</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

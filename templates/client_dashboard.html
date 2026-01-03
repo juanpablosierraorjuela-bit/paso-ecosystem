@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4">Mis Citas</h2>
+    <div class="row g-4">
+        {% for item in citas %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">{{ item.obj.service.name }}</h5>
+                    <p class="text-muted mb-2">{{ item.obj.salon.name }} - {{ item.obj.date }} {{ item.obj.time }}</p>
+                    {% if item.obj.status == 'pending_payment' %}
+                        <div class="alert alert-warning py-2 small">Pendiente Abono: ${{ item.abono|intcomma }}</div>
+                        <a href="{{ item.wa_link }}" target="_blank" class="btn btn-success w-100"><i class="fab fa-whatsapp"></i> Pagar Abono</a>
+                    {% else %}
+                        <span class="badge bg-success">Confirmada</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,191 +1,139 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
-from django.forms import modelformset_factory
+from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-from django.db import transaction
-
-# Modelos
-from .models import Salon, OpeningHours, EmployeeSchedule, Employee, Service
-# Forms
-from .forms import (
-    SalonCreateForm, OpeningHoursForm, BookingForm, 
-    EmployeeSettingsForm, EmployeeScheduleForm, EmployeeCreationForm, 
-    ServiceForm
-)
-# Servicios
-from .services import create_booking_service
-from .utils import notify_new_booking
+from datetime import datetime, timedelta, date
+from decimal import Decimal
+import urllib.parse
+from .forms import *
+from .models import Salon, Service, Booking, Employee, Schedule, OpeningHours
 
 User = get_user_model()
 
-# --- VISTAS DE DASHBOARD (Ya las tenías bien, las dejo igual por seguridad) ---
+def get_salon(user): return Salon.objects.filter(owner=user).first()
+
+def check_expired_bookings():
+    try:
+        limit = timezone.now() - timedelta(minutes=30)
+        Booking.objects.filter(status='pending_payment', created_at__lt=limit).update(status='expired')
+    except: pass
+
+def get_available_slots(employee, check_date, duration=60):
+    check_expired_bookings()
+    day_idx = check_date.weekday()
+    # Lógica simplificada de horarios (asumiendo que existen)
+    try:
+        sched = Schedule.objects.filter(employee=employee, day_of_week=day_idx, is_active=True).first()
+        if not sched: return []
+        slots = []
+        current = datetime.combine(check_date, sched.start_time)
+        limit = datetime.combine(check_date, sched.end_time)
+
+        # Filtro hoy
+        if check_date == date.today():
+            if current < datetime.now() + timedelta(minutes=30):
+                current = datetime.now().replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+
+        while current + timedelta(minutes=duration) <= limit:
+            # Aquí iría el check de colisiones real
+            slots.append(current.strftime('%H:%M'))
+            current += timedelta(minutes=30)
+        return slots
+    except: return []
+
+# WIZARD
+def booking_wizard_start(request): 
+    sid = request.POST.getlist('service_ids')
+    if not sid: return redirect('home')
+    request.session['booking']={'salon_slug':request.POST.get('salon_slug'), 'service_ids':sid}
+    return redirect('booking_step_employee')
+
+def booking_step_employee(request):
+    d = request.session.get('booking')
+    s = get_object_or_404(Salon, slug=d['salon_slug'])
+    if request.method == 'POST':
+        request.session['booking']['emp_id'] = request.POST.get('employee_id')
+        request.session.modified = True
+        return redirect('booking_step_datetime')
+    return render(request, 'booking_wizard_employee.html', {'salon': s, 'employees': Employee.objects.filter(salon=s)})
+
+def booking_step_datetime(request):
+    d = request.session.get('booking')
+    s = Salon.objects.get(slug=d['salon_slug'])
+    date_str = request.GET.get('date', date.today().isoformat())
+    return render(request, 'booking_wizard_datetime.html', {'salon': s, 'slots': ['09:00', '10:00', '11:00'], 'selected_date': date_str})
+
+def booking_step_contact(request):
+    if request.method == 'POST':
+        request.session['booking'].update({'date': request.POST.get('date'), 'time': request.POST.get('time')})
+        request.session.modified = True
+    d = request.session.get('booking')
+    s = Salon.objects.get(slug=d['salon_slug'])
+    total = sum(sv.price for sv in Service.objects.filter(id__in=d['service_ids']))
+    porcentaje = Decimal(s.deposit_percentage) / Decimal(100)
+    return render(request, 'booking_contact.html', {'salon': s, 'total': total, 'abono': total * porcentaje, 'porcentaje': s.deposit_percentage})
+
+def booking_create(request):
+    d = request.session.get('booking')
+    s = Salon.objects.get(slug=d['salon_slug'])
+    email = request.POST['customer_email']
+    u, created = User.objects.get_or_create(email=email, defaults={'username': email})
+    if created: u.set_password('123456'); u.save()
+    login(request, u, backend='django.contrib.auth.backends.ModelBackend')
+
+    emp = Employee.objects.filter(salon=s).first() # Fallback simple
+    for sid in d['service_ids']:
+        Booking.objects.create(salon=s, service_id=sid, employee=emp, customer_name=request.POST['customer_name'], customer_email=email, customer_phone=request.POST['customer_phone'], date=d['date'], time=d['time'])
+
+    del request.session['booking']
+    return redirect('client_dashboard')
+
+# DASHBOARDS
+@login_required
+def client_dashboard(request):
+    check_expired_bookings()
+    bookings = Booking.objects.filter(customer_email=request.user.email)
+    citas = []
+    for b in bookings:
+        precio = b.service.price
+        porcentaje = Decimal(b.salon.deposit_percentage) / Decimal(100)
+        abono = precio * porcentaje
+        msg = f"Hola {b.salon.name}, pago cita #{b.id}. Abono: ${abono:,.0f}."
+        citas.append({'obj': b, 'abono': abono, 'pendiente': precio - abono, 'wa_link': f"https://wa.me/{b.salon.phone}?text={urllib.parse.quote(msg)}"})
+    return render(request, 'client_dashboard.html', {'citas': citas})
 
 @login_required
-def create_employee_view(request):
-    try:
-        salon = request.user.salon
-    except:
-        messages.error(request, "Solo los dueños de salón pueden registrar empleados.")
-        return redirect('dashboard')
+def owner_dashboard(request):
+    return render(request, 'dashboard/owner_dashboard.html', {'salon': get_salon(request.user)})
 
+@login_required
+def booking_confirm_payment(request, booking_id):
+    b = get_object_or_404(Booking, id=booking_id)
+    b.status = 'confirmed'; b.save()
+    return redirect('owner_dashboard')
+
+# AUTH
+def saas_login(request):
     if request.method == 'POST':
-        form = EmployeeCreationForm(request.POST)
+        form = UserLoginForm(data=request.POST)
+        if form.is_valid(): login(request, form.get_user()); return redirect('client_dashboard')
+    return render(request, 'registration/login.html', {'form': UserLoginForm()})
+
+def register_owner(request):
+    if request.method == 'POST':
+        form = OwnerRegistrationForm(request.POST)
         if form.is_valid():
-            data = form.cleaned_data
-            email = data['email']
-            password = data['password']
-            name = data['name']
-            phone = data['phone']
+            u = User.objects.create_user(username=form.cleaned_data['email'], email=form.cleaned_data['email'], password=form.cleaned_data['password'])
+            Salon.objects.create(owner=u, name=form.cleaned_data['nombre_negocio'], city=form.cleaned_data['ciudad'], phone=form.cleaned_data['whatsapp'])
+            login(request, u, backend='django.contrib.auth.backends.ModelBackend')
+            return redirect('owner_dashboard')
+    return render(request, 'registration/register_owner.html', {'form': OwnerRegistrationForm()})
 
-            if User.objects.filter(email=email).exists():
-                messages.error(request, f"El correo {email} ya está registrado en la plataforma.")
-            else:
-                try:
-                    with transaction.atomic():
-                        user = User.objects.create_user(username=email, email=email, password=password, role='EMPLOYEE')
-                        Employee.objects.create(salon=salon, user=user, name=name, phone=phone)
-                    messages.success(request, f"¡Empleado {name} creado exitosamente!")
-                    return redirect('dashboard')
-                except Exception as e:
-                    messages.error(request, f"Error creando empleado: {e}")
-    else:
-        form = EmployeeCreationForm()
-    return render(request, 'dashboard/create_employee.html', {'form': form, 'salon': salon})
-
-@login_required
-def salon_settings_view(request):
-    salon = get_object_or_404(Salon, owner=request.user)
-    if salon.opening_hours.count() < 7:
-        for i in range(7):
-            OpeningHours.objects.get_or_create(salon=salon, weekday=i, defaults={'from_hour': '09:00', 'to_hour': '18:00'})
-            
-    HoursFormSet = modelformset_factory(OpeningHours, form=OpeningHoursForm, extra=0)
-    
-    if request.method == 'POST':
-        salon_form = SalonCreateForm(request.POST, request.FILES, instance=salon)
-        hours_formset = HoursFormSet(request.POST, queryset=salon.opening_hours.all())
-        if salon_form.is_valid() and hours_formset.is_valid():
-            salon_form.save()
-            hours_formset.save()
-            messages.success(request, "Configuración guardada.")
-            return redirect('dashboard')
-    else:
-        salon_form = SalonCreateForm(instance=salon)
-        hours_formset = HoursFormSet(queryset=salon.opening_hours.all())
-    return render(request, 'dashboard/settings.html', {'salon_form': salon_form, 'hours_formset': hours_formset, 'salon': salon})
-
-@login_required
-def employee_settings_view(request):
-    try:
-        employee = request.user.employee
-    except:
-        messages.warning(request, "No tienes perfil de empleado.")
-        return redirect('home')
-    
-    if employee.schedules.count() < 7:
-        for i in range(7):
-            EmployeeSchedule.objects.get_or_create(employee=employee, weekday=i, defaults={'from_hour': '09:00', 'to_hour': '18:00', 'is_closed': False})
-
-    ScheduleFormSet = modelformset_factory(EmployeeSchedule, form=EmployeeScheduleForm, extra=0)
-
-    if request.method == 'POST':
-        settings_form = EmployeeSettingsForm(request.POST, instance=employee)
-        schedule_formset = ScheduleFormSet(request.POST, queryset=employee.schedules.all())
-        if settings_form.is_valid() and schedule_formset.is_valid():
-            settings_form.save()
-            schedule_formset.save()
-            messages.success(request, "Perfil actualizado.")
-            return redirect('dashboard')
-    else:
-        settings_form = EmployeeSettingsForm(instance=employee)
-        schedule_formset = ScheduleFormSet(queryset=employee.schedules.all())
-
-    return render(request, 'dashboard/employee_dashboard.html', {'settings_form': settings_form, 'schedule_formset': schedule_formset, 'employee': employee})
-
-@login_required
-def services_settings_view(request):
-    try:
-        salon = request.user.salon
-    except:
-        messages.error(request, "No tienes un salón registrado.")
-        return redirect('dashboard')
-
-    if request.method == 'POST':
-        if 'create_service' in request.POST:
-            form = ServiceForm(request.POST)
-            if form.is_valid():
-                service = form.save(commit=False)
-                service.salon = salon
-                service.save()
-                messages.success(request, "¡Servicio agregado exitosamente!")
-                return redirect('services_settings')
-        elif 'delete_service' in request.POST:
-            service_id = request.POST.get('service_id')
-            service = get_object_or_404(Service, id=service_id, salon=salon)
-            service.delete()
-            messages.success(request, "Servicio eliminado.")
-            return redirect('services_settings')
-    else:
-        form = ServiceForm()
-
-    services = salon.services.all()
-    return render(request, 'dashboard/services.html', {'salon': salon, 'form': form, 'services': services})
-
-
-# --- VISTA PÚBLICA (Aquí estaba el problema) ---
-
-def salon_detail(request, slug):
-    salon = get_object_or_404(Salon, slug=slug)
-    
-    # 1. RECUPERAR SERVICIOS (Esto faltaba)
-    services = salon.services.all()
-
-    # 2. CALCULAR SI ESTÁ ABIERTO AHORA MISMO (Esto faltaba)
-    now = timezone.localtime(timezone.now())
-    current_day = now.weekday() # 0 = Lunes, 6 = Domingo
-    is_open = False
-    
-    # Buscar el horario de hoy
-    today_hours = salon.opening_hours.filter(weekday=current_day).first()
-    
-    if today_hours and not today_hours.is_closed:
-        # Comparar hora actual con rango de apertura
-        if today_hours.from_hour <= now.time() <= today_hours.to_hour:
-            is_open = True
-
-    # 3. LÓGICA DE RESERVA (Igual que antes)
-    service_id = request.POST.get('service') or request.GET.get('service')
-    selected_service = None
-    if service_id:
-        try:
-            selected_service = Service.objects.get(id=service_id, salon=salon)
-        except Service.DoesNotExist:
-            selected_service = None
-
-    if request.method == 'POST':
-        form = BookingForm(request.POST, service=selected_service)
-        if form.is_valid():
-            if not selected_service:
-                messages.error(request, "Selecciona un servicio.")
-            else:
-                try:
-                    booking = create_booking_service(salon, selected_service, request.user, form.cleaned_data)
-                    notify_new_booking(booking)
-                    messages.success(request, f"¡Reserva confirmada con {booking.employee.name}!")
-                    return redirect('salon_detail', slug=slug)
-                except ValueError as e:
-                    messages.error(request, str(e))
-                except Exception as e:
-                    messages.error(request, "Error inesperado.")
-    else:
-        form = BookingForm(service=selected_service)
-
-    return render(request, 'salon_detail.html', {
-        'salon': salon, 
-        'form': form, 
-        'selected_service': selected_service,
-        'services': services,  # Enviamos los servicios a la plantilla
-        'is_open': is_open     # Enviamos el estado real (Abierto/Cerrado)
-    })
+def home(request): return render(request, 'home.html')
+def marketplace(request): return render(request, 'marketplace.html', {'salons': Salon.objects.all()})
+def salon_detail(request, slug): 
+    s = get_object_or_404(Salon, slug=slug)
+    return render(request, 'salon_detail.html', {'salon': s, 'services': Service.objects.filter(salon=s)})
+def saas_logout(request): logout(request); return redirect('home')
