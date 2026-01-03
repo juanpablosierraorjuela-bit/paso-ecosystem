@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
 set -o errexit
 
-echo "🏗️ Construyendo Proyecto..."
+echo "🏗️ Construyendo Proyecto (Modo Reparación)..."
 pip install -r requirements.txt
 
 echo "🎨 Recopilando Estáticos..."
 python manage.py collectstatic --no-input
 
-echo "🔧 Migraciones..."
-# Forzamos creación de tablas nuevas
+echo "🧨 LIMPIEZA DE BASE DE DATOS (Fix Error 500)..."
+# Ejecutamos el comando que acabamos de crear
+python manage.py force_reset
+
+echo "🔧 Regenerando Migraciones..."
+# Borramos migraciones locales del servidor (si existen)
+rm -rf apps/businesses/migrations/0*
+rm -rf apps/core_saas/migrations/0*
+
+# Creamos migraciones nuevas basadas en el código actual
 python manage.py makemigrations core_saas
 python manage.py makemigrations businesses
-python manage.py makemigrations
+
+echo "💾 Aplicando Nueva Estructura..."
 python manage.py migrate
 
-echo "✅ Listo para despegar."
+echo "✅ Sistema Reparado y Listo."
