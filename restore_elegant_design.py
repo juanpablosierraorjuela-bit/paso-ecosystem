@@ -1,4 +1,12 @@
-{% load static %}
+import os
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+MASTER_HTML_PATH = os.path.join(TEMPLATES_DIR, "master.html")
+
+# --- CONTENIDO DE MASTER.HTML (DISEÑO ELEGANTE Y SOBRIO) ---
+CONTENIDO_MASTER = """{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -165,3 +173,18 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+"""
+
+def restaurar_diseno_elegante():
+    print("🎩 Aplicando diseño 'All Black'...")
+    print("   - Eliminando amarillo.")
+    print("   - Restaurando logo PASO limpio.")
+    print("   - Insertando Favicon.")
+    
+    with open(MASTER_HTML_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_MASTER)
+        
+    print("✅ ¡Diseño restaurado con éxito! Elegancia pura.")
+
+if __name__ == "__main__":
+    restaurar_diseno_elegante()
