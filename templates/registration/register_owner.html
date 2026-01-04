@@ -1,156 +1,117 @@
-﻿{% extends 'master.html' %}
-{% load static %}
-
+{% extends 'master.html' %}
 {% block content %}
-<style>
-    body { background-color: #f8f9fa; }
-    .register-container {
-        background: white;
-        border-radius: 30px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-        overflow: hidden;
-        min-height: 80vh;
-    }
-    .register-sidebar {
-        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-        color: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 4rem;
-        position: relative;
-    }
-    /* Imagen de fondo sutil */
-    .register-sidebar::after {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: url('https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?q=80&w=1000&auto=format&fit=crop') center/cover;
-        opacity: 0.3;
-        mix-blend-mode: overlay;
-    }
-    .gold-accent {
-        color: #d4af37;
-        font-weight: bold;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        font-size: 0.9rem;
-    }
-    .form-control {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        padding: 0.8rem 1rem;
-        border-radius: 12px;
-        transition: all 0.3s;
-    }
-    .form-control:focus {
-        background: white;
-        border-color: #000;
-        box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
-    }
-    .btn-register {
-        background: #000;
-        color: white;
-        padding: 1rem;
-        border-radius: 50px;
-        font-weight: 700;
-        letter-spacing: 1px;
-        transition: all 0.3s;
-        width: 100%;
-    }
-    .btn-register:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        color: #d4af37;
-    }
-    .form-section-title {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #adb5bd;
-        font-weight: 700;
-        margin: 1.5rem 0 1rem;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 0.5rem;
-    }
-</style>
-
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-xl-11">
-            <div class="row g-0 register-container">
-                <div class="col-lg-5 register-sidebar d-none d-lg-flex text-center text-lg-start">
-                    <div style="z-index: 2;">
-                        <div class="gold-accent mb-3">Paso Ecosystem</div>
-                        <h1 class="display-4 fw-bold mb-4">Potencia tu<br>Marca.</h1>
-                        <p class="lead text-white-50 mb-5">La plataforma premium para gestionar citas y atraer clientes de alto valor.</p>
-                        <div class="d-flex flex-column gap-3 opacity-75 small">
-                            <div><i class="fas fa-check-circle text-warning me-2"></i> Perfil Web Personalizado</div>
-                            <div><i class="fas fa-check-circle text-warning me-2"></i> Gestión de Agenda y Empleados</div>
-                            <div><i class="fas fa-check-circle text-warning me-2"></i> Enlaces directos a WhatsApp</div>
-                        </div>
-                    </div>
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4 text-center">
+                    <h3 class="mb-0 fw-bold">Registro de Negocio</h3>
+                    <p class="mb-0 text-white-50">Únete a Paso Ecosystem</p>
                 </div>
-
-                <div class="col-lg-7 p-5 bg-white">
-                    <div class="text-center text-lg-start mb-4">
-                        <h3 class="fw-bold mb-1 text-dark">Crear Cuenta de Negocio</h3>
-                        <p class="text-muted small">Configura tu perfil en menos de 2 minutos.</p>
-                    </div>
+                <div class="card-body p-5 bg-light">
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger rounded-3 border-0 shadow-sm mb-4">
+                            {% for error in form.non_field_errors %}
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
 
                     <form method="post">
                         {% csrf_token %}
                         
-                        {% if form.errors %}
-                            <div class="alert alert-danger border-0 bg-danger-subtle small rounded-3 mb-4">
-                                <i class="fas fa-exclamation-circle me-2"></i> Revisa los campos marcados en rojo.
+                        <h5 class="fw-bold mb-3 text-secondary">Datos de Acceso</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Usuario</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Correo Electrónico</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Contraseña</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                    <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+                                {% endif %}
                             </div>
-                        {% endif %}
-
-                        <div class="form-section-title"><i class="fas fa-user-circle me-2"></i> Tus Datos de Acceso</div>
-                        <div class="row g-3 mb-2">
-                            <div class="col-md-6"><label class="form-label small fw-bold">Usuario</label>{{ form.username }}</div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">Email</label>{{ form.email }}</div>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-6"><label class="form-label small fw-bold">Contraseña</label>{{ form.password1 }}</div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">Confirmar</label>{{ form.password2 }}</div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Confirmar</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                    <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
 
-                        <div class="form-section-title"><i class="fas fa-store me-2"></i> Datos del Establecimiento</div>
+                        <hr class="my-4 text-muted">
+                        <h5 class="fw-bold mb-3 text-secondary">Información del Negocio</h5>
+
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Nombre del Negocio</label>
+                            <label class="form-label fw-bold small">Nombre del Negocio</label>
                             {{ form.salon_name }}
-                        </div>
-                        <div class="row g-3 mb-2">
-                            <div class="col-md-6"><label class="form-label small fw-bold">Ciudad</label>{{ form.city }}</div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">Dirección</label>{{ form.address }}</div>
+                            {% if form.salon_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.salon_name.errors.0 }}</div>
+                            {% endif %}
                         </div>
 
-                        <div class="form-section-title"><i class="fas fa-share-alt me-2"></i> Visibilidad y Contacto</div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold text-success"><i class="fab fa-whatsapp me-1"></i> WhatsApp (Reservas)</label>
-                            {{ form.phone }}
+                            <label class="form-label fw-bold small">Ciudad</label>
+                            {{ form.city }}
+                            {% if form.city.errors %}
+                                <div class="text-danger small mt-1">{{ form.city.errors.0 }}</div>
+                            {% endif %}
                         </div>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-danger"><i class="fab fa-instagram me-1"></i> Instagram</label>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Dirección Física</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                                <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Teléfono / WhatsApp</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Instagram (Opcional)</label>
                                 {{ form.instagram_link }}
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-primary"><i class="fas fa-map-marked-alt me-1"></i> Google Maps</label>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Google Maps (Opcional)</label>
                                 {{ form.maps_link }}
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-register">
-                            CREAR CUENTA Y COMENZAR <i class="fas fa-arrow-right ms-2"></i>
-                        </button>
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold shadow hover-scale">
+                                Registrar Negocio <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-link text-muted text-decoration-none">Cancelar</a>
+                        </div>
                     </form>
-                    
-                    <div class="text-center mt-4 border-top pt-3">
-                        <p class="small text-muted">¿Ya tienes cuenta? <a href="{% url 'saas_login' %}" class="fw-bold text-dark text-decoration-none">Iniciar Sesión</a></p>
-                    </div>
                 </div>
             </div>
         </div>

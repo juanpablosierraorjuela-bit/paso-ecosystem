@@ -1,4 +1,13 @@
-from django import forms
+﻿import os
+import subprocess
+
+# -----------------------------------------------------------------------------
+# 1. ASEGURAR FORMS.PY (Con lista de ciudades y Meta corregido)
+# -----------------------------------------------------------------------------
+forms_path = os.path.join('apps', 'businesses', 'forms.py')
+print(f" Actualizando formulario en {forms_path}...")
+
+new_forms_code = r"""from django import forms
 from django.contrib.auth import get_user_model
 from .models import Salon, Service, Employee, EmployeeSchedule
 from datetime import datetime
@@ -167,3 +176,154 @@ class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = ['name', 'phone', 'instagram_link', 'is_active']
+"""
+with open(forms_path, 'w', encoding='utf-8') as f:
+    f.write(new_forms_code)
+
+
+# -----------------------------------------------------------------------------
+# 2. RECONSTRUIR REGISTER_OWNER.HTML (Para mostrar el Desplegable y Errores)
+# -----------------------------------------------------------------------------
+template_path = os.path.join('templates', 'registration', 'register_owner.html')
+print(f" Reconstruyendo plantilla en {template_path}...")
+
+new_template_code = r"""{% extends 'master.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4 text-center">
+                    <h3 class="mb-0 fw-bold">Registro de Negocio</h3>
+                    <p class="mb-0 text-white-50">Únete a Paso Ecosystem</p>
+                </div>
+                <div class="card-body p-5 bg-light">
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger rounded-3 border-0 shadow-sm mb-4">
+                            {% for error in form.non_field_errors %}
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="fw-bold mb-3 text-secondary">Datos de Acceso</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Usuario</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Correo Electrónico</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Contraseña</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                    <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Confirmar</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                    <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4 text-muted">
+                        <h5 class="fw-bold mb-3 text-secondary">Información del Negocio</h5>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Nombre del Negocio</label>
+                            {{ form.salon_name }}
+                            {% if form.salon_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.salon_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Ciudad</label>
+                            {{ form.city }}
+                            {% if form.city.errors %}
+                                <div class="text-danger small mt-1">{{ form.city.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Dirección Física</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                                <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Teléfono / WhatsApp</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Instagram (Opcional)</label>
+                                {{ form.instagram_link }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Google Maps (Opcional)</label>
+                                {{ form.maps_link }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold shadow hover-scale">
+                                Registrar Negocio <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <a href="{% url 'home' %}" class="btn btn-link text-muted text-decoration-none">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+"""
+with open(template_path, 'w', encoding='utf-8') as f:
+    f.write(new_template_code)
+
+# -----------------------------------------------------------------------------
+# 3. SUBIR A GITHUB
+# -----------------------------------------------------------------------------
+print(" Subiendo arreglos de registro a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Formulario registro con Desplegable Ciudades y Errores visibles"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡LISTO! Formulario de registro reparado.")
+except Exception as e:
+    print(f" Error Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass
