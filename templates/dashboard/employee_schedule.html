@@ -1,0 +1,31 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4"><h4 class="mb-0 fw-bold">Configurar Mi Horario</h4></div>
+                <div class="card-body p-5 bg-light">
+                    <div class="alert alert-info border-0 rounded-3 mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        El negocio abre de <strong>{{ salon.opening_time }}</strong> a <strong>{{ salon.closing_time }}</strong>. 
+                        Asegúrate de que tus horas estén dentro de este rango.
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3 row">
+                            <label class="col-sm-3 col-form-label fw-bold small text-uppercase">{{ field.label }}</label>
+                            <div class="col-sm-9">{{ field }}</div>
+                        </div>
+                        {% endfor %}
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-dark rounded-pill py-2 fw-bold">Guardar Horario</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

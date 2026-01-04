@@ -9,8 +9,9 @@
             <p class="text-muted mb-0">Bienvenido, {{ user.salon.name }}</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{% url 'owner_services' %}" class="btn btn-dark rounded-pill"><i class="fas fa-cut"></i> Servicios</a>
+            <a href="{% url 'owner_employees' %}" class="btn btn-dark rounded-pill"><i class="fas fa-users"></i> Equipo</a>
             <a href="{% url 'owner_settings' %}" class="btn btn-outline-dark rounded-pill"><i class="fas fa-cog"></i> Configuración</a>
-            <a href="{% url 'salon_detail' user.salon.id %}" target="_blank" class="btn btn-dark rounded-pill"><i class="fas fa-external-link-alt"></i> Ver mi Negocio</a>
         </div>
     </div>
 
@@ -46,62 +47,19 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4 py-3">Cliente</th>
-                        <th>Servicio</th>
-                        <th>Fecha/Hora</th>
-                        <th>Abono Esperado</th>
-                        <th class="text-end pe-4">Acción</th>
-                    </tr>
+                    <tr><th class="ps-4">Cliente</th><th>Servicio</th><th>Fecha</th><th>Abono</th><th class="text-end pe-4">Acción</th></tr>
                 </thead>
                 <tbody>
                     {% for booking in pending_bookings %}
                     <tr>
-                        <td class="ps-4 fw-bold">
-                            {{ booking.customer_name }}<br>
-                            <span class="small text-muted fw-normal">{{ booking.customer_phone }}</span>
-                        </td>
-                        <td>{{ booking.service.name }}<br><span class="badge bg-light text-dark border">{{ booking.employee.name }}</span></td>
-                        <td>{{ booking.date_time|date:"d M, Y" }}<br><span class="fw-bold">{{ booking.date_time|time:"H:i" }}</span></td>
-                        <td class="text-success fw-bold">$ {{ booking.deposit_amount|intcomma }}</td>
-                        <td class="text-end pe-4">
-                            <a href="{% url 'verify_booking' booking.id %}" class="btn btn-success rounded-pill btn-sm px-3 fw-bold shadow-sm">
-                                <i class="fas fa-check-circle me-1"></i> Verificar Pago
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">No hay pagos pendientes por revisar.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <h4 class="fw-bold mb-3 text-muted">Agenda Confirmada</h4>
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4 py-3">Cliente</th>
-                        <th>Servicio</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in confirmed_bookings %}
-                    <tr>
-                        <td class="ps-4">{{ booking.customer_name }}</td>
+                        <td class="ps-4 fw-bold">{{ booking.customer_name }}<br><span class="small fw-normal">{{ booking.customer_phone }}</span></td>
                         <td>{{ booking.service.name }}</td>
                         <td>{{ booking.date_time|date:"d M, H:i" }}</td>
-                        <td><span class="badge bg-success">Confirmada</span></td>
+                        <td class="text-success fw-bold">$ {{ booking.deposit_amount|intcomma }}</td>
+                        <td class="text-end pe-4"><a href="{% url 'verify_booking' booking.id %}" class="btn btn-success rounded-pill btn-sm px-3">Verificar</a></td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4" class="text-center py-4">Agenda libre.</td></tr>
+                    <tr><td colspan="5" class="text-center py-5 text-muted">Todo al día.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

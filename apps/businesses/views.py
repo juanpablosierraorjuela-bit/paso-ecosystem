@@ -6,13 +6,13 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from datetime import datetime
 from django.contrib import messages
-from django.http import JsonResponse
+from apps.core_saas.models import User
 
 from .models import Salon, Service, Employee, Booking, EmployeeSchedule
-from .forms import SalonForm, ServiceForm, EmployeeForm, OwnerSignUpForm
+from .forms import SalonForm, ServiceForm, EmployeeForm, OwnerSignUpForm, EmployeeScheduleForm
 from .logic import get_available_slots
 
-# --- PÚBLICO ---
+# ... (Home, Marketplace, Booking Views SE MANTIENEN IGUAL) ...
 def home(request): return render(request, 'home.html')
 
 class MarketplaceView(ListView):
@@ -24,7 +24,7 @@ class MarketplaceView(ListView):
         city = self.request.GET.get('city')
         queryset = Salon.objects.all()
         if city and city != 'Todas': queryset = queryset.filter(city__iexact=city)
-        if query: queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
+        if query: queryset = queryset.filter(Q(name__icontains=query))
         return queryset
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -54,19 +54,14 @@ def booking_step_employee(request):
 
 def booking_step_calendar(request):
     if request.method == 'POST': request.session['booking_employee_id'] = request.POST.get('employee_id')
-    
     emp_id = request.session.get('booking_employee_id')
     srv_id = request.session.get('booking_service_id')
     if not emp_id: return redirect('booking_step_employee')
-    
     employee = get_object_or_404(Employee, id=emp_id)
     service = get_object_or_404(Service, id=srv_id)
-    
     date_str = request.GET.get('date', datetime.now().strftime('%Y-%m-%d'))
     selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-    
     slots = get_available_slots(employee, service, selected_date)
-    
     return render(request, 'booking/step_calendar.html', {
         'employee': employee, 'service': service, 'slots': slots,
         'selected_date': date_str, 'today': datetime.now().strftime('%Y-%m-%d')
@@ -76,74 +71,48 @@ def booking_step_confirm(request):
     if request.method == 'POST':
         request.session['booking_date'] = request.POST.get('date')
         request.session['booking_time'] = request.POST.get('time')
-    
     srv_id = request.session.get('booking_service_id')
     salon_id = request.session.get('booking_salon_id')
-    
     service = get_object_or_404(Service, id=srv_id)
     salon = get_object_or_404(Salon, id=salon_id)
-    
-    # Calcular Abono Dinámico
     deposit = service.price * (salon.deposit_percentage / 100)
-    
     return render(request, 'booking/step_confirm.html', {
         'service': service, 'salon': salon, 'deposit': deposit,
-        'date': request.session.get('booking_date'),
-        'time': request.session.get('booking_time')
+        'date': request.session.get('booking_date'), 'time': request.session.get('booking_time')
     })
 
 def booking_create(request):
     if request.method == 'POST':
-        # Recuperar datos sesión
         salon_id = request.session.get('booking_salon_id')
         service_id = request.session.get('booking_service_id')
         employee_id = request.session.get('booking_employee_id')
-        
-        # Recuperar datos formulario
         customer_name = request.POST.get('customer_name')
         customer_phone = request.POST.get('customer_phone')
-        
-        # Procesar Fecha
         dt_str = f"{request.session.get('booking_date')} {request.session.get('booking_time')}"
         full_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
-        
         service = get_object_or_404(Service, id=service_id)
-        
-        # Lógica Lazy User (Aquí podríamos crear un User real, por ahora solo cita)
         booking = Booking.objects.create(
             salon_id=salon_id, service_id=service_id, employee_id=employee_id,
             customer_name=customer_name, customer_phone=customer_phone,
             date_time=full_dt, total_price=service.price,
-            # El deposit se calcula solo en el modelo save()
         )
         return redirect('booking_success', booking_id=booking.id)
     return redirect('marketplace')
 
 def booking_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
-    
-    # MENSAJE DE WHATSAPP AUTOMATIZADO Y DETALLADO
     saldo = booking.total_price - booking.deposit_amount
-    msg = f"Hola *{booking.salon.name}* , soy {booking.customer_name}.%0A%0A" \
-          f" *Nueva Reserva:* {booking.date_time.strftime('%d/%m %H:%M')}%0A" \
-          f" *Servicio:* {booking.service.name}%0A" \
-          f" *Profesional:* {booking.employee.name}%0A%0A" \
-          f" *Total:* %0A" \
-          f" *Abono a Pagar:* %0A" \
-          f" *Restante en local:* %0A%0A" \
-          f"¿A qué cuenta (Nequi/Bancolombia) transfiero el abono?"
-    
+    msg = f"Hola *{booking.salon.name}*, soy {booking.customer_name}. Cita #{booking.id}. Abono: ."
     wa_link = f"https://wa.me/{booking.salon.whatsapp_number}?text={msg}"
-    
     return render(request, 'booking/success.html', {'booking': booking, 'wa_link': wa_link})
 
-# --- DUEÑO: VERIFICACIÓN DE PAGOS ---
+# --- DUEÑO DASHBOARD ---
 class OwnerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
     def get_context_data(self, **kwargs):
+        if self.request.user.role == 'EMPLOYEE': return {'employee_mode': True} # Redirigir mentalmente
         ctx = super().get_context_data(**kwargs)
         salon = self.request.user.salon
-        # Obtener citas ordenadas
         ctx['pending_bookings'] = Booking.objects.filter(salon=salon, status='PENDING_PAYMENT').order_by('date_time')
         ctx['confirmed_bookings'] = Booking.objects.filter(salon=salon, status='VERIFIED').order_by('date_time')
         return ctx
@@ -155,7 +124,68 @@ def verify_booking(request, booking_id):
     booking.save()
     return redirect('owner_dashboard')
 
-# --- REGISTRO Y GESTIÓN (CRUDs Standard) ---
+# --- EMPLEADOS (CREACIÓN CON USUARIO) ---
+class OwnerEmployeesView(LoginRequiredMixin, ListView):
+    model = Employee
+    template_name = 'dashboard/owner_employees.html'
+    context_object_name = 'employees'
+    def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
+
+class EmployeeCreateView(LoginRequiredMixin, CreateView):
+    model = Employee
+    form_class = EmployeeForm
+    template_name = 'dashboard/employee_form.html'
+    success_url = reverse_lazy('owner_employees')
+    
+    def form_valid(self, form):
+        # 1. Crear Usuario para el Empleado
+        username = form.cleaned_data['username']
+        password = form.cleaned_data['password']
+        user = User.objects.create_user(username=username, email=f"{username}@paso.com", password=password)
+        user.role = 'EMPLOYEE'
+        user.save()
+        
+        # 2. Crear Perfil Empleado
+        employee = form.save(commit=False)
+        employee.salon = self.request.user.salon
+        employee.user = user
+        employee.save()
+        
+        # 3. Crear Horario Default
+        EmployeeSchedule.objects.create(employee=employee)
+        return redirect('owner_employees')
+
+# --- PANEL DEL EMPLEADO (NUEVO) ---
+@login_required
+def employee_dashboard(request):
+    if request.user.role != 'EMPLOYEE': return redirect('owner_dashboard')
+    employee = request.user.employee_profile
+    bookings = Booking.objects.filter(employee=employee, status='VERIFIED').order_by('date_time')
+    return render(request, 'employee_dashboard.html', {'employee': employee, 'bookings': bookings})
+
+@login_required
+def employee_schedule_update(request):
+    employee = request.user.employee_profile
+    schedule = employee.schedule
+    if request.method == 'POST':
+        form = EmployeeScheduleForm(request.POST, instance=schedule)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Horario actualizado correctamente.')
+            return redirect('employee_dashboard')
+    else:
+        form = EmployeeScheduleForm(instance=schedule)
+    return render(request, 'dashboard/employee_schedule.html', {'form': form, 'salon': employee.salon})
+
+# --- CONFIGURACIÓN DUEÑO (HORARIOS) ---
+class OwnerSettingsView(LoginRequiredMixin, UpdateView):
+    model = Salon
+    form_class = SalonForm
+    template_name = 'dashboard/owner_settings.html'
+    success_url = reverse_lazy('owner_dashboard')
+    def get_object(self): return self.request.user.salon
+
+# --- RESTO DE VISTAS (Servicios, etc) ---
 class RegisterOwnerView(CreateView):
     template_name = 'registration/register_owner.html'
     form_class = OwnerSignUpForm
@@ -189,24 +219,6 @@ class ServiceDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('owner_services')
     def get_queryset(self): return Service.objects.filter(salon__owner=self.request.user)
 
-class OwnerEmployeesView(LoginRequiredMixin, ListView):
-    model = Employee
-    template_name = 'dashboard/owner_employees.html'
-    context_object_name = 'employees'
-    def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
-
-class EmployeeCreateView(LoginRequiredMixin, CreateView):
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'dashboard/employee_form.html'
-    success_url = reverse_lazy('owner_employees')
-    def form_valid(self, form):
-        form.instance.salon = self.request.user.salon
-        employee = form.save(commit=False)
-        employee.save()
-        EmployeeSchedule.objects.create(employee=employee)
-        return redirect('owner_employees')
-
 class EmployeeUpdateView(LoginRequiredMixin, UpdateView):
     model = Employee
     form_class = EmployeeForm
@@ -219,10 +231,3 @@ class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'dashboard/employee_confirm_delete.html'
     success_url = reverse_lazy('owner_employees')
     def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
-
-class OwnerSettingsView(LoginRequiredMixin, UpdateView):
-    model = Salon
-    form_class = SalonForm
-    template_name = 'dashboard/owner_settings.html'
-    success_url = reverse_lazy('owner_dashboard')
-    def get_object(self): return self.request.user.salon

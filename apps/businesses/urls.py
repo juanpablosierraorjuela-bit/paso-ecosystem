@@ -16,10 +16,9 @@ urlpatterns = [
     path('reservar/crear/', views.booking_create, name='booking_create'),
     path('reservar/exito/<int:booking_id>/', views.booking_success, name='booking_success'),
 
-    # Dashboard & Actions
+    # Owner Dashboard
     path('dashboard/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
     path('dashboard/verificar/<int:booking_id>/', views.verify_booking, name='verify_booking'),
-    
     path('dashboard/servicios/', views.OwnerServicesView.as_view(), name='owner_services'),
     path('dashboard/servicios/nuevo/', views.ServiceCreateView.as_view(), name='service_create'),
     path('dashboard/servicios/<int:pk>/editar/', views.ServiceUpdateView.as_view(), name='service_update'),
@@ -31,4 +30,8 @@ urlpatterns = [
     path('dashboard/empleados/<int:pk>/eliminar/', views.EmployeeDeleteView.as_view(), name='employee_delete'),
     
     path('dashboard/configuracion/', views.OwnerSettingsView.as_view(), name='owner_settings'),
+
+    # Employee Dashboard (NUEVO)
+    path('empleado/', views.employee_dashboard, name='employee_dashboard'),
+    path('empleado/horario/', views.employee_schedule_update, name='employee_schedule'),
 ]
