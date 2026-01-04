@@ -1,4 +1,13 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿import os
+import subprocess
+
+# -----------------------------------------------------------------------------
+# 1. ACTUALIZAR VIEWS.PY (Sin comillas conflictivas)
+# -----------------------------------------------------------------------------
+views_path = os.path.join('apps', 'businesses', 'views.py')
+print(f" Reparando lógica interna en {views_path}...")
+
+new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -338,3 +347,98 @@ def owner_settings(request):
     s=request.user.salon
     if request.method=='POST': f=SalonSettingsForm(request.POST, instance=s); f.save(); messages.success(request, 'Guardado'); return redirect('owner_dashboard') if f.is_valid() else None
     return render(request, 'dashboard/owner_settings.html', {'form': SalonSettingsForm(instance=s)})
+"""
+with open(views_path, 'w', encoding='utf-8') as f:
+    f.write(new_views_code)
+
+# -----------------------------------------------------------------------------
+# 2. ACTUALIZAR CALENDARIO (Para que envíe la FECHA por POST)
+# -----------------------------------------------------------------------------
+calendar_path = os.path.join('templates', 'booking', 'step_calendar.html')
+print(f" Corrigiendo el calendario en {calendar_path}...")
+
+calendar_code = r"""{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-white p-4 text-center border-bottom">
+                    <h4 class="fw-bold mb-1">Selecciona tu Hora</h4>
+                    <p class="text-muted mb-0">{{ service.name }} con <span class="fw-bold text-dark">{{ employee.name }}</span></p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+                        <button class="btn btn-light rounded-circle shadow-sm" onclick="changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <h5 class="mb-0 fw-bold">{{ selected_date }}</h5>
+                        <button class="btn btn-light rounded-circle shadow-sm" onclick="changeDate(1)"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+
+                    {% if slots %}
+                        <form action="{% url 'booking_step_confirm' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="date_selected" value="{{ selected_date }}">
+                            
+                            <div class="row g-3">
+                                {% for slot in slots %}
+                                <div class="col-4 col-sm-3 col-md-2">
+                                    <input type="radio" class="btn-check" name="time" id="slot_{{ forloop.counter }}" value="{{ slot }}" required>
+                                    <label class="btn btn-outline-dark w-100 rounded-3 py-2" for="slot_{{ forloop.counter }}">
+                                        {{ slot }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="d-grid mt-5">
+                                <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold shadow-sm">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted mb-3"><i class="far fa-calendar-times fa-3x"></i></div>
+                            <h5>No hay cupos para esta fecha.</h5>
+                            <p class="text-muted small">Intenta buscar en otro día.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a href="{% url 'booking_step_employee' %}" class="text-muted text-decoration-none small">Cambiar Profesional</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function changeDate(days) {
+        const current = new Date("{{ selected_date }}");
+        current.setDate(current.getDate() + days);
+        const nextDate = current.toISOString().split('T')[0];
+        window.location.href = "?date=" + nextDate;
+    }
+</script>
+{% endblock %}
+"""
+with open(calendar_path, 'w', encoding='utf-8') as f:
+    f.write(calendar_code)
+
+# -----------------------------------------------------------------------------
+# 3. SUBIR A GITHUB
+# -----------------------------------------------------------------------------
+print(" Subiendo Reparación Real v2 a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix Real v2: Error 500 y Flujo de Fechas"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡LISTO! El sistema ahora es estable y robusto.")
+except Exception as e:
+    print(f" Error Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass

@@ -58,7 +58,6 @@
     function changeDate(days) {
         const current = new Date("{{ selected_date }}");
         current.setDate(current.getDate() + days);
-        // Formato YYYY-MM-DD simple
         const nextDate = current.toISOString().split('T')[0];
         window.location.href = "?date=" + nextDate;
     }
