@@ -6,17 +6,19 @@ User = get_user_model()
 
 # --- 1. REGISTRO DUEÑO ---
 class OwnerRegistrationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Contraseña")
-    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Confirmar")
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea tu contraseña'}), label="Contraseña")
+    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Repite la contraseña'}), label="Confirmar")
+    
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'username']
         widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu Nombre'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tu Apellido'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}),
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario para login'}),
         }
+    
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("password") != cleaned_data.get("password_confirm"):
@@ -25,14 +27,23 @@ class OwnerRegistrationForm(forms.ModelForm):
 class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
+        # Aseguramos que address (Maps) e instagram estén aquí
         fields = ['name', 'address', 'city', 'phone', 'whatsapp', 'instagram']
+        labels = {
+            'name': 'Nombre del Negocio',
+            'address': 'Dirección (Ubicación en Maps)',
+            'city': 'Ciudad',
+            'phone': 'Teléfono de Contacto',
+            'whatsapp': 'WhatsApp (Para reservas)',
+            'instagram': 'Usuario de Instagram (Sin @)',
+        }
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Barbería El Rey'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Calle 123 # 45-67'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Bogotá'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
-            'instagram': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 300 123 4567'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 300 123 4567'}),
+            'instagram': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: barberia_elrey'}),
         }
 
 # --- 2. GESTIÓN SERVICIOS ---
@@ -73,9 +84,8 @@ class EmployeeCreationForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
 
-# --- 4. CONFIGURACIÓN HORARIOS (EL NUEVO) ---
+# --- 4. CONFIGURACIÓN HORARIOS ---
 class SalonScheduleForm(forms.ModelForm):
     class Meta:
         model = SalonSchedule
         fields = ['monday_open', 'tuesday_open', 'wednesday_open', 'thursday_open', 'friday_open', 'saturday_open', 'sunday_open']
-        # Aquí puedes agregar widgets si quieres checkboxes bonitos, pero por defecto funcionan
