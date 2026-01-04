@@ -1,9 +1,42 @@
 ﻿import os
 import subprocess
+import sys
+import django
 
-# RUTA
+# Configurar Django para el script de reparación de datos
+sys.path.append(os.getcwd())
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'paso_ecosystem.settings')
+django.setup()
+
+from apps.businesses.models import Employee, EmployeeSchedule
+
+print(" INICIANDO REPARACIÓN DE DATOS...")
+
+# -----------------------------------------------------------------------------
+# 1. REPARAR EMPLEADOS SIN HORARIO (La causa raíz del Error 500)
+# -----------------------------------------------------------------------------
+employees = Employee.objects.all()
+fixed_count = 0
+for emp in employees:
+    # Intentamos acceder al horario
+    try:
+        schedule = emp.schedule
+    except EmployeeSchedule.DoesNotExist: # Si no existe, explota aquí
+        print(f" Empleado roto encontrado: {emp.name} (ID: {emp.id})")
+        # Lo reparamos creando un horario por defecto
+        EmployeeSchedule.objects.create(employee=emp)
+        print(f" Horario creado para {emp.name}")
+        fixed_count += 1
+    except Exception as e:
+        print(f"Error desconocido con {emp.name}: {e}")
+
+print(f" Reparación completada. {fixed_count} empleados arreglados.")
+
+# -----------------------------------------------------------------------------
+# 2. APLICAR VIEWS.PY BLINDADO (Sin errores de sintaxis)
+# -----------------------------------------------------------------------------
 views_path = os.path.join('apps', 'businesses', 'views.py')
-print(f" Blindando {views_path} contra errores de sesión...")
+print(f" Blindando {views_path}...")
 
 new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
@@ -20,13 +53,13 @@ from django.core.exceptions import ObjectDoesNotExist
 
 # --- HELPERS ---
 def get_available_slots(employee, date_obj, service):
-    # Calcula cupos. Retorna lista vacía si hay error, evitando 500.
     slots = []
     try:
+        # 1. Validar horario de forma segura
         try:
             schedule = employee.schedule
         except ObjectDoesNotExist:
-            return [] # Sin horario
+            return [] # Empleado sin horario = Sin cupos
 
         weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         day_name = weekdays[date_obj.weekday()]
@@ -50,18 +83,28 @@ def get_available_slots(employee, date_obj, service):
         now_bogota = datetime.now(bogota_tz)
 
         while current + duration <= work_end:
-            collision = Booking.objects.filter(employee=employee, status__in=['PENDING_PAYMENT', 'VERIFIED'], date_time__lt=current + duration, end_time__gt=current).exists()
+            collision = Booking.objects.filter(
+                employee=employee, 
+                status__in=['PENDING_PAYMENT', 'VERIFIED'], 
+                date_time__lt=current + duration, 
+                end_time__gt=current
+            ).exists()
+            
+            # Comparar con zona horaria correcta
             current_aware = pytz.timezone('America/Bogota').localize(current)
             is_future = current_aware > now_bogota
-            if not collision and is_future: slots.append(current.strftime("%H:%M"))
+
+            if not collision and is_future: 
+                slots.append(current.strftime("%H:%M"))
+            
             current += timedelta(minutes=30)
             
     except Exception as e:
-        print(f"Slot error: {e}")
+        print(f"Error slots: {e}")
         return []
     return slots
 
-# --- FLOW BLINDADO ---
+# --- FLOW DE RESERVAS ---
 
 def booking_wizard_start(request):
     if request.method == 'POST':
@@ -75,7 +118,7 @@ def booking_wizard_start(request):
             if not salon.employees.filter(is_active=True).exists():
                 messages.error(request, f"Lo sentimos, {salon.name} no tiene profesionales disponibles.")
                 return redirect('salon_detail', pk=salon_id)
-        except Exception:
+        except:
             return redirect('marketplace')
             
         return redirect('booking_step_employee')
@@ -94,16 +137,14 @@ def booking_step_calendar(request):
     employee_id = request.session.get('booking_employee')
     service_id = request.session.get('booking_service')
     
-    # BLINDAJE 1: Si faltan datos de sesión, volver al inicio en vez de error 500
     if not employee_id or not service_id:
-        messages.warning(request, "Sesión reiniciada. Por favor selecciona el servicio nuevamente.")
+        messages.warning(request, "Sesión reiniciada. Selecciona servicio de nuevo.") 
         return redirect('marketplace')
     
     try:
         employee = get_object_or_404(Employee, id=employee_id)
         service = get_object_or_404(Service, id=service_id)
-    except Exception:
-        # Si los IDs son inválidos, volver
+    except:
         return redirect('marketplace')
     
     today = datetime.now().date()
@@ -130,9 +171,8 @@ def booking_step_confirm(request):
     time_str = request.session.get('booking_time')
     service_id = request.session.get('booking_service')
 
-    # BLINDAJE 2: Validación estricta
     if not (date_str and time_str and service_id):
-        messages.error(request, "Faltan datos. Selecciona fecha y hora de nuevo.")
+        messages.error(request, "Datos incompletos. Intenta de nuevo.")
         return redirect('booking_step_calendar')
 
     service = get_object_or_404(Service, id=service_id)
@@ -157,7 +197,7 @@ def booking_create(request):
         customer_phone = request.POST.get('customer_phone')
         
         if not (salon_id and service_id and employee_id and time_str and date_str):
-            messages.error(request, "Error de datos. Intenta nuevamente.")
+            messages.error(request, "Error en la reserva. Intenta de nuevo.")
             return redirect('marketplace')
         try:
             salon = get_object_or_404(Salon, id=salon_id)
@@ -169,7 +209,7 @@ def booking_create(request):
             start_datetime = datetime.combine(date_obj, time_obj)
             
             if Booking.objects.filter(employee=employee, date_time=start_datetime, status__in=['PENDING_PAYMENT', 'VERIFIED']).exists():
-                messages.error(request, "Horario no disponible. Intenta otro.")
+                messages.error(request, "Horario ocupado recientemente.")
                 return redirect('booking_step_calendar')
 
             total_price = service.price
@@ -183,7 +223,7 @@ def booking_create(request):
             )
             return redirect('booking_success', booking_id=booking.id)
         except Exception as e:
-            print(f"Create Error: {e}")
+            print(f"Booking Error: {e}")
             return redirect('marketplace')
     return redirect('marketplace')
 
@@ -191,7 +231,7 @@ def booking_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     salon = booking.salon
     
-    # Cronómetro
+    # Cronómetro y Lógica
     created_at = booking.created_at
     if timezone.is_naive(created_at):
         created_at = timezone.make_aware(created_at, pytz.timezone('America/Bogota'))
@@ -334,14 +374,17 @@ def owner_settings(request):
 with open(views_path, 'w', encoding='utf-8') as f:
     f.write(new_views_code)
 
-print(" Subiendo blindaje final a GitHub...")
+# -----------------------------------------------------------------------------
+# 3. SUBIR A GITHUB
+# -----------------------------------------------------------------------------
+print(" Subiendo la solución de Datos + Código a GitHub...")
 try:
     subprocess.run(["git", "add", "."], check=True)
-    subprocess.run(["git", "commit", "-m", "Final Rescue: Proteger vistas de datos nulos para evitar 500"], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Reparar Empleados sin Horario y Blindar Vistas"], check=True)
     subprocess.run(["git", "push", "origin", "main"], check=True)
-    print(" ¡LISTO! Si falta un dato, te llevará al inicio en vez de dar error.")
+    print(" ¡ÉXITO TOTAL! Datos reparados y código seguro.")
 except Exception as e:
-    print(f" Error Git: {e}")
+    print(f" Nota de Git: {e}")
 
 try:
     os.remove(__file__)
