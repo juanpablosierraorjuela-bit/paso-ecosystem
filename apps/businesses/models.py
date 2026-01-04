@@ -11,19 +11,15 @@ class Salon(models.Model):
     city = models.CharField(max_length=100, verbose_name="Ciudad", default="Bogotá")
     address = models.CharField(max_length=255, verbose_name="Dirección Física")
     
-    # Redes (Para las tarjetas)
     whatsapp_number = models.CharField(max_length=50, blank=True, verbose_name="WhatsApp")
     instagram_link = models.URLField(blank=True, verbose_name="Link Instagram")
     maps_link = models.URLField(blank=True, verbose_name="Link Maps")
     
-    # Configuración Financiera
     deposit_percentage = models.IntegerField(default=50, verbose_name="% de Abono")
     
-    # HORARIOS GLOBALES (Limites para empleados)
     opening_time = models.TimeField(default="08:00", verbose_name="Apertura")
     closing_time = models.TimeField(default="20:00", verbose_name="Cierre")
     
-    # Días Laborales (El dueño decide qué días abre el local)
     work_monday = models.BooleanField(default=True, verbose_name="Lunes")
     work_tuesday = models.BooleanField(default=True, verbose_name="Martes")
     work_wednesday = models.BooleanField(default=True, verbose_name="Miércoles")
@@ -36,43 +32,48 @@ class Salon(models.Model):
 
     @property
     def is_open_now(self):
-        """Calcula si está abierto AHORA MISMO en hora Colombia"""
+        """Calcula si está abierto considerando trasnochos (Ej: 10pm - 4am)"""
         bogota = pytz.timezone('America/Bogota')
         now = datetime.now(bogota)
         current_time = now.time()
-        weekday = now.weekday() # 0=Lunes, 6=Domingo
+        weekday = now.weekday() # 0=Lunes
         
-        # 1. Chequear día
+        # Mapeo de días
         days_map = [self.work_monday, self.work_tuesday, self.work_wednesday, self.work_thursday, self.work_friday, self.work_saturday, self.work_sunday]
+        
+        # Si hoy no trabaja, cerrado
         if not days_map[weekday]: return False
         
-        # 2. Chequear hora
-        if self.opening_time <= current_time <= self.closing_time: return True
-        return False
+        # LÓGICA NOCTURNA
+        if self.opening_time <= self.closing_time:
+            # Horario normal (Ej: 8am - 8pm)
+            return self.opening_time <= current_time <= self.closing_time
+        else:
+            # Horario trasnocho (Ej: 10pm - 4am)
+            # Está abierto si es mas tarde que la apertura O mas temprano que el cierre
+            return current_time >= self.opening_time or current_time <= self.closing_time
 
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    duration = models.IntegerField(default=30, verbose_name="Duración (min)")
-    buffer_time = models.IntegerField(default=10, verbose_name="Limpieza (min)")
+    duration = models.IntegerField(default=30)
+    buffer_time = models.IntegerField(default=10)
     price = models.DecimalField(max_digits=10, decimal_places=0)
     is_active = models.BooleanField(default=True)
     def __str__(self): return self.name
 
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
-    # Usuario asociado para que el empleado entre a su propio panel
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='employee_profile', null=True, blank=True)
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=50, blank=True)
-    instagram_link = models.URLField(blank=True, verbose_name="Instagram Personal")
+    instagram_link = models.URLField(blank=True)
     is_active = models.BooleanField(default=True)
     def __str__(self): return self.name
 
 class EmployeeSchedule(models.Model):
     employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='schedule')
-    # Horarios específicos del empleado (Deben estar dentro del horario del Salón)
     monday_hours = models.CharField(max_length=50, default="09:00-18:00")
     tuesday_hours = models.CharField(max_length=50, default="09:00-18:00")
     wednesday_hours = models.CharField(max_length=50, default="09:00-18:00")
