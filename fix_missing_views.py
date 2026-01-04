@@ -1,4 +1,12 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿import os
+import subprocess
+
+# RUTA
+views_path = os.path.join("apps", "businesses", "views.py")
+print(f" Restaurando vistas perdidas en {views_path}...")
+
+# CONTENIDO COMPLETO Y CORRECTO (Con Dashboard + Registro Fix + Reservas)
+new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -389,3 +397,16 @@ def owner_settings(request):
         messages.success(request, "Guardado")
         return redirect("owner_dashboard")
     return render(request, "dashboard/owner_settings.html", {"form": SalonSettingsForm(instance=s)})
+"""
+
+with open(views_path, "w", encoding="utf-8") as f:
+    f.write(new_views_code)
+
+print(" Subiendo Vistas Completas a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Restaurar Vistas del Dashboard borradas accidentalmente"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡LISTO! El error AttributeError debería desaparecer.")
+except Exception as e:
+    print(f" Error Git: {e}")
