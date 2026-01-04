@@ -2,45 +2,46 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-header bg-dark text-white p-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="mb-0 fw-bold"> Mi Disponibilidad</h4>
-                        <p class="mb-0 text-white-50 small">Define tus turnos semanales.</p>
-                    </div>
-                    <a href="{% url 'employee_dashboard' %}" class="btn btn-sm btn-outline-light rounded-pill">Volver</a>
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-header bg-dark text-white p-4">
+                    <h3 class="mb-0 fw-bold"><i class="fas fa-clock me-2"></i> Mi Horario de Trabajo</h3>
+                    <p class="text-white-50 mb-0">Define los días y horas en los que estás disponible para los clientes.</p>
                 </div>
-                <div class="card-body p-5 bg-light">
-                    
-                    <div class="alert alert-info border-0 rounded-3 mb-4 shadow-sm small">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Solo puedes activar los días que el negocio está <strong>ABIERTO</strong>.
-                        Si apagas un día, los clientes no podrán reservar contigo.
-                    </div>
-
-                    <form method="post">
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" class="needs-validation">
                         {% csrf_token %}
                         
-                        <div class="row g-3">
-                            {% include 'dashboard/schedule_row.html' with day_name="Lunes" active_field=form.monday_active start_field=form.monday_start end_field=form.monday_end %}
-                            
-                            {% include 'dashboard/schedule_row.html' with day_name="Martes" active_field=form.tuesday_active start_field=form.tuesday_start end_field=form.tuesday_end %}
-
-                            {% include 'dashboard/schedule_row.html' with day_name="Miércoles" active_field=form.wednesday_active start_field=form.wednesday_start end_field=form.wednesday_end %}
-
-                            {% include 'dashboard/schedule_row.html' with day_name="Jueves" active_field=form.thursday_active start_field=form.thursday_start end_field=form.thursday_end %}
-
-                            {% include 'dashboard/schedule_row.html' with day_name="Viernes" active_field=form.friday_active start_field=form.friday_start end_field=form.friday_end %}
-
-                            {% include 'dashboard/schedule_row.html' with day_name="Sábado" active_field=form.saturday_active start_field=form.saturday_start end_field=form.saturday_end %}
-
-                            {% include 'dashboard/schedule_row.html' with day_name="Domingo" active_field=form.sunday_active start_field=form.sunday_start end_field=form.sunday_end %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Día</th>
+                                        <th>¿Trabajas?</th>
+                                        <th>Hora Inicio</th>
+                                        <th>Hora Fin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for day_code, day_name in form.day_fields %}
+                                    <tr class="{% if not day_name.is_salon_open %}table-secondary{% endif %}">
+                                        <td class="fw-bold text-dark">{{ day_name.label }}</td>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                {{ day_name.active_field }}
+                                            </div>
+                                        </td>
+                                        <td>{{ day_name.start_field }}</td>
+                                        <td>{{ day_name.end_field }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
 
-                        <div class="d-grid mt-5">
-                            <button type="submit" class="btn btn-dark rounded-pill py-3 fw-bold shadow-sm hover-scale">
-                                <i class="fas fa-save me-2"></i> Guardar Mi Horario
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill shadow-sm py-3 fw-bold">
+                                <i class="fas fa-save me-2"></i> GUARDAR MI DISPONIBILIDAD
                             </button>
                         </div>
                     </form>
@@ -50,20 +51,24 @@
     </div>
 </div>
 
+<style>
+    .form-switch .form-check-input { width: 3em; height: 1.5em; cursor: pointer; }
+    .form-select { border-radius: 10px; border: 1px solid #dee2e6; padding: 0.5rem; }
+    .form-select:disabled { background-color: #f8f9fa; color: #adb5bd; }
+</style>
+
 <script>
-    // Script simple para habilitar/deshabilitar los selects según el checkbox
-    document.querySelectorAll('.day-toggle').forEach(toggle => {
-        toggle.addEventListener('change', function() {
-            const row = this.closest('.schedule-row');
-            const selects = row.querySelectorAll('select');
-            selects.forEach(s => s.disabled = !this.checked);
-            row.classList.toggle('opacity-50', !this.checked);
-        });
-        // Init state
-        const row = toggle.closest('.schedule-row');
+    // Lógica para deshabilitar selectores si el switch está apagado
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        const row = checkbox.closest('tr');
         const selects = row.querySelectorAll('select');
-        selects.forEach(s => s.disabled = !toggle.checked);
-        row.classList.toggle('opacity-50', !toggle.checked);
+        
+        const updateState = () => {
+            selects.forEach(s => s.disabled = !checkbox.checked);
+        };
+        
+        checkbox.addEventListener('change', updateState);
+        updateState(); // Inicial
     });
 </script>
 {% endblock %}
