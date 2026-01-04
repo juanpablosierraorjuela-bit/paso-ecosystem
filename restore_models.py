@@ -1,4 +1,12 @@
-from django.db import models
+import os
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.join(BASE_DIR, "apps", "businesses")
+MODELS_PATH = os.path.join(APP_DIR, "models.py")
+
+# --- CONTENIDO COMPLETO Y CORREGIDO DE MODELS.PY ---
+CONTENIDO_MODELOS = """from django.db import models
 from django.conf import settings
 
 class Salon(models.Model):
@@ -82,3 +90,13 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"{self.customer.username} - {self.date} {self.time}"
+"""
+
+def restaurar_modelos():
+    print("🚑 Restaurando models.py completo...")
+    with open(MODELS_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_MODELOS)
+    print("✅ Archivo models.py reparado exitosamente.")
+
+if __name__ == "__main__":
+    restaurar_modelos()
