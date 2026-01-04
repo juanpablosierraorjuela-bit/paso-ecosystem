@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paso Marketplace | Tu Belleza, Tu Tiempo</title>
 
-    <link rel="shortcut icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
-    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="shortcut icon" href="{% static 'images/favicon.svg' %}" type="image/svg+xml">
+    <link rel="icon" href="{% static 'images/favicon.svg' %}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{% static 'images/favicon.svg' %}">
     <meta name="theme-color" content="#ffffff">
 
@@ -16,7 +16,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        /* ESTILO GLOBAL DE LUJO MINIMALISTA */
+        /* ESTILO GLOBAL DE LUJO MINIMALISTA (Original del Backup) */
         :root {
             --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
             --bs-body-bg: #ffffff;
@@ -97,6 +97,8 @@
         /* Mensajes Flotantes */
         .messages-container { position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; }
         .alert { box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; border-radius: 10px; }
+        
+        main { flex: 1; }
     </style>
 </head>
 <body>
@@ -124,12 +126,8 @@
 
             <div class="collapse navbar-collapse" id="navbarMain">
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'marketplace' %}">Explorar</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'landing_businesses' %}">Negocios</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'marketplace' %}">Explorar</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing_businesses' %}">Negocios</a></li>
                 </ul>
 
                 <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
