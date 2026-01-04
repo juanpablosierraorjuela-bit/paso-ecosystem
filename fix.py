@@ -1,4 +1,9 @@
-﻿{% load static %}
+import os
+import re
+import subprocess
+
+# 1. CONTENIDO DEL NUEVO MASTER.HTML (Con Favicon Base64 que no falla)
+html_content = r"""{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paso Marketplace | Tu Belleza, Tu Tiempo</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='white'/><text x='50' y='75' font-family='Arial, sans-serif' font-weight='bold' font-size='75' text-anchor='middle' fill='black'>P</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc1MCcgZmlsbD0nd2hpdGUnLz48dGV4dCB4PSc1MCcgeT0nNzUnIGZvbnQtZmFtaWx5PSdBcmlhbCwgc2Fucy1zZXJpZicgZm9udC13ZWlnaHQ9J2JvbGQnIGZvbnQtc2l6ZT0nNzUnIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9J2JsYWNrJz5QPC90ZXh0Pjwvc3ZnPg==">
 
     <meta name="theme-color" content="#ffffff">
 
@@ -15,7 +20,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        /* ESTILO 'INTER' LIMPIO (Original) */
+        /* ESTILO 'INTER' LIMPIO */
         :root {
             --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
             --bs-body-bg: #ffffff;
@@ -114,3 +119,46 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+"""
+
+# 2. CREAR EL ARCHIVO FISICO
+print("🔄 Creando templates/master.html...")
+with open(os.path.join('templates', 'master.html'), 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+# 3. ACTUALIZAR TODAS LAS PLANTILLAS
+print("🔄 Conectando archivos...")
+count = 0
+for root, dirs, files in os.walk('templates'):
+    for file in files:
+        if file.endswith('.html'):
+            path = os.path.join(root, file)
+            with open(path, 'r', encoding='utf-8') as f:
+                txt = f.read()
+            
+            # Reemplazar 'base.html' por 'master.html'
+            new_txt = re.sub(r"\{%\s*extends\s*['\"]base\.html['\"]\s*%\}", "{% extends 'master.html' %}", txt)
+            
+            if txt != new_txt:
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(new_txt)
+                print(f"✅ Arreglado: {file}")
+                count += 1
+
+print(f"✨ ¡Listo! {count} archivos actualizados.")
+
+# 4. ELIMINAR EL ARCHIVO VIEJO
+if os.path.exists(os.path.join('templates', 'base.html')):
+    os.remove(os.path.join('templates', 'base.html'))
+    print("🗑️ base.html eliminado.")
+
+# 5. SUBIR A GITHUB AUTOMATICAMENTE
+print("🚀 Subiendo a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix Favicon: Implementacion master.html Base64"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print("🎉 ¡TODO TERMINADO! Espera 3 minutos a Render y recarga.")
+except Exception as e:
+    print("⚠️ Hubo un detalle con Git, pero los archivos ya estan arreglados.")
+    print("Si fallo el push, prueba escribir manualmente: git push origin master")
