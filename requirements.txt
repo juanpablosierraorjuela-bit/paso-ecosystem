@@ -1,4 +1,4 @@
-Django>=5.0
+﻿Django>=5.0
 gunicorn
 psycopg2-binary
 dj-database-url
@@ -8,9 +8,4 @@ django-cors-headers
 django-jazzmin
 djangorestframework
 django-multitenant
-
-pytz
-
-pytz
-
 pytz

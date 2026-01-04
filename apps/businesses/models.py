@@ -28,6 +28,7 @@ class Salon(models.Model):
 
     @property
     def is_open_now(self):
+        # Lógica de horarios corregida y limpia
         bogota = pytz.timezone('America/Bogota')
         now = datetime.now(bogota)
         current_time = now.time()
@@ -35,20 +36,19 @@ class Salon(models.Model):
         yesterday_idx = (today_idx - 1) % 7
         days_map = [self.work_monday, self.work_tuesday, self.work_wednesday, self.work_thursday, self.work_friday, self.work_saturday, self.work_sunday]
         
-        # Turno de HOY
+        # Turno HOY
         if days_map[today_idx]:
             if self.opening_time <= self.closing_time:
                 if self.opening_time <= current_time <= self.closing_time: return True
-            else:
+            else: # Nocturno
                 if current_time >= self.opening_time: return True
         
-        # Turno de AYER (Madrugada)
+        # Turno AYER (Madrugada)
         if days_map[yesterday_idx] and self.opening_time > self.closing_time:
             if current_time <= self.closing_time: return True
             
         return False
 
-# ... (El resto de modelos se mantiene igual, solo actualizamos Salon) ...
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=255)
