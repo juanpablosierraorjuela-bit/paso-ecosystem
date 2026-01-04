@@ -1,6 +1,7 @@
 ﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.db.models import Q
 from datetime import datetime
@@ -147,12 +148,11 @@ class OwnerDashboardView(LoginRequiredMixin, TemplateView):
         ctx['confirmed_bookings'] = Booking.objects.filter(salon=salon, status='VERIFIED').order_by('date_time')
         return ctx
 
-@LoginRequiredMixin
+@login_required
 def verify_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, salon__owner=request.user)
     booking.status = 'VERIFIED'
     booking.save()
-    # Aquí podríamos redirigir a WhatsApp para confirmar al cliente
     return redirect('owner_dashboard')
 
 # --- REGISTRO Y GESTIÓN (CRUDs Standard) ---
