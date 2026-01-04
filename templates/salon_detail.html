@@ -1,37 +1,56 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load humanize %}
 {% block content %}
 <div class="container py-5">
     <div class="row">
         <div class="col-md-4 mb-4">
             <div class="card border-0 shadow-sm p-4 text-center">
+                <div class="display-1 fw-bold text-dark mb-3">{{ salon.name|slice:":1" }}</div>
                 <h2 class="fw-bold">{{ salon.name }}</h2>
-                <p class="text-muted">{{ salon.address }}</p>
-                {% if salon.instagram_link %}
-                <a href="{{ salon.instagram_link }}" target="_blank" class="btn btn-sm btn-outline-danger"><i class="fab fa-instagram"></i> Instagram</a>
-                {% endif %}
+                <p class="text-muted"><i class="fas fa-map-marker-alt me-1"></i> {{ salon.address }}</p>
+                <div class="d-flex justify-content-center gap-2 mt-3">
+                    {% if salon.instagram_link %}
+                    <a href="{{ salon.instagram_link }}" target="_blank" class="btn btn-outline-dark rounded-pill btn-sm"><i class="fab fa-instagram"></i></a>
+                    {% endif %}
+                    {% if salon.maps_link %}
+                    <a href="{{ salon.maps_link }}" target="_blank" class="btn btn-outline-dark rounded-pill btn-sm"><i class="fas fa-map"></i></a>
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="col-md-8">
-            <h3 class="fw-bold mb-3">Servicios</h3>
+            <h3 class="fw-bold mb-4">Selecciona un Servicio</h3>
+            
             <form action="{% url 'booking_wizard_start' %}" method="POST">
                 {% csrf_token %}
-                <input type="hidden" name="salon_slug" value="{{ salon.slug }}">
-                <div class="list-group mb-4">
-                    {% for service in services %}
-                    <label class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <input class="form-check-input me-2" type="checkbox" name="service_ids" value="{{ service.id }}">
-                            <span class="fw-bold">{{ service.name }}</span>
-                            <small class="d-block text-muted">{{ service.duration_minutes }} min</small>
+                <input type="hidden" name="salon_id" value="{{ salon.id }}">
+                
+                <div class="list-group mb-4 shadow-sm border-0 rounded-4 overflow-hidden">
+                    {% for service in salon.services.all %}
+                    <label class="list-group-item d-flex justify-content-between align-items-center p-4 border-0 border-bottom list-group-item-action cursor-pointer">
+                        <div class="d-flex align-items-center">
+                            <input class="form-check-input me-3 rounded-circle" type="radio" name="service_id" value="{{ service.id }}" required style="width: 1.5em; height: 1.5em;">
+                            <div>
+                                <span class="fw-bold fs-5">{{ service.name }}</span>
+                                <small class="d-block text-muted">{{ service.duration }} min  {{ service.description|truncatechars:50 }}</small>
+                            </div>
                         </div>
-                        <span class="fw-bold text-success">${{ service.price|intcomma }}</span>
+                        <span class="fw-bold text-dark fs-5">$ {{ service.price|intcomma }}</span>
                     </label>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">Este negocio aún no tiene servicios configurados.</div>
                     {% endfor %}
                 </div>
-                <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill fw-bold">Reservar Ahora</button>
+                
+                <button type="submit" class="btn btn-dark w-100 py-3 rounded-pill fw-bold fs-5 shadow-lg hover-scale">
+                    Continuar Reserva <i class="fas fa-arrow-right ms-2"></i>
+                </button>
             </form>
         </div>
     </div>
 </div>
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .hover-scale:hover { transform: scale(1.02); transition: 0.2s; }
+</style>
 {% endblock %}
