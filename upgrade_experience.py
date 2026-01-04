@@ -1,4 +1,170 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿import os
+import subprocess
+
+# -----------------------------------------------------------------------------
+# 1. MEJORAR FORMS.PY (La Magia de la UX para el Empleado)
+# -----------------------------------------------------------------------------
+forms_path = os.path.join('apps', 'businesses', 'forms.py')
+print(f" Mejorando la UX en {forms_path}...")
+
+new_forms_code = r"""from django import forms
+from django.contrib.auth import get_user_model
+from .models import Salon, Service, Employee, EmployeeSchedule
+from datetime import datetime
+
+User = get_user_model()
+
+# Generador de horas para los desplegables (de 5 AM a 10 PM cada 30 min)
+TIME_CHOICES = []
+for h in range(5, 23):
+    for m in (0, 30):
+        time_str = f"{h:02d}:{m:02d}"
+        display_str = datetime.strptime(time_str, "%H:%M").strftime("%I:%M %p")
+        TIME_CHOICES.append((time_str, display_str))
+
+class EmployeeScheduleForm(forms.ModelForm):
+    # Campos "virtuales" para la interfaz gráfica (no se guardan directo en DB)
+    def __init__(self, *args, **kwargs):
+        self.salon = kwargs.pop('salon', None)
+        super().__init__(*args, **kwargs)
+        
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        
+        # Inicializar los campos del formulario basados en los datos guardados (string "09:00-18:00")
+        if self.instance.pk:
+            for day in days:
+                db_val = getattr(self.instance, f"{day}_hours", "CERRADO")
+                is_active = db_val != "CERRADO"
+                self.fields[f"{day}_active"].initial = is_active
+                
+                if is_active and '-' in db_val:
+                    start, end = db_val.split('-')
+                    self.fields[f"{day}_start"].initial = start
+                    self.fields[f"{day}_end"].initial = end
+
+        # Bloquear días si el dueño (Salon) no trabaja
+        if self.salon:
+            map_salon = {
+                'monday': self.salon.work_monday, 'tuesday': self.salon.work_tuesday,
+                'wednesday': self.salon.work_wednesday, 'thursday': self.salon.work_thursday,
+                'friday': self.salon.work_friday, 'saturday': self.salon.work_saturday,
+                'sunday': self.salon.work_sunday
+            }
+            for day, works in map_salon.items():
+                if not works:
+                    self.fields[f"{day}_active"].disabled = True
+                    self.fields[f"{day}_active"].help_text = "Cerrado por el negocio."
+                    self.fields[f"{day}_active"].initial = False
+
+    # Definimos los campos explícitamente para el loop
+    monday_active = forms.BooleanField(required=False, label="Lunes")
+    monday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    monday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    tuesday_active = forms.BooleanField(required=False, label="Martes")
+    tuesday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    tuesday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    wednesday_active = forms.BooleanField(required=False, label="Miércoles")
+    wednesday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    wednesday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    thursday_active = forms.BooleanField(required=False, label="Jueves")
+    thursday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    thursday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    friday_active = forms.BooleanField(required=False, label="Viernes")
+    friday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    friday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    saturday_active = forms.BooleanField(required=False, label="Sábado")
+    saturday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    saturday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    sunday_active = forms.BooleanField(required=False, label="Domingo")
+    sunday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+    sunday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
+    class Meta:
+        model = EmployeeSchedule
+        fields = [] # No usamos los campos directos del modelo, los calculamos
+
+    def save(self, commit=True):
+        schedule = super().save(commit=False)
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        
+        for day in days:
+            is_active = self.cleaned_data.get(f"{day}_active")
+            start = self.cleaned_data.get(f"{day}_start")
+            end = self.cleaned_data.get(f"{day}_end")
+            
+            # Lógica inteligente: Si está activo, guarda "HH:MM-HH:MM". Si no, "CERRADO"
+            if is_active and start and end:
+                setattr(schedule, f"{day}_hours", f"{start}-{end}")
+            else:
+                setattr(schedule, f"{day}_hours", "CERRADO")
+        
+        if commit:
+            schedule.save()
+        return schedule
+
+# --- Otros formularios (se mantienen igual para no romper nada) ---
+class SalonRegistrationForm(forms.ModelForm):
+    username = forms.CharField(max_length=150)
+    email = forms.EmailField()
+    password1 = forms.CharField(widget=forms.PasswordInput)
+    password2 = forms.CharField(widget=forms.PasswordInput)
+    salon_name = forms.CharField(max_length=255)
+    city = forms.CharField(max_length=100)
+    address = forms.CharField(max_length=255)
+    phone = forms.CharField(max_length=50) 
+    instagram_link = forms.URLField(required=False)
+    maps_link = forms.URLField(required=False)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_password2(self):
+        p1 = self.cleaned_data.get('password1')
+        p2 = self.cleaned_data.get('password2')
+        if p1 and p2 and p1 != p2: raise forms.ValidationError("Las contraseñas no coinciden")
+        return p2
+
+class SalonSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Salon
+        fields = ['name', 'city', 'address', 'whatsapp_number', 'instagram_link', 'maps_link', 
+                  'opening_time', 'closing_time', 'deposit_percentage',
+                  'work_monday', 'work_tuesday', 'work_wednesday', 'work_thursday', 'work_friday', 'work_saturday', 'work_sunday']
+        widgets = {
+            'opening_time': forms.TimeInput(attrs={'type': 'time'}),
+            'closing_time': forms.TimeInput(attrs={'type': 'time'}),
+        }
+
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'description', 'duration', 'price', 'buffer_time', 'is_active']
+
+class EmployeeForm(forms.ModelForm):
+    username = forms.CharField(required=False)
+    password = forms.CharField(widget=forms.PasswordInput, required=False)
+    class Meta:
+        model = Employee
+        fields = ['name', 'phone', 'instagram_link', 'is_active']
+"""
+with open(forms_path, 'w', encoding='utf-8') as f:
+    f.write(new_forms_code)
+
+
+# -----------------------------------------------------------------------------
+# 2. ACTUALIZAR VIEWS.PY (La Inteligencia del Sistema)
+# -----------------------------------------------------------------------------
+views_path = os.path.join('apps', 'businesses', 'views.py')
+print(f" Inyectando inteligencia en {views_path}...")
+
+new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -385,3 +551,145 @@ def owner_settings(request):
         form = SalonSettingsForm(instance=salon)
     return render(request, 'dashboard/owner_settings.html', {'form': form})
 
+"""
+with open(views_path, 'w', encoding='utf-8') as f:
+    f.write(new_views_code)
+
+# -----------------------------------------------------------------------------
+# 3. ACTUALIZAR TEMPLATE (employee_schedule.html)
+# -----------------------------------------------------------------------------
+template_path = os.path.join('templates', 'dashboard', 'employee_schedule.html')
+print(f" Embelleciendo el template {template_path}...")
+
+new_template_code = r"""{% extends 'master.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold"> Mi Disponibilidad</h4>
+                        <p class="mb-0 text-white-50 small">Define tus turnos semanales.</p>
+                    </div>
+                    <a href="{% url 'employee_dashboard' %}" class="btn btn-sm btn-outline-light rounded-pill">Volver</a>
+                </div>
+                <div class="card-body p-5 bg-light">
+                    
+                    <div class="alert alert-info border-0 rounded-3 mb-4 shadow-sm small">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Solo puedes activar los días que el negocio está <strong>ABIERTO</strong>.
+                        Si apagas un día, los clientes no podrán reservar contigo.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            {% include 'dashboard/schedule_row.html' with day_name="Lunes" active_field=form.monday_active start_field=form.monday_start end_field=form.monday_end %}
+                            
+                            {% include 'dashboard/schedule_row.html' with day_name="Martes" active_field=form.tuesday_active start_field=form.tuesday_start end_field=form.tuesday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Miércoles" active_field=form.wednesday_active start_field=form.wednesday_start end_field=form.wednesday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Jueves" active_field=form.thursday_active start_field=form.thursday_start end_field=form.thursday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Viernes" active_field=form.friday_active start_field=form.friday_start end_field=form.friday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Sábado" active_field=form.saturday_active start_field=form.saturday_start end_field=form.saturday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Domingo" active_field=form.sunday_active start_field=form.sunday_start end_field=form.sunday_end %}
+                        </div>
+
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-dark rounded-pill py-3 fw-bold shadow-sm hover-scale">
+                                <i class="fas fa-save me-2"></i> Guardar Mi Horario
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Script simple para habilitar/deshabilitar los selects según el checkbox
+    document.querySelectorAll('.day-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const row = this.closest('.schedule-row');
+            const selects = row.querySelectorAll('select');
+            selects.forEach(s => s.disabled = !this.checked);
+            row.classList.toggle('opacity-50', !this.checked);
+        });
+        // Init state
+        const row = toggle.closest('.schedule-row');
+        const selects = row.querySelectorAll('select');
+        selects.forEach(s => s.disabled = !toggle.checked);
+        row.classList.toggle('opacity-50', !toggle.checked);
+    });
+</script>
+{% endblock %}
+"""
+with open(template_path, 'w', encoding='utf-8') as f:
+    f.write(new_template_code)
+
+# -----------------------------------------------------------------------------
+# 4. CREAR EL SUB-TEMPLATE (schedule_row.html) PARA NO REPETIR CODIGO
+# -----------------------------------------------------------------------------
+row_template_path = os.path.join('templates', 'dashboard', 'schedule_row.html')
+print(f" Creando componente {row_template_path}...")
+
+row_code = r"""<div class="col-12 schedule-row bg-white p-3 rounded-3 border mb-2 shadow-sm d-flex align-items-center flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-3 flex-grow-1">
+        <div class="form-check form-switch">
+            {{ active_field }}
+            {{ active_field.label_tag }}
+        </div>
+        {% if active_field.help_text %}
+            <span class="badge bg-secondary text-white ms-2">{{ active_field.help_text }}</span>
+        {% endif %}
+    </div>
+    
+    <div class="d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-0">De</span>
+            {{ start_field }}
+        </div>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-0">A</span>
+            {{ end_field }}
+        </div>
+    </div>
+</div>
+<style>
+    .day-toggle { cursor: pointer; transform: scale(1.3); margin-right: 10px; }
+    .form-check-label { font-weight: bold; cursor: pointer; }
+    .schedule-row { transition: all 0.3s; }
+    select { border-radius: 20px !important; padding: 5px 10px; border: 1px solid #eee; }
+</style>
+<script>
+    // Asignar clase para JS
+    var inputs = document.querySelectorAll('input[type=checkbox]');
+    inputs.forEach(i => i.classList.add('day-toggle'));
+</script>
+"""
+with open(row_template_path, 'w', encoding='utf-8') as f:
+    f.write(row_code)
+
+# -----------------------------------------------------------------------------
+# 5. SUBIR A GITHUB
+# -----------------------------------------------------------------------------
+print(" Subiendo mejoras a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "UX Upgrade: Panel Empleado Inteligente + Booking Check"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡TODO LISTO! Experiencia de empleado mejorada.")
+except Exception as e:
+    print(f" Error Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass

@@ -1,109 +1,45 @@
-﻿{% extends 'master.html' %}
+{% extends 'master.html' %}
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-9">
+        <div class="col-md-10">
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-header bg-dark text-white p-4 d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0 fw-bold">Mi Disponibilidad</h4>
+                    <div>
+                        <h4 class="mb-0 fw-bold"> Mi Disponibilidad</h4>
+                        <p class="mb-0 text-white-50 small">Define tus turnos semanales.</p>
+                    </div>
                     <a href="{% url 'employee_dashboard' %}" class="btn btn-sm btn-outline-light rounded-pill">Volver</a>
                 </div>
                 <div class="card-body p-5 bg-light">
                     
-                    <div class="alert alert-warning border-0 rounded-3 mb-4 shadow-sm">
-                        <i class="fas fa-clock me-2"></i>
-                        El negocio opera de <strong>{{ salon.opening_time }}</strong> a <strong>{{ salon.closing_time }}</strong>.
-                        <br>Solo puedes programar turnos dentro de esa franja.
+                    <div class="alert alert-info border-0 rounded-3 mb-4 shadow-sm small">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Solo puedes activar los días que el negocio está <strong>ABIERTO</strong>.
+                        Si apagas un día, los clientes no podrán reservar contigo.
                     </div>
 
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_monday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold">Lunes</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_monday %}
-                                    {{ form.monday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.monday_hours }}</div> {% endif %}
-                            </div>
+                        <div class="row g-3">
+                            {% include 'dashboard/schedule_row.html' with day_name="Lunes" active_field=form.monday_active start_field=form.monday_start end_field=form.monday_end %}
+                            
+                            {% include 'dashboard/schedule_row.html' with day_name="Martes" active_field=form.tuesday_active start_field=form.tuesday_start end_field=form.tuesday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Miércoles" active_field=form.wednesday_active start_field=form.wednesday_start end_field=form.wednesday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Jueves" active_field=form.thursday_active start_field=form.thursday_start end_field=form.thursday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Viernes" active_field=form.friday_active start_field=form.friday_start end_field=form.friday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Sábado" active_field=form.saturday_active start_field=form.saturday_start end_field=form.saturday_end %}
+
+                            {% include 'dashboard/schedule_row.html' with day_name="Domingo" active_field=form.sunday_active start_field=form.sunday_start end_field=form.sunday_end %}
                         </div>
 
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_tuesday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold">Martes</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_tuesday %}
-                                    {{ form.tuesday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.tuesday_hours }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_wednesday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold">Miércoles</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_wednesday %}
-                                    {{ form.wednesday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.wednesday_hours }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_thursday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold">Jueves</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_thursday %}
-                                    {{ form.thursday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.thursday_hours }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_friday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold">Viernes</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_friday %}
-                                    {{ form.friday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.friday_hours }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_saturday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold">Sábado</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_saturday %}
-                                    {{ form.saturday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.saturday_hours }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row align-items-center bg-white p-3 rounded border {% if not salon.work_sunday %}opacity-50{% endif %}">
-                            <label class="col-sm-3 col-form-label fw-bold text-danger">Domingo</label>
-                            <div class="col-sm-9">
-                                {% if salon.work_sunday %}
-                                    {{ form.sunday_hours }}
-                                {% else %}
-                                    <input type="text" class="form-control" value="CERRADO POR EL NEGOCIO" disabled>
-                                    <div class="d-none">{{ form.sunday_hours }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-dark rounded-pill py-3 fw-bold shadow-sm">
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-dark rounded-pill py-3 fw-bold shadow-sm hover-scale">
                                 <i class="fas fa-save me-2"></i> Guardar Mi Horario
                             </button>
                         </div>
@@ -113,4 +49,21 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Script simple para habilitar/deshabilitar los selects según el checkbox
+    document.querySelectorAll('.day-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const row = this.closest('.schedule-row');
+            const selects = row.querySelectorAll('select');
+            selects.forEach(s => s.disabled = !this.checked);
+            row.classList.toggle('opacity-50', !this.checked);
+        });
+        // Init state
+        const row = toggle.closest('.schedule-row');
+        const selects = row.querySelectorAll('select');
+        selects.forEach(s => s.disabled = !toggle.checked);
+        row.classList.toggle('opacity-50', !toggle.checked);
+    });
+</script>
 {% endblock %}
