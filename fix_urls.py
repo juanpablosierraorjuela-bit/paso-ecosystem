@@ -1,4 +1,11 @@
-from django.urls import path
+﻿import os
+import subprocess
+
+# RUTA DEL ARCHIVO URLS
+urls_path = os.path.join('apps', 'businesses', 'urls.py')
+
+# CONTENIDO CORRECTO (Apuntando a FUNCIONES, no a Clases)
+new_urls_code = r"""from django.urls import path
 from . import views
 
 urlpatterns = [
@@ -40,3 +47,22 @@ urlpatterns = [
     path('empleado/', views.employee_dashboard, name='employee_dashboard'),
     path('empleado/horario/', views.employee_schedule, name='employee_schedule'),
 ]
+"""
+
+print(f" Reparando {urls_path}...")
+with open(urls_path, 'w', encoding='utf-8') as f:
+    f.write(new_urls_code)
+
+print(" Subiendo corrección a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix: Actualizar URLs para usar vistas basadas en funciones"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡LISTO! El error de 'MarketplaceView' ha sido eliminado.")
+except Exception as e:
+    print(f" Error Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass
