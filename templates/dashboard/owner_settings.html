@@ -5,43 +5,68 @@
         <div class="col-md-8">
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-header bg-dark text-white p-4">
-                    <h3 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i> Configuración del Negocio</h3>
+                    <h3 class="mb-0 fw-bold"><i class="fas fa-store me-2"></i> Perfil del Negocio</h3>
+                    <p class="mb-0 text-white-50 small">Configura cómo te verán tus clientes en el Marketplace.</p>
                 </div>
+                
                 <div class="card-body p-5 bg-light">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <h5 class="fw-bold mb-3 text-dark">Información Básica</h5>
-                        <div class="mb-3">{{ form.name.label_tag }} {{ form.name }}</div>
-                        <div class="mb-3">{{ form.description.label_tag }} {{ form.description }}</div>
+                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">🏢 Información General</h5>
                         
-                        <hr class="my-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            <div class="form-text">El nombre público de tu salón o barbería.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.description.label }}</label>
+                            {{ form.description }}
+                        </div>
+
+                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2 mt-5">📍 Ubicación</h5>
                         
-                        <h5 class="fw-bold mb-3 text-dark">Ubicación y Contacto</h5>
                         <div class="row g-3">
-                            <div class="col-md-6">{{ form.city.label_tag }} {{ form.city }}</div>
-                            <div class="col-md-6">{{ form.address.label_tag }} {{ form.address }}</div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.city.label }}</label>
+                                {{ form.city }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.address.label }}</label>
+                                {{ form.address }}
+                            </div>
                         </div>
 
-                        <hr class="my-4">
+                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2 mt-5">📱 Redes y Contacto</h5>
+                        <div class="alert alert-info border-0 d-flex align-items-center rounded-3">
+                            <i class="fas fa-info-circle fs-4 me-3"></i>
+                            <div>
+                                <strong>Tip Pro:</strong> Tus clientes podrán contactarte directamente si llenas estos datos.
+                            </div>
+                        </div>
 
-                        <h5 class="fw-bold mb-3 text-dark">Redes Sociales (Opcional)</h5>
-                        <div class="alert alert-info border-0 small"><i class="fas fa-info-circle"></i> Estos botones aparecerán en tu tarjeta del Marketplace.</div>
                         <div class="mb-3">
-                            <label class="form-label"><i class="fab fa-whatsapp text-success"></i> WhatsApp</label>
+                            <label class="form-label fw-bold"><i class="fab fa-whatsapp text-success me-1"></i> {{ form.whatsapp_number.label }}</label>
                             {{ form.whatsapp_number }}
+                            <div class="form-text">Ingresa tu número celular (ej: 3101234567). Nosotros agregamos el código de país.</div>
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label"><i class="fab fa-instagram text-danger"></i> Instagram</label>
+                            <label class="form-label fw-bold"><i class="fab fa-instagram text-danger me-1"></i> {{ form.instagram_link.label }}</label>
                             {{ form.instagram_link }}
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-map-marked-alt text-primary"></i> Google Maps</label>
+                            <label class="form-label fw-bold"><i class="fas fa-map-marked-alt text-primary me-1"></i> {{ form.maps_link.label }}</label>
                             {{ form.maps_link }}
                         </div>
 
                         <div class="d-grid mt-5">
-                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold">Guardar Cambios</button>
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold py-3 shadow-sm hover-scale">
+                                <i class="fas fa-save me-2"></i> Guardar Configuración
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -49,4 +74,12 @@
         </div>
     </div>
 </div>
+
+<style>
+    .hover-scale:hover { transform: scale(1.02); transition: 0.2s; }
+    .form-control:focus {
+        border-color: #000;
+        box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
+    }
+</style>
 {% endblock %}
