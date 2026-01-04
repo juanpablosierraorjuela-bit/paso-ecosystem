@@ -10,56 +10,45 @@ class Salon(models.Model):
     description = models.TextField(verbose_name="Descripción", blank=True)
     city = models.CharField(max_length=100, verbose_name="Ciudad", default="Bogotá")
     address = models.CharField(max_length=255, verbose_name="Dirección Física")
-    
-    whatsapp_number = models.CharField(max_length=50, blank=True, verbose_name="WhatsApp")
-    instagram_link = models.URLField(blank=True, verbose_name="Link Instagram")
-    maps_link = models.URLField(blank=True, verbose_name="Link Maps")
-    
-    deposit_percentage = models.IntegerField(default=50, verbose_name="% de Abono")
-    
-    # Horarios
-    opening_time = models.TimeField(default="08:00", verbose_name="Apertura")
-    closing_time = models.TimeField(default="20:00", verbose_name="Cierre")
-    
-    # Días
-    work_monday = models.BooleanField(default=True, verbose_name="Lunes")
-    work_tuesday = models.BooleanField(default=True, verbose_name="Martes")
-    work_wednesday = models.BooleanField(default=True, verbose_name="Miércoles")
-    work_thursday = models.BooleanField(default=True, verbose_name="Jueves")
-    work_friday = models.BooleanField(default=True, verbose_name="Viernes")
-    work_saturday = models.BooleanField(default=True, verbose_name="Sábado")
-    work_sunday = models.BooleanField(default=False, verbose_name="Domingo")
+    whatsapp_number = models.CharField(max_length=50, blank=True)
+    instagram_link = models.URLField(blank=True)
+    maps_link = models.URLField(blank=True)
+    deposit_percentage = models.IntegerField(default=50)
+    opening_time = models.TimeField(default="08:00")
+    closing_time = models.TimeField(default="20:00")
+    work_monday = models.BooleanField(default=True)
+    work_tuesday = models.BooleanField(default=True)
+    work_wednesday = models.BooleanField(default=True)
+    work_thursday = models.BooleanField(default=True)
+    work_friday = models.BooleanField(default=True)
+    work_saturday = models.BooleanField(default=True)
+    work_sunday = models.BooleanField(default=False)
 
     def __str__(self): return self.name
 
     @property
     def is_open_now(self):
-        """Calcula si está abierto (Soporta trasnocho ej: 10pm - 3am)"""
         bogota = pytz.timezone('America/Bogota')
         now = datetime.now(bogota)
         current_time = now.time()
-        
         today_idx = now.weekday()
         yesterday_idx = (today_idx - 1) % 7
-        
         days_map = [self.work_monday, self.work_tuesday, self.work_wednesday, self.work_thursday, self.work_friday, self.work_saturday, self.work_sunday]
         
-        # 1. Turno de HOY
+        # Turno de HOY
         if days_map[today_idx]:
             if self.opening_time <= self.closing_time:
-                # Horario normal (8am - 8pm)
                 if self.opening_time <= current_time <= self.closing_time: return True
             else:
-                # Horario nocturno (10pm - 3am) -> Si es HOY, debe ser tarde
                 if current_time >= self.opening_time: return True
         
-        # 2. Turno de AYER (La Madrugada)
+        # Turno de AYER (Madrugada)
         if days_map[yesterday_idx] and self.opening_time > self.closing_time:
-            # Si ayer fue nocturno, y hoy es temprano (antes del cierre)
             if current_time <= self.closing_time: return True
             
         return False
 
+# ... (El resto de modelos se mantiene igual, solo actualizamos Salon) ...
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=255)
@@ -102,7 +91,6 @@ class Booking(models.Model):
     deposit_amount = models.DecimalField(max_digits=10, decimal_places=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
     created_at = models.DateTimeField(auto_now_add=True)
-    
     def save(self, *args, **kwargs):
         if not self.end_time and self.service:
             total_min = self.service.duration + self.service.buffer_time

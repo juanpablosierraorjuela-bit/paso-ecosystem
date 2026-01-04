@@ -37,7 +37,6 @@ class SalonDetailView(DetailView):
 
 class LandingBusinessesView(TemplateView): template_name = 'landing_businesses.html'
 
-# --- BOOKING ---
 class BookingWizardStartView(View):
     def post(self, request):
         salon_id = request.POST.get('salon_id')
@@ -108,7 +107,6 @@ def booking_success(request, booking_id):
     wa_link = f"https://wa.me/{booking.salon.whatsapp_number}?text={msg}"
     return render(request, 'booking/success.html', {'booking': booking, 'wa_link': wa_link})
 
-# --- DUEÑO DASHBOARD (CORREGIDO ERROR DE SINTAXIS) ---
 class OwnerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
     def dispatch(self, request, *args, **kwargs):
@@ -129,7 +127,6 @@ def verify_booking(request, booking_id):
     booking.save()
     return redirect('owner_dashboard')
 
-# --- EMPLEADOS ---
 class OwnerEmployeesView(LoginRequiredMixin, ListView):
     model = Employee
     template_name = 'dashboard/owner_employees.html'
