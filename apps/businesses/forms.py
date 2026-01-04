@@ -100,7 +100,6 @@ class EmployeeScheduleForm(forms.ModelForm):
         return schedule
 
 class SalonRegistrationForm(forms.ModelForm):
-    # Campos explícitos con widgets de Bootstrap
     username = forms.CharField(max_length=150, label="Usuario", widget=forms.TextInput(attrs={'class': 'form-control'}))
     email = forms.EmailField(label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control'}))
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Contraseña")
@@ -108,7 +107,7 @@ class SalonRegistrationForm(forms.ModelForm):
     
     salon_name = forms.CharField(max_length=255, label="Nombre del Negocio", widget=forms.TextInput(attrs={'class': 'form-control'}))
     
-    # Desplegable de ciudades
+    # CORRECCIÓN: Campo de Ciudad Desplegable (Estaba faltando en el backup)
     city = forms.ChoiceField(
         choices=COLOMBIA_CITIES, 
         label="Ciudad", 
@@ -123,7 +122,7 @@ class SalonRegistrationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["username", "email"] # CORRECCIÓN: Quitamos passwords de aquí para evitar error de validación
+        fields = ["username", "email"] # CORRECCIÓN: Quitamos passwords de aquí
 
     def clean_password2(self):
         p1 = self.cleaned_data.get("password1")
