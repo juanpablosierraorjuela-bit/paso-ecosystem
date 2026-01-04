@@ -4,15 +4,57 @@ from django.db import transaction
 from apps.core_saas.models import User
 from .models import Salon, Service, Employee
 
+# --- LISTA MAESTRA DE CIUDADES (Capitales y Principales) ---
+CIUDADES_COLOMBIA = [
+    ('', 'Selecciona una ciudad...'),
+    ('Arauca', 'Arauca'),
+    ('Armenia', 'Armenia'),
+    ('Barranquilla', 'Barranquilla'),
+    ('Bogotá', 'Bogotá'),
+    ('Bucaramanga', 'Bucaramanga'),
+    ('Cali', 'Cali'),
+    ('Cartagena', 'Cartagena'),
+    ('Cúcuta', 'Cúcuta'),
+    ('Florencia', 'Florencia'),
+    ('Ibagué', 'Ibagué'),
+    ('Leticia', 'Leticia'),
+    ('Manizales', 'Manizales'),
+    ('Medellín', 'Medellín'),
+    ('Mitú', 'Mitú'),
+    ('Mocoa', 'Mocoa'),
+    ('Montería', 'Montería'),
+    ('Neiva', 'Neiva'),
+    ('Pasto', 'Pasto'),
+    ('Pereira', 'Pereira'),
+    ('Popayán', 'Popayán'),
+    ('Puerto Carreño', 'Puerto Carreño'),
+    ('Inírida', 'Inírida'),
+    ('Quibdó', 'Quibdó'),
+    ('Riohacha', 'Riohacha'),
+    ('San Andrés', 'San Andrés'),
+    ('San José del Guaviare', 'San José del Guaviare'),
+    ('Santa Marta', 'Santa Marta'),
+    ('Sincelejo', 'Sincelejo'),
+    ('Soacha', 'Soacha'),
+    ('Sogamoso', 'Sogamoso'),
+    ('Tunja', 'Tunja'),
+    ('Valledupar', 'Valledupar'),
+    ('Villavicencio', 'Villavicencio'),
+    ('Yopal', 'Yopal'),
+    ('Zipaquirá', 'Zipaquirá'),
+]
+
 class OwnerSignUpForm(UserCreationForm):
     # --- DATOS DEL NEGOCIO ---
     salon_name = forms.CharField(
         label="Nombre del Negocio",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Barbería Supreme'})
     )
-    city = forms.CharField(
+    # AHORA ES UN SELECTOR
+    city = forms.ChoiceField(
         label="Ciudad",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Bogotá'})
+        choices=CIUDADES_COLOMBIA,
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
     address = forms.CharField(
         label="Dirección",
@@ -64,13 +106,19 @@ class OwnerSignUpForm(UserCreationForm):
         return user
 
 class SalonForm(forms.ModelForm):
+    # AHORA ES UN SELECTOR AQUÍ TAMBIÉN
+    city = forms.ChoiceField(
+        label="Ciudad",
+        choices=CIUDADES_COLOMBIA,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
     class Meta:
         model = Salon
         fields = ['name', 'description', 'city', 'address', 'whatsapp_number', 'instagram_link', 'maps_link']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'city': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
             'whatsapp_number': forms.TextInput(attrs={'class': 'form-control'}),
             'instagram_link': forms.URLInput(attrs={'class': 'form-control'}),
