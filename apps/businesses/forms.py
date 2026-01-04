@@ -45,19 +45,19 @@ CIUDADES_COLOMBIA = [
 ]
 
 class OwnerSignUpForm(UserCreationForm):
-    salon_name = forms.CharField(label="Nombre del Negocio", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    salon_name = forms.CharField(label="Nombre del Negocio", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Barbería Supreme'}))
     
-    # CAMBIO: Usamos ChoiceField para la ciudad
+    # ¡AQUÍ ESTÁ EL DROPDOWN RECUPERADO!
     city = forms.ChoiceField(
         label="Ciudad",
         choices=CIUDADES_COLOMBIA,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
-    address = forms.CharField(label="Dirección", widget=forms.TextInput(attrs={'class': 'form-control'}))
-    phone = forms.CharField(label="WhatsApp", widget=forms.TextInput(attrs={'class': 'form-control'}))
-    instagram_link = forms.URLField(label="Instagram", required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
-    maps_link = forms.URLField(label="Maps", required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
+    address = forms.CharField(label="Dirección", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Cra 15 # 85-20'}))
+    phone = forms.CharField(label="WhatsApp", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '3001234567'}))
+    instagram_link = forms.URLField(label="Instagram", required=False, widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/tu_negocio'}))
+    maps_link = forms.URLField(label="Maps", required=False, widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Link de Google Maps'}))
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -68,15 +68,22 @@ class OwnerSignUpForm(UserCreationForm):
         user = super().save(commit=False)
         user.role = 'OWNER'
         user.save()
+        
+        # Lógica +57
+        raw_phone = self.cleaned_data['phone']
+        clean_phone = ''.join(filter(str.isdigit, raw_phone))
+        if clean_phone.startswith('3') and len(clean_phone) == 10:
+            clean_phone = '57' + clean_phone
+
         Salon.objects.create(
             owner=user, name=self.cleaned_data['salon_name'], city=self.cleaned_data['city'],
-            address=self.cleaned_data['address'], whatsapp_number=self.cleaned_data['phone'],
+            address=self.cleaned_data['address'], whatsapp_number=clean_phone,
             instagram_link=self.cleaned_data.get('instagram_link'), maps_link=self.cleaned_data.get('maps_link')
         )
         return user
 
 class SalonForm(forms.ModelForm):
-    # CAMBIO: También en la edición del perfil
+    # ¡DROPDOWN TAMBIÉN EN CONFIGURACIÓN!
     city = forms.ChoiceField(
         label="Ciudad",
         choices=CIUDADES_COLOMBIA,
@@ -85,6 +92,7 @@ class SalonForm(forms.ModelForm):
 
     class Meta:
         model = Salon
+        # Mantenemos TODOS los campos de la lógica avanzada (Horarios, Días, Abono)
         fields = ['name', 'description', 'city', 'address', 'whatsapp_number', 'instagram_link', 'maps_link', 
                   'opening_time', 'closing_time', 'work_monday', 'work_tuesday', 'work_wednesday', 
                   'work_thursday', 'work_friday', 'work_saturday', 'work_sunday', 'deposit_percentage']
