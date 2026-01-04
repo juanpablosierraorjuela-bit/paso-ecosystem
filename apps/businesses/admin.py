@@ -1,19 +1,16 @@
 ﻿from django.contrib import admin
-from .models import Salon, Service, Employee, Schedule, Booking
+from .models import Salon, Service, Employee, Booking
 
 class ServiceInline(admin.TabularInline):
     model = Service
-    extra = 0
-
-class ScheduleInline(admin.TabularInline):
-    model = Schedule
     extra = 0
 
 @admin.register(Salon)
 class SalonAdmin(admin.ModelAdmin):
     list_display = ('name', 'city', 'whatsapp_number')
     search_fields = ('name', 'city')
-    inlines = [ServiceInline, ScheduleInline]
+    # Ya no incluimos ScheduleInline porque el modelo no existe
+    inlines = [ServiceInline]
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
