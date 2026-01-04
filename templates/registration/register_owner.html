@@ -1,105 +1,54 @@
-{% extends 'base.html' %}
-{% load static %}
-
+﻿{% extends 'base.html' %}
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="text-center mb-5">
-                <h1 class="display-5 fw-bold text-dark">Ecosistema PASO</h1>
-                <p class="lead text-muted">Registro Empresarial</p>
-            </div>
-
-            <form method="post" class="needs-validation" novalidate>
-                {% csrf_token %}
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4 text-center">
+                    <h3 class="mb-1 fw-bold">Únete a Paso</h3>
+                    <p class="mb-0 text-white-50 small">Crea tu cuenta y digitaliza tu negocio hoy.</p>
+                </div>
                 
-                <div class="card shadow-sm border-0 mb-4" style="background-color: #f8f9fa;">
-                    <div class="card-body p-5">
-                        <div class="d-flex align-items-center mb-4 border-bottom pb-3">
-                            <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
-                            <h3 class="h4 mb-0 text-dark">Datos del Administrador</h3>
-                        </div>
+                <div class="card-body p-5 bg-light">
+                    <form method="post">
+                        {% csrf_token %}
                         
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Nombre</label>
-                                {{ user_form.first_name }}
+                        {% if form.errors %}
+                            <div class="alert alert-danger small">
+                                Por favor corrige los errores abajo indicados.
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Apellido</label>
-                                {{ user_form.last_name }}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Correo Profesional</label>
-                                {{ user_form.email }}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Usuario de Acceso</label>
-                                {{ user_form.username }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Contraseña</label>
-                                {{ user_form.password }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Confirmar Contraseña</label>
-                                {{ user_form.password_confirm }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        {% endif %}
 
-                <div class="card shadow border-0 mb-5">
-                    <div class="card-body p-5">
-                        <div class="d-flex align-items-center mb-4 border-bottom pb-3">
-                            <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                <i class="bi bi-building"></i>
-                            </div>
-                            <h3 class="h4 mb-0 text-dark">Información del Negocio</h3>
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text small">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
                         </div>
+                        {% endfor %}
 
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Nombre Comercial</label>
-                                {{ salon_form.name }}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Dirección Física</label>
-                                {{ salon_form.address }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Teléfono</label>
-                                {{ salon_form.phone }}
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small text-uppercase"><i class="bi bi-whatsapp"></i> WhatsApp Business</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border text-muted">+</span>
-                                    {{ salon_form.whatsapp }}
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold text-secondary small text-uppercase"><i class="bi bi-instagram"></i> Instagram</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border text-muted">@</span>
-                                    {{ salon_form.instagram }}
-                                </div>
-                            </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold py-3 shadow-sm hover-scale">
+                                Registrar mi Negocio
+                            </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-
-                <div class="d-grid gap-2 mb-5">
-                    <button type="submit" class="btn btn-dark btn-lg py-3 fw-bold text-uppercase" style="letter-spacing: 1px;">
-                        Completar Registro
-                    </button>
+                <div class="card-footer bg-white text-center p-3 border-0">
+                    <p class="small mb-0">¿Ya tienes cuenta? <a href="{% url 'saas_login' %}" class="fw-bold text-dark text-decoration-none">Inicia Sesión</a></p>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
+<style>
+    .hover-scale:hover { transform: scale(1.02); transition: 0.2s; }
+    .form-control { padding: 0.75rem 1rem; border-radius: 10px; }
+    .form-control:focus { border-color: #000; box-shadow: 0 0 0 0.25rem rgba(0,0,0,0.1); }
+</style>
 {% endblock %}

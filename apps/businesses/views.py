@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Salon, Service, Employee, Booking
-from .forms import SalonForm, ServiceForm, EmployeeForm
+from .forms import SalonForm, ServiceForm, EmployeeForm, OwnerSignUpForm
 
 def home(request):
     return render(request, 'home.html')
@@ -12,8 +12,14 @@ def home(request):
 class LandingBusinessesView(TemplateView):
     template_name = 'landing_businesses.html'
 
-class RegisterOwnerView(TemplateView):
+class RegisterOwnerView(CreateView):
     template_name = 'registration/register_owner.html'
+    form_class = OwnerSignUpForm
+    success_url = reverse_lazy('saas_login') # Redirigir al login al terminar
+
+    def form_valid(self, form):
+        # Login automático tras registro (Opcional, aquí solo guardamos)
+        return super().form_valid(form)
 
 class MarketplaceView(ListView):
     model = Salon
@@ -113,3 +119,4 @@ class OwnerSettingsView(LoginRequiredMixin, UpdateView):
     template_name = 'dashboard/owner_settings.html'
     success_url = reverse_lazy('owner_dashboard')
     def get_object(self): return self.request.user.salon
+

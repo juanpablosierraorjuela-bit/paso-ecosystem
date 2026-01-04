@@ -100,3 +100,50 @@ class EmployeeForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Juan Pérez'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 300 123 4567'}),
         }
+
+from django.contrib.auth.forms import UserCreationForm
+from django.db import transaction
+from apps.core_saas.models import User
+
+class OwnerSignUpForm(UserCreationForm):
+    # Campos extra para el negocio (se guardarán en el modelo Salon)
+    salon_name = forms.CharField(
+        label="Nombre de tu Negocio",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Barbería El Capo'})
+    )
+    city = forms.CharField(
+        label="Ciudad",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Bogotá'})
+    )
+    phone = forms.CharField(
+        label="Celular / WhatsApp",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 300 123 4567'})
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = UserCreationForm.Meta.fields + ('email',)
+
+    @transaction.atomic
+    def save(self):
+        # 1. Crear el Usuario
+        user = super().save(commit=False)
+        user.role = 'OWNER' # Asignamos rol de Dueño
+        user.save()
+        
+        # 2. Crear el Salón automáticamente
+        from .models import Salon
+        
+        # Lógica +57 para el registro también
+        raw_phone = self.cleaned_data['phone']
+        clean_phone = ''.join(filter(str.isdigit, raw_phone))
+        if clean_phone.startswith('3') and len(clean_phone) == 10:
+            clean_phone = '57' + clean_phone
+            
+        Salon.objects.create(
+            owner=user,
+            name=self.cleaned_data['salon_name'],
+            city=self.cleaned_data['city'],
+            whatsapp_number=clean_phone
+        )
+        return user
