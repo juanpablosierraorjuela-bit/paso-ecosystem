@@ -1,120 +1,34 @@
-{% extends 'base.html' %}
+﻿{% extends 'master.html' %}
 {% block content %}
-<div class="container py-5 text-center">
-    <div class="row justify-content-center">
-        <div class="col-md-7">
-            
-            {% if is_expired %}
-                <div class="card border-0 shadow-lg rounded-4 p-5 text-center bg-light">
-                    <div class="text-danger display-1 mb-3"><i class="far fa-times-circle"></i></div>
-                    <h2 class="fw-bold text-danger">Reserva Cancelada</h2>
-                    <p class="text-muted">El tiempo para realizar el abono ha expirado.</p>
-                    <a href="{% url 'marketplace' %}" class="btn btn-dark rounded-pill mt-3 px-4">Nueva Reserva</a>
-                </div>
-            {% else %}
-                <div class="mb-4 animate-up">
-                    <div class="display-1 text-success mb-3"><i class="fas fa-check-circle"></i></div>
-                    <h1 class="fw-bold">¡Cita Pendiente de Abono!</h1>
-                    <p class="lead text-muted">Tu cita está reservada temporalmente.</p>
-                </div>
-
-                <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 mb-4 animate-up text-center py-3">
-                    <p class="mb-0 text-danger fw-bold small text-uppercase">Tiempo restante para verificar</p>
-                    <div class="display-4 fw-bold text-danger" id="timer">Calculating...</div>
-                </div>
-
-                <div class="alert alert-light border shadow-sm rounded-4 mb-4 text-start animate-up">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-shield-alt fs-3 text-warning me-3"></i>
-                        <div>
-                            <h6 class="fw-bold mb-1">Política de Cancelación y Abonos</h6>
-                            <p class="mb-0 small text-muted">
-                                Si no asistes, el abono no es reembolsable. Cancelaciones con menos de 4 horas de anticipación pierden el abono.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 text-start animate-up">
-                    <div class="card-header bg-white p-4 border-bottom">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="fw-bold mb-0">Resumen de Cita #{{ booking.id }}</h5>
-                            <span class="badge bg-warning text-dark">Pendiente</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <small class="text-muted d-block">Servicio</small>
-                                <strong>{{ booking.service.name }}</strong>
-                            </div>
-                            <div class="col-6 text-end">
-                                <small class="text-muted d-block">Profesional</small>
-                                <strong>{{ booking.employee.name }}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Fecha</small>
-                                <strong>{{ booking.date_time|date:"D d M, Y" }}</strong>
-                            </div>
-                            <div class="col-6 text-end">
-                                <small class="text-muted d-block">Hora</small>
-                                <strong>{{ booking.date_time|date:"h:i A" }}</strong>
-                            </div>
-                        </div>
-                        <hr class="my-4">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Valor Total</span>
-                            <span class="fw-bold">${{ booking.total_price|floatformat:0 }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-success bg-opacity-10 rounded-3">
-                            <span class="text-success fw-bold">Abono a Pagar Ahora</span>
-                            <span class="fs-4 fw-bold text-success">{{ deposit_fmt }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <a href="{{ whatsapp_url }}" target="_blank" class="btn btn-success btn-lg rounded-pill w-100 py-3 fw-bold shadow hover-scale mb-3 animate-up">
-                    <i class="fab fa-whatsapp me-2 display-6 align-middle"></i> Pagar Abono en WhatsApp
-                </a>
-                <p class="text-muted small mb-5">Envía el comprobante para que el negocio verifique tu cita.</p>
-            {% endif %}
-
-        </div>
+<div class="container py-5 text-center" style="max-width: 500px;">
+    <div class="icon-box bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow" style="width: 80px; height: 80px;">
+        <i class="fas fa-check fs-2"></i>
     </div>
+    <h2 class="fw-bold mb-2">¡Hora Reservada!</h2>
+    <p class="text-muted mb-4">Tienes 60 minutos para realizar el abono.</p>
+    
+    <div class="card border-0 bg-light p-4 rounded-4 mb-4">
+        <h1 class="display-4 fw-bold text-dark mb-0" id="timer">59:59</h1>
+        <small class="text-muted">Tiempo restante</small>
+    </div>
+
+    <a href="{{ wa_link }}" target="_blank" class="btn btn-success w-100 rounded-pill py-3 fw-bold shadow-lg mb-3 hover-scale">
+        <i class="fab fa-whatsapp me-2"></i> Enviar Comprobante
+    </a>
+    <a href="{% url 'marketplace' %}" class="btn btn-link text-muted">Volver al inicio</a>
 </div>
 
 <script>
-    {% if not is_expired %}
-    // Cronómetro Real Persistente
-    let timeLeft = {{ time_left_seconds }};
+    // Timer simple de 60 mins
+    let duration = 60 * 60;
     const display = document.querySelector('#timer');
-    
-    function updateTimer() {
-        let minutes = parseInt(timeLeft / 60, 10);
-        let seconds = parseInt(timeLeft % 60, 10);
-
+    setInterval(function () {
+        let minutes = parseInt(duration / 60, 10);
+        let seconds = parseInt(duration % 60, 10);
         minutes = minutes < 10 ? "0" + minutes : minutes;
         seconds = seconds < 10 ? "0" + seconds : seconds;
-
         display.textContent = minutes + ":" + seconds;
-
-        if (timeLeft <= 0) {
-            location.reload(); // Recargar para mostrar estado caducado
-        } else {
-            timeLeft--;
-        }
-    }
-    
-    // Iniciar
-    updateTimer();
-    setInterval(updateTimer, 1000);
-    {% endif %}
+        if (--duration < 0) duration = 0;
+    }, 1000);
 </script>
-
-<style>
-    .hover-scale { transition: transform 0.2s; }
-    .hover-scale:hover { transform: translateY(-3px); }
-    .animate-up { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.6s forwards; }
-    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-</style>
 {% endblock %}

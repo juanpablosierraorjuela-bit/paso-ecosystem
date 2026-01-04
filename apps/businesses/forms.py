@@ -5,28 +5,7 @@ from datetime import datetime
 
 User = get_user_model()
 
-# --- LISTA DE CIUDADES DE COLOMBIA ---
-COLOMBIA_CITIES = [
-    ('Bogotá', 'Bogotá'), ('Medellín', 'Medellín'), ('Cali', 'Cali'),
-    ('Barranquilla', 'Barranquilla'), ('Cartagena', 'Cartagena'), ('Cúcuta', 'Cúcuta'),
-    ('Bucaramanga', 'Bucaramanga'), ('Pereira', 'Pereira'), ('Santa Marta', 'Santa Marta'),
-    ('Ibagué', 'Ibagué'), ('Pasto', 'Pasto'), ('Manizales', 'Manizales'),
-    ('Neiva', 'Neiva'), ('Villavicencio', 'Villavicencio'), ('Armenia', 'Armenia'),
-    ('Valledupar', 'Valledupar'), ('Montería', 'Montería'), ('Sincelejo', 'Sincelejo'),
-    ('Popayán', 'Popayán'), ('Tunja', 'Tunja'), ('Riohacha', 'Riohacha'),
-    ('Florencia', 'Florencia'), ('Quibdó', 'Quibdó'), ('Arauca', 'Arauca'),
-    ('Yopal', 'Yopal'), ('Leticia', 'Leticia'), ('San Andrés', 'San Andrés'),
-    ('Mocoa', 'Mocoa'), ('Mitú', 'Mitú'), ('Puerto Carreño', 'Puerto Carreño'),
-    ('Inírida', 'Inírida'), ('San José del Guaviare', 'San José del Guaviare'),
-    ('Sogamoso', 'Sogamoso'), ('Duitama', 'Duitama'), ('Girardot', 'Girardot'),
-    ('Barrancabermeja', 'Barrancabermeja'), ('Buenaventura', 'Buenaventura'),
-    ('Tumaco', 'Tumaco'), ('Ipiales', 'Ipiales'), ('Palmira', 'Palmira'),
-    ('Tuluá', 'Tuluá'), ('Buga', 'Buga'), ('Cartago', 'Cartago'),
-    ('Soacha', 'Soacha'), ('Bello', 'Bello'), ('Itagüí', 'Itagüí'),
-    ('Envigado', 'Envigado'), ('Apartadó', 'Apartadó'),
-]
-
-# Generador de horas
+# Generador de horas para los desplegables (de 5 AM a 10 PM cada 30 min)
 TIME_CHOICES = []
 for h in range(5, 23):
     for m in (0, 30):
@@ -35,21 +14,26 @@ for h in range(5, 23):
         TIME_CHOICES.append((time_str, display_str))
 
 class EmployeeScheduleForm(forms.ModelForm):
+    # Campos "virtuales" para la interfaz gráfica (no se guardan directo en DB)
     def __init__(self, *args, **kwargs):
         self.salon = kwargs.pop('salon', None)
         super().__init__(*args, **kwargs)
+        
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         
+        # Inicializar los campos del formulario basados en los datos guardados (string "09:00-18:00")
         if self.instance.pk:
             for day in days:
                 db_val = getattr(self.instance, f"{day}_hours", "CERRADO")
                 is_active = db_val != "CERRADO"
                 self.fields[f"{day}_active"].initial = is_active
+                
                 if is_active and '-' in db_val:
                     start, end = db_val.split('-')
                     self.fields[f"{day}_start"].initial = start
                     self.fields[f"{day}_end"].initial = end
 
+        # Bloquear días si el dueño (Salon) no trabaja
         if self.salon:
             map_salon = {
                 'monday': self.salon.work_monday, 'tuesday': self.salon.work_tuesday,
@@ -63,70 +47,74 @@ class EmployeeScheduleForm(forms.ModelForm):
                     self.fields[f"{day}_active"].help_text = "Cerrado por el negocio."
                     self.fields[f"{day}_active"].initial = False
 
+    # Definimos los campos explícitamente para el loop
     monday_active = forms.BooleanField(required=False, label="Lunes")
     monday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     monday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
     tuesday_active = forms.BooleanField(required=False, label="Martes")
     tuesday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     tuesday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
     wednesday_active = forms.BooleanField(required=False, label="Miércoles")
     wednesday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     wednesday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
     thursday_active = forms.BooleanField(required=False, label="Jueves")
     thursday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     thursday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
     friday_active = forms.BooleanField(required=False, label="Viernes")
     friday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     friday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
     saturday_active = forms.BooleanField(required=False, label="Sábado")
     saturday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     saturday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
+
     sunday_active = forms.BooleanField(required=False, label="Domingo")
     sunday_start = forms.ChoiceField(choices=TIME_CHOICES, required=False)
     sunday_end = forms.ChoiceField(choices=TIME_CHOICES, required=False)
 
     class Meta:
         model = EmployeeSchedule
-        fields = []
+        fields = [] # No usamos los campos directos del modelo, los calculamos
 
     def save(self, commit=True):
         schedule = super().save(commit=False)
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        
         for day in days:
             is_active = self.cleaned_data.get(f"{day}_active")
             start = self.cleaned_data.get(f"{day}_start")
             end = self.cleaned_data.get(f"{day}_end")
+            
+            # Lógica inteligente: Si está activo, guarda "HH:MM-HH:MM". Si no, "CERRADO"
             if is_active and start and end:
                 setattr(schedule, f"{day}_hours", f"{start}-{end}")
             else:
                 setattr(schedule, f"{day}_hours", "CERRADO")
-        if commit: schedule.save()
+        
+        if commit:
+            schedule.save()
         return schedule
 
+# --- Otros formularios (se mantienen igual para no romper nada) ---
 class SalonRegistrationForm(forms.ModelForm):
-    username = forms.CharField(max_length=150, label="Usuario", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: tu_negocio_2026'}))
-    email = forms.EmailField(label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}))
-    password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': '********'}), label="Contraseña")
-    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': '********'}), label="Confirmar Contraseña")
-    
-    salon_name = forms.CharField(max_length=255, label="Nombre del Negocio", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Barbería Estilo'}))
-    
-    # LISTA DESPLEGABLE DE CIUDADES
-    city = forms.ChoiceField(
-        choices=COLOMBIA_CITIES, 
-        label="Ciudad", 
-        initial='Bogotá',
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    address = forms.CharField(max_length=255, label="Dirección", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Calle 123 # 45-67'}))
-    phone = forms.CharField(max_length=50, label="Teléfono/WhatsApp", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '300 123 4567'}))
-    instagram_link = forms.URLField(required=False, label="Instagram (Opcional)", widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/tu_negocio'}))
-    maps_link = forms.URLField(required=False, label="Google Maps (Opcional)", widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://maps.google.com/...'}))
+    username = forms.CharField(max_length=150)
+    email = forms.EmailField()
+    password1 = forms.CharField(widget=forms.PasswordInput)
+    password2 = forms.CharField(widget=forms.PasswordInput)
+    salon_name = forms.CharField(max_length=255)
+    city = forms.CharField(max_length=100)
+    address = forms.CharField(max_length=255)
+    phone = forms.CharField(max_length=50) 
+    instagram_link = forms.URLField(required=False)
+    maps_link = forms.URLField(required=False)
 
     class Meta:
         model = User
-        fields = ['username', 'email'] # Solo campos del modelo User
+        fields = ['username', 'email', 'password1', 'password2']
 
     def clean_password2(self):
         p1 = self.cleaned_data.get('password1')
@@ -135,25 +123,14 @@ class SalonRegistrationForm(forms.ModelForm):
         return p2
 
 class SalonSettingsForm(forms.ModelForm):
-    city = forms.ChoiceField(
-        choices=COLOMBIA_CITIES, 
-        label="Ciudad",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
     class Meta:
         model = Salon
         fields = ['name', 'city', 'address', 'whatsapp_number', 'instagram_link', 'maps_link', 
                   'opening_time', 'closing_time', 'deposit_percentage',
                   'work_monday', 'work_tuesday', 'work_wednesday', 'work_thursday', 'work_friday', 'work_saturday', 'work_sunday']
         widgets = {
-            'opening_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'closing_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'address': forms.TextInput(attrs={'class': 'form-control'}),
-            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'instagram_link': forms.URLInput(attrs={'class': 'form-control'}),
-            'maps_link': forms.URLInput(attrs={'class': 'form-control'}),
-            'deposit_percentage': forms.NumberInput(attrs={'class': 'form-control'}),
+            'opening_time': forms.TimeInput(attrs={'type': 'time'}),
+            'closing_time': forms.TimeInput(attrs={'type': 'time'}),
         }
 
 class ServiceForm(forms.ModelForm):
