@@ -1,24 +1,14 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class User(AbstractUser):
-    # Actualizamos ADMIN por OWNER para que coincida con tus vistas
-    ROLE_CHOICES = (("CLIENT", "Cliente"), ("OWNER", "Dueño de Negocio"), ("EMPLOYEE", "Empleado"))
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="CLIENT")
-    phone = models.CharField(max_length=20, blank=True)
-
 class PlatformSettings(models.Model):
-    whatsapp_number = models.CharField(max_length=50, blank=True, help_text="Número WhatsApp del soporte")
-    instagram_link = models.URLField(blank=True, help_text="Link completo de Instagram")
-    
-    class Meta:
-        verbose_name = "Configuración de Plataforma"
-        verbose_name_plural = "Configuración de Plataforma"
+    site_name = models.CharField(max_length=100, default="Paso Ecosystem")
+    whatsapp_number = models.CharField(max_length=20, help_text="Ej: 573001234567", blank=True, null=True)
+    instagram_link = models.CharField(max_length=200, help_text="URL completa de Instagram", blank=True, null=True)
+    footer_text = models.CharField(max_length=200, default="Todos los derechos reservados", blank=True)
 
     def __str__(self):
-        return "Ajustes Generales (Footer)"
+        return "Configuración General de la Plataforma"
 
-    def save(self, *args, **kwargs):
-        if not self.pk and PlatformSettings.objects.exists():
-            return
-        super().save(*args, **kwargs)
+    class Meta:
+        verbose_name = "Configuración del Sistema"
+        verbose_name_plural = "Configuración del Sistema"

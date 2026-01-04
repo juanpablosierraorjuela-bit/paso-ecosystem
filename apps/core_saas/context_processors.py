@@ -1,6 +1,6 @@
 from .models import PlatformSettings
 
-def platform_settings(request):
-    # Obtiene la primera configuración que encuentre
+def global_settings(request):
+    # Busca la configuración, si no existe devuelve vacío para no romper nada
     settings = PlatformSettings.objects.first()
     return {'global_settings': settings}

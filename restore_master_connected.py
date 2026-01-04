@@ -1,4 +1,58 @@
-{% load static %}
+import os
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+CORE_APP_DIR = os.path.join(BASE_DIR, "apps", "core_saas")
+
+MASTER_HTML_PATH = os.path.join(TEMPLATES_DIR, "master.html")
+MODELS_PATH = os.path.join(CORE_APP_DIR, "models.py")
+CONTEXT_PATH = os.path.join(CORE_APP_DIR, "context_processors.py")
+ADMIN_PATH = os.path.join(CORE_APP_DIR, "admin.py")
+
+# --- 1. MODELO DE CONFIGURACIÓN (Para guardar tus redes en Admin) ---
+CONTENIDO_MODELS = """from django.db import models
+
+class PlatformSettings(models.Model):
+    site_name = models.CharField(max_length=100, default="Paso Ecosystem")
+    whatsapp_number = models.CharField(max_length=20, help_text="Ej: 573001234567", blank=True, null=True)
+    instagram_link = models.CharField(max_length=200, help_text="URL completa de Instagram", blank=True, null=True)
+    footer_text = models.CharField(max_length=200, default="Todos los derechos reservados", blank=True)
+
+    def __str__(self):
+        return "Configuración General de la Plataforma"
+
+    class Meta:
+        verbose_name = "Configuración del Sistema"
+        verbose_name_plural = "Configuración del Sistema"
+"""
+
+# --- 2. ADMIN (Para que puedas editarlo) ---
+CONTENIDO_ADMIN = """from django.contrib import admin
+from .models import PlatformSettings
+
+@admin.register(PlatformSettings)
+class PlatformSettingsAdmin(admin.ModelAdmin):
+    list_display = ('site_name', 'whatsapp_number', 'instagram_link')
+    
+    # Esto impide crear más de una configuración (Singleton)
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)
+"""
+
+# --- 3. CONTEXT PROCESSOR (El puente entre la BD y el HTML) ---
+CONTENIDO_CONTEXT = """from .models import PlatformSettings
+
+def global_settings(request):
+    # Busca la configuración, si no existe devuelve vacío para no romper nada
+    settings = PlatformSettings.objects.first()
+    return {'global_settings': settings}
+"""
+
+# --- 4. MASTER.HTML (DISEÑO BLANCO Y CONECTADO) ---
+CONTENIDO_MASTER = """{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -204,3 +258,36 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+"""
+
+def restaurar_conexion_y_diseno():
+    print("🧠 Restaurando cerebro (Context Processors y Models)...")
+    
+    # 1. Crear carpeta core_saas si no existe (por seguridad)
+    if not os.path.exists(CORE_APP_DIR):
+        print("   ⚠️ Creando carpeta core_saas...")
+        os.makedirs(CORE_APP_DIR)
+        with open(os.path.join(CORE_APP_DIR, "__init__.py"), "w") as f: f.write("")
+
+    # 2. Escribir Models
+    with open(MODELS_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_MODELS)
+
+    # 3. Escribir Admin
+    with open(ADMIN_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_ADMIN)
+
+    # 4. Escribir Context Processor
+    with open(CONTEXT_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_CONTEXT)
+
+    # 5. Escribir Master HTML (Diseño Blanco)
+    print("🎨 Aplicando diseño BLANCO en Footer y conectando íconos...")
+    with open(MASTER_HTML_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_MASTER)
+
+    print("✅ ¡Sistema restaurado! Ahora el footer es blanco y lee la base de datos.")
+    print("⚠️ IMPORTANTE: Asegúrate de que 'apps.core_saas.context_processors.global_settings' esté en tu settings.py en la sección TEMPLATES > OPTIONS > context_processors.")
+
+if __name__ == "__main__":
+    restaurar_conexion_y_diseno()
