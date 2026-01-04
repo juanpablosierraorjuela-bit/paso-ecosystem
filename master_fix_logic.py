@@ -1,4 +1,16 @@
-from django.shortcuts import render, redirect, get_object_or_404
+import os
+import sys
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.join(BASE_DIR, "apps", "businesses")
+VIEWS_PATH = os.path.join(APP_DIR, "views.py")
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+CLIENT_DASH_PATH = os.path.join(TEMPLATES_DIR, "client_dashboard.html")
+OWNER_DASH_PATH = os.path.join(TEMPLATES_DIR, "dashboard", "owner_dashboard.html")
+
+# --- 1. VIEWS.PY RECARGADO (CEREBRO DE RESERVAS) ---
+CONTENIDO_VIEWS = """from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import CreateView, TemplateView, UpdateView, ListView, DeleteView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -222,3 +234,95 @@ class OwnerSettingsView(UpdateView):
 @login_required
 def employee_dashboard(request):
     return render(request, 'employee_dashboard.html', {'employee': request.user.employee_profile})
+"""
+
+# --- 2. DASHBOARD CLIENTE (SEMÁFORO Y WHATSAPP) ---
+CONTENIDO_CLIENT_DASH = """{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Mis Reservas</h2>
+        <a href="{% url 'marketplace' %}" class="btn btn-dark">Nueva Reserva</a>
+    </div>
+
+    <div class="row">
+        {% for booking in bookings %}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="fw-bold text-dark">{{ booking.salon.name }}</h5>
+                        {% if booking.status == 'pending' %}
+                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                <i class="bi bi-hourglass-split"></i> Pendiente de Pago
+                            </span>
+                        {% elif booking.status == 'confirmed' %}
+                            <span class="badge bg-success px-3 py-2 rounded-pill">
+                                <i class="bi bi-check-circle-fill"></i> Verificada
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">Cancelada</span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="mb-1 text-muted"><i class="bi bi-calendar-event"></i> {{ booking.date }} a las {{ booking.time }}</p>
+                    <p class="mb-1 text-muted"><i class="bi bi-person"></i> {{ booking.employee.first_name }}</p>
+                    <p class="mb-3 text-muted"><i class="bi bi-scissors"></i> 
+                        {% for s in booking.services.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    
+                    <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-3">
+                        <div>
+                            <small class="text-muted d-block">Total</small>
+                            <span class="fw-bold">${{ booking.total_price|intcomma }}</span>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Abono (50%)</small>
+                            <span class="fw-bold text-dark">${{ booking.deposit_amount|intcomma }}</span>
+                        </div>
+                    </div>
+
+                    {% if booking.status == 'pending' %}
+                    <div class="d-grid">
+                        <a href="https://wa.me/{{ booking.salon.whatsapp }}?text=Hola {{ booking.salon.name }}, quiero confirmar mi reserva del {{ booking.date }} a las {{ booking.time }}. Mi nombre es {{ user.first_name }}. ¿A qué cuenta consigno el abono de ${{ booking.deposit_amount }}?" 
+                           target="_blank" 
+                           class="btn btn-warning fw-bold text-dark">
+                            <i class="bi bi-whatsapp"></i> Pagar Abono
+                        </a>
+                        <small class="text-center text-muted mt-2">Envía el comprobante para verificar tu cita.</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if booking.status == 'confirmed' %}
+                    <div class="alert alert-success mb-0 text-center small">
+                        <i class="bi bi-shield-check"></i> ¡Tu cupo está blindado!
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h3 class="text-muted">Aún no tienes citas.</h3>
+            <p>Explora el marketplace y agenda tu primer servicio.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+"""
+
+def actualizar_archivos():
+    print("🧠 Actualizando Views.py (Wizard corregido y Timezone)...")
+    with open(VIEWS_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_VIEWS)
+
+    print("🚦 Actualizando Client Dashboard (Semáforo y WhatsApp)...")
+    with open(CLIENT_DASH_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_CLIENT_DASH)
+
+if __name__ == "__main__":
+    print("🚀 INICIANDO ACTUALIZACIÓN MASTER 🚀")
+    actualizar_archivos()
+    print("\n✅ Archivos actualizados. Ejecuta los comandos de git para subir.")

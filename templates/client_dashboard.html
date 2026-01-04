@@ -1,64 +1,72 @@
-{% extends 'master.html' %}
+{% extends 'base.html' %}
 {% load humanize %}
 {% block content %}
 <div class="container py-5">
-    <h2 class="fw-bold mb-4">Mis Citas 📅</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Mis Reservas</h2>
+        <a href="{% url 'marketplace' %}" class="btn btn-dark">Nueva Reserva</a>
+    </div>
 
-    <div class="row g-4">
-        {% for item in citas %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between">
-                    <small class="text-muted">#{{ item.obj.id }}</small>
-                    {% if item.obj.status == 'pending_payment' %}
-                        <span class="badge bg-warning text-dark">🟡 Pendiente Abono</span>
-                    {% elif item.obj.status == 'confirmed' %}
-                        <span class="badge bg-success">🟢 Confirmada</span>
-                    {% elif item.obj.status == 'expired' %}
-                        <span class="badge bg-secondary">⚫ Expirada</span>
-                    {% else %}
-                        <span class="badge bg-danger">Cancelada</span>
-                    {% endif %}
-                </div>
-
-                <div class="card-body">
-                    <h5 class="fw-bold mt-2">{{ item.obj.service.name }}</h5>
-                    <p class="text-muted mb-1"><i class="fas fa-store me-1"></i> {{ item.obj.salon.name }}</p>
-                    <p class="text-muted mb-3"><i class="fas fa-clock me-1"></i> {{ item.obj.date }} a las {{ item.obj.time }}</p>
-
-                    <div class="bg-light p-3 rounded-3 mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Total:</span>
-                            <strong>${{ item.obj.service.price|intcomma }}</strong>
+    <div class="row">
+        {% for booking in bookings %}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="fw-bold text-dark">{{ booking.salon.name }}</h5>
+                        {% if booking.status == 'pending' %}
+                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                <i class="bi bi-hourglass-split"></i> Pendiente de Pago
+                            </span>
+                        {% elif booking.status == 'confirmed' %}
+                            <span class="badge bg-success px-3 py-2 rounded-pill">
+                                <i class="bi bi-check-circle-fill"></i> Verificada
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">Cancelada</span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="mb-1 text-muted"><i class="bi bi-calendar-event"></i> {{ booking.date }} a las {{ booking.time }}</p>
+                    <p class="mb-1 text-muted"><i class="bi bi-person"></i> {{ booking.employee.first_name }}</p>
+                    <p class="mb-3 text-muted"><i class="bi bi-scissors"></i> 
+                        {% for s in booking.services.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    
+                    <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-3">
+                        <div>
+                            <small class="text-muted d-block">Total</small>
+                            <span class="fw-bold">${{ booking.total_price|intcomma }}</span>
                         </div>
-                        <div class="d-flex justify-content-between text-success">
-                            <span>Abono ({{ item.obj.salon.deposit_percentage }}%):</span>
-                            <strong>${{ item.abono|intcomma }}</strong>
+                        <div>
+                            <small class="text-muted d-block">Abono (50%)</small>
+                            <span class="fw-bold text-dark">${{ booking.deposit_amount|intcomma }}</span>
                         </div>
                     </div>
 
-                    {% if item.obj.status == 'pending_payment' %}
-                        <a href="{{ item.wa_link }}" target="_blank" class="btn btn-success w-100 fw-bold mb-2">
-                            <i class="fab fa-whatsapp me-2"></i> Pagar Abono
+                    {% if booking.status == 'pending' %}
+                    <div class="d-grid">
+                        <a href="https://wa.me/{{ booking.salon.whatsapp }}?text=Hola {{ booking.salon.name }}, quiero confirmar mi reserva del {{ booking.date }} a las {{ booking.time }}. Mi nombre es {{ user.first_name }}. ¿A qué cuenta consigno el abono de ${{ booking.deposit_amount }}?" 
+                           target="_blank" 
+                           class="btn btn-warning fw-bold text-dark">
+                            <i class="bi bi-whatsapp"></i> Pagar Abono
                         </a>
-                        <small class="text-muted d-block text-center" style="font-size: 0.8rem;">
-                            Se abrirá WhatsApp con los datos para transferir.
-                        </small>
-                    {% elif item.obj.status == 'confirmed' %}
-                        <button class="btn btn-outline-success w-100" disabled>
-                            <i class="fas fa-check-circle me-2"></i> Todo Listo
-                        </button>
-                        <p class="text-center mt-2 small text-muted">
-                            Pendiente en local: <strong>${{ item.pendiente|intcomma }}</strong>
-                        </p>
+                        <small class="text-center text-muted mt-2">Envía el comprobante para verificar tu cita.</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if booking.status == 'confirmed' %}
+                    <div class="alert alert-success mb-0 text-center small">
+                        <i class="bi bi-shield-check"></i> ¡Tu cupo está blindado!
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <h4 class="text-muted">Aún no tienes citas.</h4>
-            <a href="{% url 'marketplace' %}" class="btn btn-primary mt-3">Ir a Reservar</a>
+            <h3 class="text-muted">Aún no tienes citas.</h3>
+            <p>Explora el marketplace y agenda tu primer servicio.</p>
         </div>
         {% endfor %}
     </div>
