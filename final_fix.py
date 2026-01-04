@@ -1,4 +1,14 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿import os
+import subprocess
+import urllib.parse
+
+# -----------------------------------------------------------------------------
+# 1. ACTUALIZAR VIEWS.PY (Lógica de Fecha Blindada + Cronómetro Real)
+# -----------------------------------------------------------------------------
+views_path = os.path.join('apps', 'businesses', 'views.py')
+print(f" Reparando el motor de reservas en {views_path}...")
+
+new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -300,3 +310,231 @@ def owner_settings(request):
     s=request.user.salon
     if request.method=='POST': f=SalonSettingsForm(request.POST, instance=s); f.save(); messages.success(request, 'Guardado'); return redirect('owner_dashboard') if f.is_valid() else None
     return render(request, 'dashboard/owner_settings.html', {'form': SalonSettingsForm(instance=s)})
+"""
+with open(views_path, 'w', encoding='utf-8') as f:
+    f.write(new_views_code)
+
+# -----------------------------------------------------------------------------
+# 2. ACTUALIZAR STEP_CALENDAR.HTML (Para que envíe la FECHA por POST)
+# -----------------------------------------------------------------------------
+calendar_path = os.path.join('templates', 'booking', 'step_calendar.html')
+print(f" Corrigiendo el calendario en {calendar_path}...")
+
+calendar_code = r"""{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-white p-4 text-center border-bottom">
+                    <h4 class="fw-bold mb-1">Selecciona tu Hora</h4>
+                    <p class="text-muted mb-0">{{ service.name }} con <span class="fw-bold text-dark">{{ employee.name }}</span></p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+                        <button class="btn btn-light rounded-circle shadow-sm" onclick="changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <h5 class="mb-0 fw-bold">{{ selected_date }}</h5>
+                        <button class="btn btn-light rounded-circle shadow-sm" onclick="changeDate(1)"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+
+                    {% if slots %}
+                        <form action="{% url 'booking_step_confirm' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="date_selected" value="{{ selected_date }}">
+                            
+                            <div class="row g-3">
+                                {% for slot in slots %}
+                                <div class="col-4 col-sm-3 col-md-2">
+                                    <input type="radio" class="btn-check" name="time" id="slot_{{ forloop.counter }}" value="{{ slot }}" required>
+                                    <label class="btn btn-outline-dark w-100 rounded-3 py-2" for="slot_{{ forloop.counter }}">
+                                        {{ slot }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="d-grid mt-5">
+                                <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold shadow-sm">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted mb-3"><i class="far fa-calendar-times fa-3x"></i></div>
+                            <h5>No hay cupos para esta fecha.</h5>
+                            <p class="text-muted small">Intenta buscar en otro día.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a href="{% url 'booking_step_employee' %}" class="text-muted text-decoration-none small">Cambiar Profesional</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function changeDate(days) {
+        const current = new Date("{{ selected_date }}");
+        current.setDate(current.getDate() + days);
+        // Formato YYYY-MM-DD simple
+        const nextDate = current.toISOString().split('T')[0];
+        window.location.href = "?date=" + nextDate;
+    }
+</script>
+{% endblock %}
+"""
+with open(calendar_path, 'w', encoding='utf-8') as f:
+    f.write(calendar_code)
+
+
+# -----------------------------------------------------------------------------
+# 3. ACTUALIZAR SUCCESS.HTML (Panel de Cliente Persistente + Cronómetro Pro)
+# -----------------------------------------------------------------------------
+success_path = os.path.join('templates', 'booking', 'success.html')
+print(f" Creando el Panel de Cliente en {success_path}...")
+
+success_code = r"""{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            
+            {% if is_expired %}
+                <div class="card border-0 shadow-lg rounded-4 p-5 text-center bg-light">
+                    <div class="text-danger display-1 mb-3"><i class="far fa-times-circle"></i></div>
+                    <h2 class="fw-bold text-danger">Reserva Cancelada</h2>
+                    <p class="text-muted">El tiempo para realizar el abono ha expirado.</p>
+                    <a href="{% url 'marketplace' %}" class="btn btn-dark rounded-pill mt-3 px-4">Nueva Reserva</a>
+                </div>
+            {% else %}
+                <div class="mb-4 animate-up">
+                    <div class="display-1 text-success mb-3"><i class="fas fa-check-circle"></i></div>
+                    <h1 class="fw-bold">¡Cita Pendiente de Abono!</h1>
+                    <p class="lead text-muted">Tu cita está reservada temporalmente.</p>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 bg-danger bg-opacity-10 mb-4 animate-up text-center py-3">
+                    <p class="mb-0 text-danger fw-bold small text-uppercase">Tiempo restante para verificar</p>
+                    <div class="display-4 fw-bold text-danger" id="timer">Calculating...</div>
+                </div>
+
+                <div class="alert alert-light border shadow-sm rounded-4 mb-4 text-start animate-up">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt fs-3 text-warning me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Política de Cancelación y Abonos</h6>
+                            <p class="mb-0 small text-muted">
+                                Si no asistes, el abono no es reembolsable. Cancelaciones con menos de 4 horas de anticipación pierden el abono.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 text-start animate-up">
+                    <div class="card-header bg-white p-4 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0">Resumen de Cita #{{ booking.id }}</h5>
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <small class="text-muted d-block">Servicio</small>
+                                <strong>{{ booking.service.name }}</strong>
+                            </div>
+                            <div class="col-6 text-end">
+                                <small class="text-muted d-block">Profesional</small>
+                                <strong>{{ booking.employee.name }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Fecha</small>
+                                <strong>{{ booking.date_time|date:"D d M, Y" }}</strong>
+                            </div>
+                            <div class="col-6 text-end">
+                                <small class="text-muted d-block">Hora</small>
+                                <strong>{{ booking.date_time|date:"h:i A" }}</strong>
+                            </div>
+                        </div>
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Valor Total</span>
+                            <span class="fw-bold">${{ booking.total_price|floatformat:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-success bg-opacity-10 rounded-3">
+                            <span class="text-success fw-bold">Abono a Pagar Ahora</span>
+                            <span class="fs-4 fw-bold text-success">{{ deposit_fmt }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{{ whatsapp_url }}" target="_blank" class="btn btn-success btn-lg rounded-pill w-100 py-3 fw-bold shadow hover-scale mb-3 animate-up">
+                    <i class="fab fa-whatsapp me-2 display-6 align-middle"></i> Pagar Abono en WhatsApp
+                </a>
+                <p class="text-muted small mb-5">Envía el comprobante para que el negocio verifique tu cita.</p>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+    {% if not is_expired %}
+    // Cronómetro Real Persistente
+    let timeLeft = {{ time_left_seconds }};
+    const display = document.querySelector('#timer');
+    
+    function updateTimer() {
+        let minutes = parseInt(timeLeft / 60, 10);
+        let seconds = parseInt(timeLeft % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+
+        if (timeLeft <= 0) {
+            location.reload(); // Recargar para mostrar estado caducado
+        } else {
+            timeLeft--;
+        }
+    }
+    
+    // Iniciar
+    updateTimer();
+    setInterval(updateTimer, 1000);
+    {% endif %}
+</script>
+
+<style>
+    .hover-scale { transition: transform 0.2s; }
+    .hover-scale:hover { transform: translateY(-3px); }
+    .animate-up { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.6s forwards; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+</style>
+{% endblock %}
+"""
+with open(success_path, 'w', encoding='utf-8') as f:
+    f.write(success_code)
+
+
+# -----------------------------------------------------------------------------
+# 4. SUBIR A GITHUB
+# -----------------------------------------------------------------------------
+print(" Subiendo solución definitiva a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Fix Critical: Reparar flujo de Fecha + Panel Cliente + Cronometro Real"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡HECHO! El sistema ahora es robusto y hermoso.")
+except Exception as e:
+    print(f" Error Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass

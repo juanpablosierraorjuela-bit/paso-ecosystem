@@ -1,40 +1,66 @@
-﻿{% extends 'master.html' %}
+{% extends 'base.html' %}
 {% block content %}
-<div class="container py-5" style="max-width: 600px;">
-    <div class="text-center mb-4">
-        <h2 class="fw-bold">Elige tu hora</h2>
-        <p class="text-muted">Con {{ employee.name }} para {{ service.name }}</p>
-    </div>
-
-    <div class="card border-0 shadow-lg rounded-4 p-4">
-        <form method="GET" class="mb-4">
-            <label class="fw-bold small mb-2">Fecha</label>
-            <input type="date" name="date" class="form-control form-control-lg rounded-pill" value="{{ selected_date }}" min="{{ today }}" onchange="this.form.submit()">
-        </form>
-
-        <form action="{% url 'booking_step_confirm' %}" method="POST">
-            {% csrf_token %}
-            <h5 class="fw-bold mb-3">Horarios Disponibles</h5>
-            <div class="row g-2">
-                {% for slot in slots %}
-                <div class="col-4 col-md-3">
-                    <input type="radio" class="btn-check" name="time" id="slot_{{ slot }}" value="{{ slot }}" required>
-                    <label class="btn btn-outline-dark w-100 rounded-pill py-2" for="slot_{{ slot }}">{{ slot }}</label>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-white p-4 text-center border-bottom">
+                    <h4 class="fw-bold mb-1">Selecciona tu Hora</h4>
+                    <p class="text-muted mb-0">{{ service.name }} con <span class="fw-bold text-dark">{{ employee.name }}</span></p>
                 </div>
-                {% empty %}
-                <div class="col-12 text-center py-4 text-muted">
-                    <i class="fas fa-calendar-times fs-1 mb-2"></i><br>
-                    No hay cupos disponibles para esta fecha.
+                
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+                        <button class="btn btn-light rounded-circle shadow-sm" onclick="changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <h5 class="mb-0 fw-bold">{{ selected_date }}</h5>
+                        <button class="btn btn-light rounded-circle shadow-sm" onclick="changeDate(1)"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+
+                    {% if slots %}
+                        <form action="{% url 'booking_step_confirm' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="date_selected" value="{{ selected_date }}">
+                            
+                            <div class="row g-3">
+                                {% for slot in slots %}
+                                <div class="col-4 col-sm-3 col-md-2">
+                                    <input type="radio" class="btn-check" name="time" id="slot_{{ forloop.counter }}" value="{{ slot }}" required>
+                                    <label class="btn btn-outline-dark w-100 rounded-3 py-2" for="slot_{{ forloop.counter }}">
+                                        {{ slot }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="d-grid mt-5">
+                                <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-bold shadow-sm">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted mb-3"><i class="far fa-calendar-times fa-3x"></i></div>
+                            <h5>No hay cupos para esta fecha.</h5>
+                            <p class="text-muted small">Intenta buscar en otro día.</p>
+                        </div>
+                    {% endif %}
                 </div>
-                {% endfor %}
             </div>
-            
-            {% if slots %}
-            <button type="submit" class="btn btn-dark w-100 rounded-pill py-3 mt-4 fw-bold shadow-sm">
-                Confirmar Hora <i class="fas fa-arrow-right ms-2"></i>
-            </button>
-            {% endif %}
-        </form>
+            <div class="text-center mt-3">
+                <a href="{% url 'booking_step_employee' %}" class="text-muted text-decoration-none small">Cambiar Profesional</a>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    function changeDate(days) {
+        const current = new Date("{{ selected_date }}");
+        current.setDate(current.getDate() + days);
+        // Formato YYYY-MM-DD simple
+        const nextDate = current.toISOString().split('T')[0];
+        window.location.href = "?date=" + nextDate;
+    }
+</script>
 {% endblock %}
