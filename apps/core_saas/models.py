@@ -1,17 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-# --- 1. MODELO DE USUARIO (RESCATADO) ---
+# 1. MODELO DE USUARIO (CRÍTICO: Sin esto la página no arranca)
 class User(AbstractUser):
-    # Heredamos de AbstractUser para mantener username, email, password, etc.
-    # Esto satisface la configuración AUTH_USER_MODEL = 'core_saas.User'
+    # Hereda toda la funcionalidad de Django (username, password, email)
     pass
 
     class Meta:
         verbose_name = "Usuario"
         verbose_name_plural = "Usuarios"
 
-# --- 2. MODELO DE CONFIGURACIÓN (FOOTER) ---
+# 2. MODELO DE CONFIGURACIÓN (FOOTER Y REDES)
 class PlatformSettings(models.Model):
     site_name = models.CharField(max_length=100, default="Paso Ecosystem")
     whatsapp_number = models.CharField(max_length=20, help_text="Ej: 573001234567", blank=True, null=True)
@@ -19,7 +18,7 @@ class PlatformSettings(models.Model):
     footer_text = models.CharField(max_length=200, default="Todos los derechos reservados", blank=True)
 
     def __str__(self):
-        return "Configuración General de la Plataforma"
+        return "Configuración del Sistema"
 
     class Meta:
         verbose_name = "Configuración del Sistema"

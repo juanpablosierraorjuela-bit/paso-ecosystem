@@ -4,14 +4,13 @@ from django.db.utils import OperationalError, ProgrammingError
 def global_settings(request):
     settings = None
     try:
-        # Intentamos buscar la configuración
+        # Intenta obtener la configuración
         settings = PlatformSettings.objects.first()
     except (OperationalError, ProgrammingError):
-        # Si la tabla no existe (porque faltan migraciones), no hacemos nada
-        # Esto evita el Error 500
+        # Si la tabla no existe (error de migración), devuelve None y NO ROMPE la página
         settings = None
-    except Exception as e:
-        # Cualquier otro error, lo ignoramos para mantener el sitio arriba
+    except Exception:
+        # Cualquier otro error, se ignora por seguridad
         settings = None
         
     return {'global_settings': settings}
