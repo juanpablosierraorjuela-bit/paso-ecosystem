@@ -4,7 +4,7 @@ from .models import Salon, Service, Employee, SalonSchedule
 
 User = get_user_model()
 
-# FORMULARIO DE USUARIO (DUEÑO)
+# --- 1. REGISTRO DUEÑO ---
 class OwnerRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea tu contraseña'}), label="Contraseña")
     password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Repite la contraseña'}), label="Confirmar")
@@ -24,29 +24,28 @@ class OwnerRegistrationForm(forms.ModelForm):
         if cleaned_data.get("password") != cleaned_data.get("password_confirm"):
             raise forms.ValidationError("Las contraseñas no coinciden.")
 
-# FORMULARIO DE NEGOCIO (SALÓN)
 class SalonForm(forms.ModelForm):
+    # Campo personalizado de ciudad con lista desplegable
+    city = forms.ChoiceField(choices=[('', 'Selecciona tu Ciudad...'), ('Bogotá', 'Bogotá D.C.'), ('Medellín', 'Medellín'), ('Cali', 'Cali'), ('Barranquilla', 'Barranquilla'), ('Cartagena', 'Cartagena'), ('Bucaramanga', 'Bucaramanga'), ('Manizales', 'Manizales'), ('Pereira', 'Pereira'), ('Cúcuta', 'Cúcuta'), ('Ibagué', 'Ibagué'), ('Santa Marta', 'Santa Marta'), ('Villavicencio', 'Villavicencio'), ('Pasto', 'Pasto'), ('Montería', 'Montería'), ('Valledupar', 'Valledupar'), ('Armenia', 'Armenia'), ('Neiva', 'Neiva'), ('Popayán', 'Popayán'), ('Tunja', 'Tunja'), ('Riohacha', 'Riohacha'), ('Sincelejo', 'Sincelejo'), ('Florencia', 'Florencia'), ('Yopal', 'Yopal'), ('Quibdó', 'Quibdó')], widget=forms.Select(attrs={'class': 'form-select'}), label="Ciudad")
+
     class Meta:
         model = Salon
-        fields = ['name', 'address', 'city', 'phone', 'whatsapp', 'instagram']
+        # Quitamos 'whatsapp' de aquí porque lo llenaremos automáticamente con el teléfono
+        fields = ['name', 'address', 'city', 'phone', 'instagram']
         labels = {
             'name': 'Nombre del Negocio',
-            'address': 'Dirección Física',
-            'city': 'Ciudad',
-            'phone': 'Teléfono',
-            'whatsapp': 'Número de WhatsApp',
+            'address': 'Dirección (Maps)',
+            'phone': 'Celular / WhatsApp',
             'instagram': 'Usuario Instagram',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Barbería El Rey'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Calle 123 # 45-67'}),
-            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Bogotá'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 300 123 4567'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 300 123 4567'}),
             'instagram': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: barberia_elrey (sin @)'}),
         }
 
-# OTROS FORMULARIOS NECESARIOS PARA VIEWS.PY
+# --- OTROS FORMULARIOS ---
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service

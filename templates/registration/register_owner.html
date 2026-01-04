@@ -4,44 +4,40 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <h2 class="fw-bold text-dark">Registra tu Negocio</h2>
-                        <p class="text-muted">Únete al ecosistema y digitaliza tu agenda.</p>
-                    </div>
-
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white text-center py-4">
+                    <h3 class="fw-bold mb-0">Comienza tu prueba gratis</h3>
+                    <p class="mb-0 small text-white-50">Configura tu negocio en menos de 2 minutos</p>
+                </div>
+                <div class="card-body p-5 bg-white">
                     <form method="post">
                         {% csrf_token %}
                         
                         {% if user_form.errors or salon_form.errors %}
-                            <div class="alert alert-danger">
-                                <strong>Ups, algo salió mal:</strong>
-                                {{ user_form.errors }}
-                                {{ salon_form.errors }}
+                            <div class="alert alert-danger rounded-3 small">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> Por favor revisa los campos en rojo.
                             </div>
                         {% endif %}
 
-                        <h5 class="text-uppercase text-primary fw-bold small mb-3 border-bottom pb-2">Datos Personales</h5>
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Nombre</label>
-                            {{ user_form.first_name }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Apellido</label>
-                            {{ user_form.last_name }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Correo Electrónico</label>
-                            {{ user_form.email }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Usuario (Login)</label>
-                            {{ user_form.username }}
-                        </div>
-                        <div class="row mb-3">
+                        <h6 class="text-uppercase fw-bold text-muted mb-3"><i class="bi bi-person-badge me-2"></i> Tus Datos</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Nombre</label>
+                                {{ user_form.first_name }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Apellido</label>
+                                {{ user_form.last_name }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Correo (Usuario)</label>
+                                {{ user_form.email }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Crea tu Usuario de Acceso</label>
+                                {{ user_form.username }}
+                            </div>
                             <div class="col-6">
                                 <label class="form-label small fw-bold">Contraseña</label>
                                 {{ user_form.password }}
@@ -52,43 +48,38 @@
                             </div>
                         </div>
 
-                        <h5 class="text-uppercase text-success fw-bold small mb-3 border-bottom pb-2 mt-4">Datos del Negocio</h5>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Nombre del Negocio</label>
-                            {{ salon_form.name }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Ciudad</label>
-                            {{ salon_form.city }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Dirección</label>
-                            {{ salon_form.address }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Teléfono</label>
-                            {{ salon_form.phone }}
-                        </div>
-                        <div class="row mb-4">
-                            <div class="col-6">
-                                <label class="form-label small fw-bold text-success"><i class="bi bi-whatsapp"></i> WhatsApp</label>
-                                {{ salon_form.whatsapp }}
+                        <h6 class="text-uppercase fw-bold text-muted mb-3 border-top pt-4"><i class="bi bi-shop me-2"></i> Datos del Negocio</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Nombre del Local</label>
+                                {{ salon_form.name }}
                             </div>
-                            <div class="col-6">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Ciudad</label>
+                                {{ salon_form.city }} </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Celular / WhatsApp</label>
+                                {{ salon_form.phone }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Dirección</label>
+                                {{ salon_form.address }}
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label small fw-bold text-danger"><i class="bi bi-instagram"></i> Instagram</label>
                                 {{ salon_form.instagram }}
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-dark btn-lg w-100 rounded-pill fw-bold">
-                            Registrarme Ahora
-                        </button>
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold shadow-sm">
+                                🚀 Lanchar mi Negocio
+                            </button>
+                        </div>
                     </form>
-                    
-                    <div class="text-center mt-3">
-                        <a href="{% url 'login' %}" class="small text-decoration-none">¿Ya tienes cuenta? Inicia sesión</a>
-                    </div>
+                </div>
+                <div class="card-footer text-center bg-light py-3">
+                    <small>¿Ya tienes cuenta? <a href="{% url 'login' %}" class="fw-bold text-dark">Inicia Sesión</a></small>
                 </div>
             </div>
         </div>

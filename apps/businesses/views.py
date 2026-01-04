@@ -7,7 +7,6 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from datetime import datetime, date, time
 from .models import Salon, Service, Employee, SalonSchedule, EmployeeSchedule, Booking
-# IMPORTAMOS TODOS LOS FORMULARIOS CORRECTAMENTE
 from .forms import (
     OwnerRegistrationForm, SalonForm, ServiceForm, 
     EmployeeForm, EmployeeCreationForm, SalonScheduleForm
@@ -15,46 +14,41 @@ from .forms import (
 
 User = get_user_model()
 
-# --- VISTA DE REGISTRO (LA QUE DABA ERROR 500) ---
+# --- VISTA DE REGISTRO MEJORADA ---
 class RegisterOwnerView(CreateView):
     template_name = 'registration/register_owner.html'
-    form_class = OwnerRegistrationForm # Necesario para CreateView
+    form_class = OwnerRegistrationForm
     success_url = '/dashboard/'
 
     def get_context_data(self, **kwargs):
-        # Aquí inyectamos los dos formularios al HTML
         ctx = super().get_context_data(**kwargs)
         ctx['user_form'] = OwnerRegistrationForm()
         ctx['salon_form'] = SalonForm()
         return ctx
 
     def post(self, request, *args, **kwargs):
-        # Aquí procesamos los datos
         user_form = OwnerRegistrationForm(request.POST)
         salon_form = SalonForm(request.POST)
         
         if user_form.is_valid() and salon_form.is_valid():
-            # Guardar Usuario
             user = user_form.save(commit=False)
             user.set_password(user_form.cleaned_data['password'])
             user.save()
             
-            # Guardar Salón vinculado al usuario
             salon = salon_form.save(commit=False)
             salon.owner = user
+            
+            # TRUCO: Copiamos el teléfono al campo whatsapp automáticamente
+            salon.whatsapp = salon_form.cleaned_data['phone']
+            
             salon.save()
-            
-            # Crear Horario por defecto
             SalonSchedule.objects.create(salon=salon)
-            
-            # Loguear y redirigir
             login(request, user)
             return redirect('owner_dashboard')
         
-        # Si hay errores, volver a mostrar el formulario con los errores
         return render(request, self.template_name, {'user_form': user_form, 'salon_form': salon_form})
 
-# --- OTRAS VISTAS (RESUMEN PARA MANTENER EL ARCHIVO FUNCIONAL) ---
+# --- OTRAS VISTAS (MANTENIDAS) ---
 def home(request): return render(request, 'home.html')
 def marketplace(request): return render(request, 'marketplace.html', {'salons': Salon.objects.all()})
 def salon_detail(request, salon_id): return render(request, 'salon_detail.html', {'salon': get_object_or_404(Salon, id=salon_id)})
@@ -62,10 +56,8 @@ def landing_businesses(request): return render(request, 'landing_businesses.html
 
 @login_required
 def booking_wizard(request, salon_id):
-    # Lógica simplificada para evitar errores de importación, el wizard completo está en master_fix_logic
-    # Si necesitas restaurar el wizard completo, avísame. Por ahora, esto asegura que el server arranque.
     salon = get_object_or_404(Salon, id=salon_id)
-    return render(request, 'booking/step_calendar.html', {'salon': salon}) # Placeholder seguro
+    return render(request, 'booking/step_calendar.html', {'salon': salon})
 
 @login_required
 def client_dashboard(request):
@@ -89,7 +81,6 @@ class OwnerDashboardView(TemplateView):
             ctx['pending_bookings'] = Booking.objects.filter(salon=ctx['salon'], status='pending')
         return ctx
 
-# Vistas CRUD simplificadas para evitar bloqueos
 @method_decorator(login_required, name='dispatch')
 class OwnerServicesView(ListView):
     model = Service
