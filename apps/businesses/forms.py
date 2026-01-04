@@ -5,7 +5,7 @@ from datetime import datetime
 
 User = get_user_model()
 
-# --- LISTA OFICIAL DE CIUDADES (NO BORRAR) ---
+# --- LISTA OFICIAL DE CIUDADES ---
 COLOMBIA_CITIES = [
     ("Bogotá", "Bogotá"), ("Medellín", "Medellín"), ("Cali", "Cali"),
     ("Barranquilla", "Barranquilla"), ("Cartagena", "Cartagena"), ("Cúcuta", "Cúcuta"),
@@ -22,11 +22,10 @@ COLOMBIA_CITIES = [
     ("Barrancabermeja", "Barrancabermeja"), ("Buenaventura", "Buenaventura"),
     ("Tumaco", "Tumaco"), ("Ipiales", "Ipiales"), ("Palmira", "Palmira"),
     ("Tuluá", "Tuluá"), ("Buga", "Buga"), ("Cartago", "Cartago"),
-    ("Soacha", "Soacha"), ("Bello", "Bello"), ("Itagüí", 'Itagüí'),
+    ("Soacha", "Soacha"), ("Bello", "Bello"), ("Itagüí", "Itagüí"),
     ("Envigado", "Envigado"), ("Apartadó", "Apartadó"),
 ]
 
-# Generador de horas (Mantenemos tu lógica original)
 TIME_CHOICES = []
 for h in range(5, 23):
     for m in (0, 30):
@@ -35,7 +34,6 @@ for h in range(5, 23):
         TIME_CHOICES.append((time_str, display_str))
 
 class EmployeeScheduleForm(forms.ModelForm):
-    # Lógica original del horario (NO TOCAR, ESTÁ ESTABLE)
     def __init__(self, *args, **kwargs):
         self.salon = kwargs.pop('salon', None)
         super().__init__(*args, **kwargs)
@@ -102,28 +100,30 @@ class EmployeeScheduleForm(forms.ModelForm):
         return schedule
 
 class SalonRegistrationForm(forms.ModelForm):
-    username = forms.CharField(max_length=150)
-    email = forms.EmailField()
-    password1 = forms.CharField(widget=forms.PasswordInput)
-    password2 = forms.CharField(widget=forms.PasswordInput)
-    salon_name = forms.CharField(max_length=255)
+    # Campos explícitos con widgets de Bootstrap
+    username = forms.CharField(max_length=150, label="Usuario", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Contraseña")
+    password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Confirmar Contraseña")
     
-    # --- CAMBIO CRÍTICO: DESPLEGABLE DE CIUDADES ---
+    salon_name = forms.CharField(max_length=255, label="Nombre del Negocio", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    
+    # Desplegable de ciudades
     city = forms.ChoiceField(
         choices=COLOMBIA_CITIES, 
         label="Ciudad", 
         initial="Bogotá",
-        widget=forms.Select(attrs={"class": "form-select"}) # Estilo Bootstrap
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     
-    address = forms.CharField(max_length=255)
-    phone = forms.CharField(max_length=50) 
-    instagram_link = forms.URLField(required=False)
-    maps_link = forms.URLField(required=False)
+    address = forms.CharField(max_length=255, label="Dirección", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    phone = forms.CharField(max_length=50, label="WhatsApp / Teléfono", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    instagram_link = forms.URLField(required=False, label="Instagram", widget=forms.URLInput(attrs={'class': 'form-control'}))
+    maps_link = forms.URLField(required=False, label="Google Maps", widget=forms.URLInput(attrs={'class': 'form-control'}))
 
     class Meta:
         model = User
-        fields = ["username", "email", "password1", "password2"]
+        fields = ["username", "email"] # CORRECCIÓN: Quitamos passwords de aquí para evitar error de validación
 
     def clean_password2(self):
         p1 = self.cleaned_data.get("password1")
@@ -132,21 +132,25 @@ class SalonRegistrationForm(forms.ModelForm):
         return p2
 
 class SalonSettingsForm(forms.ModelForm):
-    # --- CAMBIO CRÍTICO: DESPLEGABLE TAMBIÉN EN AJUSTES ---
     city = forms.ChoiceField(
         choices=COLOMBIA_CITIES, 
         label="Ciudad",
         widget=forms.Select(attrs={"class": "form-select"})
     )
-
     class Meta:
         model = Salon
         fields = ["name", "city", "address", "whatsapp_number", "instagram_link", "maps_link", 
                   "opening_time", "closing_time", "deposit_percentage",
                   "work_monday", "work_tuesday", "work_wednesday", "work_thursday", "work_friday", "work_saturday", "work_sunday"]
         widgets = {
-            "opening_time": forms.TimeInput(attrs={"type": "time"}),
-            "closing_time": forms.TimeInput(attrs={"type": "time"}),
+            "opening_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "closing_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "name": forms.TextInput(attrs={'class': 'form-control'}),
+            "address": forms.TextInput(attrs={'class': 'form-control'}),
+            "whatsapp_number": forms.TextInput(attrs={'class': 'form-control'}),
+            "instagram_link": forms.URLInput(attrs={'class': 'form-control'}),
+            "maps_link": forms.URLInput(attrs={'class': 'form-control'}),
+            "deposit_percentage": forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
 class ServiceForm(forms.ModelForm):
