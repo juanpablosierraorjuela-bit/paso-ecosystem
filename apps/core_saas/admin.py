@@ -1,11 +1,15 @@
 from django.contrib import admin
-from .models import PlatformSettings
+from django.contrib.auth.admin import UserAdmin
+from .models import PlatformSettings, User
 
+# Registramos el Usuario para poder administrarlo
+admin.site.register(User, UserAdmin)
+
+# Registramos la configuración del footer
 @admin.register(PlatformSettings)
 class PlatformSettingsAdmin(admin.ModelAdmin):
     list_display = ('site_name', 'whatsapp_number', 'instagram_link')
     
-    # Esto impide crear más de una configuración (Singleton)
     def has_add_permission(self, request):
         if self.model.objects.exists():
             return False
