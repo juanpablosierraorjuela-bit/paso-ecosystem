@@ -1,45 +1,145 @@
-{% extends 'base.html' %}
-{% block content %}
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-5 fw-bold text-dark">Ecosistema Premium</h1>
-        <p class="lead text-muted">Descubre la excelencia en servicios empresariales.</p>
-    </div>
+﻿{% extends 'base.html' %}
+{% load static %}
 
+{% block content %}
+<style>
+    .marketplace-header {
+        background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+        padding: 6rem 0 4rem;
+        color: white;
+        border-radius: 0 0 40px 40px;
+        margin-bottom: 4rem;
+    }
+    .salon-card {
+        border: none;
+        border-radius: 20px;
+        background: #fff;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        overflow: hidden;
+        height: 100%;
+    }
+    .salon-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .initial-avatar {
+        width: 90px;
+        height: 90px;
+        background: #000;
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin: -45px auto 0;
+        border: 5px solid #fff;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        position: relative;
+        z-index: 2;
+    }
+    .card-banner {
+        height: 110px;
+        background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    }
+    .btn-social {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 5px;
+        transition: transform 0.2s;
+        text-decoration: none;
+        color: white;
+        font-size: 1.2rem;
+    }
+    .btn-social:hover { transform: scale(1.15); }
+    .bg-whatsapp { background: #25D366; }
+    .bg-instagram { background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D); }
+    .bg-maps { background: #4285F4; }
+    
+    .filter-box {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 50px;
+        padding: 10px 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-top: -30px;
+    }
+</style>
+
+<div class="marketplace-header text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3 tracking-wide">Paso Marketplace</h1>
+        <p class="lead text-white-50">Encuentra los servicios más exclusivos cerca de ti.</p>
+    </div>
+</div>
+
+<div class="container position-relative z-2 mb-5" style="margin-top: -80px;">
+    <form method="GET" class="filter-box d-flex flex-column flex-md-row align-items-center gap-3 p-4">
+        <div class="input-group input-group-lg border-0 bg-transparent">
+            <span class="input-group-text bg-transparent border-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" name="q" class="form-control bg-transparent border-0 shadow-none" placeholder="Buscar servicio (Uñas, Barbería...)" value="{{ request.GET.q }}">
+        </div>
+        <div class="border-start d-none d-md-block" style="height: 40px; border-color: #eee !important;"></div>
+        <div class="input-group input-group-lg border-0 bg-transparent" style="max-width: 300px;">
+            <span class="input-group-text bg-transparent border-0"><i class="fas fa-map-marker-alt text-muted"></i></span>
+            <select name="city" class="form-select bg-transparent border-0 shadow-none" onchange="this.form.submit()">
+                <option value="">Todas las Ciudades</option>
+                {% for city in cities %}
+                <option value="{{ city }}" {% if request.GET.city == city %}selected{% endif %}>{{ city }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-dark rounded-pill px-4 py-3 fw-bold shadow-sm">Buscar</button>
+    </form>
+</div>
+
+<div class="container pb-5">
     <div class="row g-4">
         {% for salon in salons %}
-        <div class="col-md-4">
-            <div class="card h-100 border-0 shadow-sm" style="border-radius: 15px; overflow: hidden; transition: transform 0.3s;">
-                <div class="card-body text-center p-4">
-                    <div class="mx-auto mb-3 d-flex align-items-center justify-content-center shadow-sm" 
-                         style="width: 80px; height: 80px; background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%); border-radius: 50%; border: 2px solid #d4af37;">
-                        <span class="h2 mb-0 text-white fw-light" style="letter-spacing: 2px;">{{ salon.name|slice:":1"|upper }}</span>
-                    </div>
+        <div class="col-md-6 col-lg-4">
+            <div class="card salon-card shadow-sm">
+                <div class="card-banner"></div>
+                <div class="initial-avatar">{{ salon.name|slice:":1"|upper }}</div>
+                
+                <div class="card-body text-center pt-3 pb-4">
+                    <h4 class="fw-bold mb-1">{{ salon.name }}</h4>
+                    <p class="text-muted small mb-3"><i class="fas fa-map-pin me-1"></i> {{ salon.city }}</p>
                     
-                    <h4 class="fw-bold text-dark mb-1">{{ salon.name }}</h4>
-                    <p class="text-muted small mb-3"><i class="bi bi-geo-alt"></i> {{ salon.address|default:"Ubicación Premium" }}</p>
-                    
-                    <div class="d-flex justify-content-center gap-3 mb-4">
-                        {% if salon.whatsapp %}
-                        <a href="https://wa.me/{{ salon.whatsapp }}" target="_blank" class="text-success fs-5"><i class="bi bi-whatsapp"></i></a>
+                    <p class="text-muted mb-4 px-3 small">
+                        {% if salon.description %}{{ salon.description|truncatechars:80 }}{% else %}Servicios profesionales de belleza y bienestar.{% endif %}
+                    </p>
+
+                    <div class="d-flex justify-content-center mb-4">
+                        {% if salon.whatsapp_number %}
+                        <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="btn-social bg-whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
                         {% endif %}
-                        {% if salon.instagram %}
-                        <a href="https://instagram.com/{{ salon.instagram }}" target="_blank" class="text-danger fs-5"><i class="bi bi-instagram"></i></a>
+                        {% if salon.instagram_link %}
+                        <a href="{{ salon.instagram_link }}" target="_blank" class="btn-social bg-instagram" title="Instagram"><i class="fab fa-instagram"></i></a>
                         {% endif %}
-                        <a href="https://www.google.com/maps/search/{{ salon.address }}" target="_blank" class="text-primary fs-5"><i class="bi bi-map"></i></a>
+                        {% if salon.maps_link %}
+                        <a href="{{ salon.maps_link }}" target="_blank" class="btn-social bg-maps" title="Ubicación"><i class="fas fa-map-marked-alt"></i></a>
+                        {% endif %}
                     </div>
 
-                    <a href="{% url 'salon_detail' salon.id %}" class="btn btn-dark w-100 py-2 text-uppercase fw-bold small" style="letter-spacing: 1px; border-radius: 8px;">
-                        Ver Portafolio
-                    </a>
+                    <div class="d-grid px-4">
+                        <a href="{% url 'salon_detail' salon.id %}" class="btn btn-dark rounded-pill py-2 fw-bold">Ver Servicios</a>
+                    </div>
                 </div>
             </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h3 class="text-muted">No hay resultados.</h3>
+            <p>Intenta cambiar el filtro de búsqueda.</p>
+            <a href="{% url 'marketplace' %}" class="btn btn-outline-dark rounded-pill">Ver todo</a>
         </div>
         {% endfor %}
     </div>
 </div>
-
-<style>
-    .card:hover { transform: translateY(-10px); }
-</style>
 {% endblock %}

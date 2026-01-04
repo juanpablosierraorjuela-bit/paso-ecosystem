@@ -1,66 +1,69 @@
-from django.db import models
-from django.conf import settings
+﻿from django.db import models
+from apps.core_saas.models import User
 
 class Salon(models.Model):
-    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salon')
+    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='salon')
     name = models.CharField(max_length=255, verbose_name="Nombre del Negocio")
     description = models.TextField(verbose_name="Descripción", blank=True)
     address = models.CharField(max_length=255, verbose_name="Dirección Física")
-    phone = models.CharField(max_length=50, verbose_name="Teléfono", blank=True, default='')
-    email = models.EmailField(verbose_name="Correo del Negocio", blank=True)
-    whatsapp = models.CharField(max_length=50, blank=True, verbose_name="WhatsApp")
-    instagram = models.CharField(max_length=100, blank=True, verbose_name="Instagram")
+    
+    # --- CAMPOS DE LUJO Y REDES (SIN IMAGEN) ---
+    city = models.CharField(max_length=100, verbose_name="Ciudad", default="Tunja")
+    whatsapp_number = models.CharField(max_length=20, blank=True, verbose_name="WhatsApp (Ej: 573001234567)")
+    instagram_link = models.URLField(blank=True, verbose_name="Link de Instagram")
+    maps_link = models.URLField(blank=True, verbose_name="Link de Google Maps")
+    
+    # Eliminamos el campo ImageField para evitar problemas y mantener el diseño de iniciales
 
     def __str__(self):
         return self.name
 
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
-    name = models.CharField(max_length=100, verbose_name="Nombre del Servicio")
-    description = models.TextField(blank=True, verbose_name="Descripción")
-    duration_minutes = models.IntegerField(default=30, verbose_name="Duración (min)")
-    price = models.DecimalField(max_digits=10, decimal_places=0, verbose_name="Precio")
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    duration = models.IntegerField(help_text="Duración en minutos", verbose_name="Duración (min)")
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.salon.name}"
+
+class Employee(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20, blank=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
 
-class Employee(models.Model):
-    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
-    # --- CONEXIÓN CON USUARIO (Login) ---
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='employee_profile', null=True, blank=True)
-    # ------------------------------------
-    first_name = models.CharField(max_length=100, verbose_name="Nombre")
-    last_name = models.CharField(max_length=100, verbose_name="Apellido")
-    phone = models.CharField(max_length=50, blank=True, verbose_name="Teléfono")
-    email = models.EmailField(blank=True, verbose_name="Email")
+class Schedule(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='schedules')
+    day_of_week = models.IntegerField(choices=[
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), 
+        (3, 'Jueves'), (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo')
+    ])
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_active = models.BooleanField(default=True)
+
+class Booking(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pendiente'),
+        ('CONFIRMED', 'Confirmada'),
+        ('COMPLETED', 'Completada'),
+        ('CANCELLED', 'Cancelada'),
+    )
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True, blank=True)
+    customer_name = models.CharField(max_length=255)
+    customer_phone = models.CharField(max_length=20)
+    customer_email = models.EmailField(blank=True)
+    date_time = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
-class SalonSchedule(models.Model):
-    salon = models.OneToOneField(Salon, on_delete=models.CASCADE, related_name='schedule')
-    monday_open = models.BooleanField(default=True, verbose_name="Lunes")
-    tuesday_open = models.BooleanField(default=True, verbose_name="Martes")
-    wednesday_open = models.BooleanField(default=True, verbose_name="Miércoles")
-    thursday_open = models.BooleanField(default=True, verbose_name="Jueves")
-    friday_open = models.BooleanField(default=True, verbose_name="Viernes")
-    saturday_open = models.BooleanField(default=True, verbose_name="Sábado")
-    sunday_open = models.BooleanField(default=False, verbose_name="Domingo")
-
-    def __str__(self):
-        return f"Horario de {self.salon.name}"
-
-# --- NUEVO: HORARIO DEL EMPLEADO ---
-class EmployeeSchedule(models.Model):
-    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='schedule')
-    # Guardaremos los horarios como texto simple por ahora "09:00-17:00" o "CERRADO"
-    monday_hours = models.CharField(max_length=50, default="09:00-18:00", blank=True)
-    tuesday_hours = models.CharField(max_length=50, default="09:00-18:00", blank=True)
-    wednesday_hours = models.CharField(max_length=50, default="09:00-18:00", blank=True)
-    thursday_hours = models.CharField(max_length=50, default="09:00-18:00", blank=True)
-    friday_hours = models.CharField(max_length=50, default="09:00-18:00", blank=True)
-    saturday_hours = models.CharField(max_length=50, default="09:00-18:00", blank=True)
-    sunday_hours = models.CharField(max_length=50, default="CERRADO", blank=True)
-
-    def __str__(self):
-        return f"Horario de {self.employee}"
+        return f"Cita de {self.customer_name}"

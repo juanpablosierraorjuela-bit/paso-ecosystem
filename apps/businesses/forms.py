@@ -1,72 +1,46 @@
-from django import forms
-from django.contrib.auth import get_user_model
+﻿from django import forms
 from .models import Salon, Service, Employee
-
-User = get_user_model()
-
-class OwnerRegistrationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Contraseña")
-    password_confirm = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label="Confirmar")
-    class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'email', 'username']
-        widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-    def clean(self):
-        cleaned_data = super().clean()
-        if cleaned_data.get("password") != cleaned_data.get("password_confirm"):
-            raise forms.ValidationError("Las contraseñas no coinciden.")
 
 class SalonForm(forms.ModelForm):
     class Meta:
         model = Salon
-        fields = ['name', 'address', 'phone', 'whatsapp', 'instagram']
+        # Solo pedimos los campos que existen en el modelo
+        fields = ['name', 'description', 'city', 'address', 'whatsapp_number', 'instagram_link', 'maps_link']
         widgets = {
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Bogotá, Tunja...'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
-            'instagram': forms.TextInput(attrs={'class': 'form-control'}),
+            'whatsapp_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 573001234567'}),
+            'instagram_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/tu_negocio'}),
+            'maps_link': forms.URLInput(attrs={'class': 'form-control'}),
         }
 
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ['name', 'description', 'duration_minutes', 'price']
+        fields = ['name', 'description', 'duration', 'price', 'is_active']
+        labels = {
+            'duration': 'Duración (minutos)',
+            'price': 'Precio ($)',
+            'name': 'Nombre del Servicio'
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'duration': forms.NumberInput(attrs={'class': 'form-control'}),
             'price': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-# --- EL FORMULARIO QUE FALTABA (RESTAURADO) ---
 class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
-        fields = ['first_name', 'last_name', 'phone', 'email']
-        widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        fields = ['name', 'phone', 'is_active']
+        labels = {
+            'name': 'Nombre del Profesional',
+            'phone': 'Teléfono'
         }
-
-# --- EL NUEVO FORMULARIO DE CREACIÓN CON USUARIO ---
-class EmployeeCreationForm(forms.ModelForm):
-    username = forms.CharField(label="Usuario de Acceso", widget=forms.TextInput(attrs={'class': 'form-control'}))
-    password = forms.CharField(label="Contraseña Temporal", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
-    
-    class Meta:
-        model = Employee
-        fields = ['first_name', 'last_name', 'phone', 'email']
         widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
