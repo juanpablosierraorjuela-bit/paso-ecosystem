@@ -118,7 +118,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='booking',
             name='date',
-            field=models.DateField(default=1),
+            field=models.DateField(default='2024-01-01'),
             preserve_default=False,
         ),
         migrations.AddField(
@@ -129,7 +129,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='booking',
             name='time',
-            field=models.TimeField(default=1),
+            field=models.TimeField(default='00:00'),
             preserve_default=False,
         ),
         migrations.AddField(
@@ -140,13 +140,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='employee',
             name='first_name',
-            field=models.CharField(default=1, max_length=100, verbose_name='Nombre'),
+            field=models.CharField(default='Desconocido', max_length=100, verbose_name='Nombre'),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='employee',
             name='last_name',
-            field=models.CharField(default=1, max_length=100, verbose_name='Apellido'),
+            field=models.CharField(default='Desconocido', max_length=100, verbose_name='Apellido'),
             preserve_default=False,
         ),
         migrations.AddField(
