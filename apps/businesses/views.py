@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
@@ -266,6 +267,7 @@ def saas_logout(request):
     logout(request)
     return redirect('home')
 
+@transaction.atomic
 def register_owner(request):
     if request.method == 'POST':
         form = SalonRegistrationForm(request.POST)
