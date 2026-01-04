@@ -7,12 +7,10 @@ from django.db.models import Q
 from datetime import datetime
 from django.contrib import messages
 from apps.core_saas.models import User
-
 from .models import Salon, Service, Employee, Booking, EmployeeSchedule
 from .forms import SalonForm, ServiceForm, EmployeeForm, OwnerSignUpForm, EmployeeScheduleForm
 from .logic import get_available_slots
 
-# ... (Home, Marketplace, Booking Views SE MANTIENEN IGUAL) ...
 def home(request): return render(request, 'home.html')
 
 class MarketplaceView(ListView):
@@ -39,18 +37,14 @@ class SalonDetailView(DetailView):
 
 class LandingBusinessesView(TemplateView): template_name = 'landing_businesses.html'
 
-# --- BOOKING WIZARD ---
-# --- BOOKING WIZARD ---
+# --- BOOKING ---
 class BookingWizardStartView(View):
     def post(self, request):
         salon_id = request.POST.get('salon_id')
         service_id = request.POST.get('service_id')
-        
-        # VALIDACIÓN: Si no escoge servicio, error y devuelve
         if not service_id:
-            messages.error(request, ' Debes seleccionar al menos un servicio para continuar.')
+            messages.error(request, 'Debes seleccionar un servicio.')
             return redirect('salon_detail', pk=salon_id)
-
         request.session['booking_salon_id'] = salon_id
         request.session['booking_service_id'] = service_id
         return redirect('booking_step_employee')
@@ -110,21 +104,17 @@ def booking_create(request):
 
 def booking_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
-    saldo = booking.total_price - booking.deposit_amount
     msg = f"Hola *{booking.salon.name}*, soy {booking.customer_name}. Cita #{booking.id}. Abono: ."
     wa_link = f"https://wa.me/{booking.salon.whatsapp_number}?text={msg}"
     return render(request, 'booking/success.html', {'booking': booking, 'wa_link': wa_link})
 
-# --- DUEÑO DASHBOARD ---
+# --- DUEÑO DASHBOARD (CORREGIDO ERROR DE SINTAXIS) ---
 class OwnerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
-    
     def dispatch(self, request, *args, **kwargs):
-        # SEGURIDAD: Si es empleado, fuera de aquí
         if request.user.is_authenticated and request.user.role == 'EMPLOYEE':
             return redirect('employee_dashboard')
         return super().dispatch(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         salon = self.request.user.salon
@@ -139,7 +129,7 @@ def verify_booking(request, booking_id):
     booking.save()
     return redirect('owner_dashboard')
 
-# --- EMPLEADOS (CREACIÓN CON USUARIO) ---
+# --- EMPLEADOS ---
 class OwnerEmployeesView(LoginRequiredMixin, ListView):
     model = Employee
     template_name = 'dashboard/owner_employees.html'
@@ -151,26 +141,19 @@ class EmployeeCreateView(LoginRequiredMixin, CreateView):
     form_class = EmployeeForm
     template_name = 'dashboard/employee_form.html'
     success_url = reverse_lazy('owner_employees')
-    
     def form_valid(self, form):
-        # 1. Crear Usuario para el Empleado
         username = form.cleaned_data['username']
         password = form.cleaned_data['password']
         user = User.objects.create_user(username=username, email=f"{username}@paso.com", password=password)
         user.role = 'EMPLOYEE'
         user.save()
-        
-        # 2. Crear Perfil Empleado
         employee = form.save(commit=False)
         employee.salon = self.request.user.salon
         employee.user = user
         employee.save()
-        
-        # 3. Crear Horario Default
         EmployeeSchedule.objects.create(employee=employee)
         return redirect('owner_employees')
 
-# --- PANEL DEL EMPLEADO (NUEVO) ---
 @login_required
 def employee_dashboard(request):
     if request.user.role != 'EMPLOYEE': return redirect('owner_dashboard')
@@ -186,13 +169,12 @@ def employee_schedule_update(request):
         form = EmployeeScheduleForm(request.POST, instance=schedule)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Horario actualizado correctamente.')
+            messages.success(request, 'Horario actualizado.')
             return redirect('employee_dashboard')
     else:
         form = EmployeeScheduleForm(instance=schedule)
     return render(request, 'dashboard/employee_schedule.html', {'form': form, 'salon': employee.salon})
 
-# --- CONFIGURACIÓN DUEÑO (HORARIOS) ---
 class OwnerSettingsView(LoginRequiredMixin, UpdateView):
     model = Salon
     form_class = SalonForm
@@ -200,7 +182,6 @@ class OwnerSettingsView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('owner_dashboard')
     def get_object(self): return self.request.user.salon
 
-# --- RESTO DE VISTAS (Servicios, etc) ---
 class RegisterOwnerView(CreateView):
     template_name = 'registration/register_owner.html'
     form_class = OwnerSignUpForm
@@ -246,6 +227,3 @@ class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'dashboard/employee_confirm_delete.html'
     success_url = reverse_lazy('owner_employees')
     def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
-
-
-

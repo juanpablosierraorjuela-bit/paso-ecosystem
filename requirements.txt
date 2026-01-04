@@ -10,3 +10,5 @@ djangorestframework
 django-multitenant
 
 pytz
+
+pytz

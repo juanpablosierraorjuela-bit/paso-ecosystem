@@ -17,9 +17,11 @@ class Salon(models.Model):
     
     deposit_percentage = models.IntegerField(default=50, verbose_name="% de Abono")
     
+    # Horarios
     opening_time = models.TimeField(default="08:00", verbose_name="Apertura")
     closing_time = models.TimeField(default="20:00", verbose_name="Cierre")
     
+    # Días
     work_monday = models.BooleanField(default=True, verbose_name="Lunes")
     work_tuesday = models.BooleanField(default=True, verbose_name="Martes")
     work_wednesday = models.BooleanField(default=True, verbose_name="Miércoles")
@@ -32,35 +34,30 @@ class Salon(models.Model):
 
     @property
     def is_open_now(self):
-        """Calcula si está abierto revisando el turno de HOY y el trasnocho de AYER"""
+        """Calcula si está abierto (Soporta trasnocho ej: 10pm - 3am)"""
         bogota = pytz.timezone('America/Bogota')
         now = datetime.now(bogota)
         current_time = now.time()
         
-        # Índices: 0=Lunes, 6=Domingo
         today_idx = now.weekday()
-        yesterday_idx = (today_idx - 1) % 7 # Si hoy es Lunes(0), ayer fue Domingo(6)
+        yesterday_idx = (today_idx - 1) % 7
         
         days_map = [self.work_monday, self.work_tuesday, self.work_wednesday, self.work_thursday, self.work_friday, self.work_saturday, self.work_sunday]
         
-        # CASO 1: Turno normal del día de HOY
+        # 1. Turno de HOY
         if days_map[today_idx]:
             if self.opening_time <= self.closing_time:
-                # Horario diurno (Ej: 8am - 8pm) -> Debe estar en el rango
-                if self.opening_time <= current_time <= self.closing_time:
-                    return True
+                # Horario normal (8am - 8pm)
+                if self.opening_time <= current_time <= self.closing_time: return True
             else:
-                # Horario nocturno (Ej: 10pm - 3am) -> Si es HOY, debe ser tarde (>= 10pm)
-                if current_time >= self.opening_time:
-                    return True
-
-        # CASO 2: Turno de trasnocho de AYER (La Madrugada)
-        # Si ayer trabajaron y el horario era nocturno (Apertura > Cierre)
+                # Horario nocturno (10pm - 3am) -> Si es HOY, debe ser tarde
+                if current_time >= self.opening_time: return True
+        
+        # 2. Turno de AYER (La Madrugada)
         if days_map[yesterday_idx] and self.opening_time > self.closing_time:
-            # Estamos en la madrugada del turno de ayer (Ej: son las 2am y cierran a las 3am)
-            if current_time <= self.closing_time:
-                return True
-                
+            # Si ayer fue nocturno, y hoy es temprano (antes del cierre)
+            if current_time <= self.closing_time: return True
+            
         return False
 
 class Service(models.Model):
@@ -93,12 +90,7 @@ class EmployeeSchedule(models.Model):
     sunday_hours = models.CharField(max_length=50, default="CERRADO")
 
 class Booking(models.Model):
-    STATUS_CHOICES = (
-        ('PENDING_PAYMENT', 'Pendiente de Abono'),
-        ('VERIFIED', 'Confirmada'),
-        ('COMPLETED', 'Completada'),
-        ('CANCELLED', 'Cancelada'),
-    )
+    STATUS_CHOICES = (('PENDING_PAYMENT', 'Pendiente'), ('VERIFIED', 'Confirmada'), ('COMPLETED', 'Completada'), ('CANCELLED', 'Cancelada'))
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
@@ -116,6 +108,5 @@ class Booking(models.Model):
             total_min = self.service.duration + self.service.buffer_time
             self.end_time = self.date_time + timedelta(minutes=total_min)
         if not self.deposit_amount and self.salon:
-            percentage = self.salon.deposit_percentage / 100
-            self.deposit_amount = self.total_price * percentage
+            self.deposit_amount = self.total_price * (self.salon.deposit_percentage / 100)
         super().save(*args, **kwargs)
