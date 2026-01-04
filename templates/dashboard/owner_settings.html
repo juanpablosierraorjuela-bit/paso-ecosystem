@@ -5,62 +5,81 @@
         <div class="col-md-8">
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-header bg-dark text-white p-4">
-                    <h3 class="mb-0 fw-bold"><i class="fas fa-store me-2"></i> Perfil del Negocio</h3>
-                    <p class="mb-0 text-white-50 small">Configura cómo te verán tus clientes en el Marketplace.</p>
+                    <h3 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i> Configuración del Negocio</h3>
                 </div>
                 
                 <div class="card-body p-5 bg-light">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">🏢 Información General</h5>
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">{{ form.name.label }}</label>
-                            {{ form.name }}
-                            <div class="form-text">El nombre público de tu salón o barbería.</div>
-                        </div>
+                        {% if form.errors %}
+                        <div class="alert alert-danger small">Corrige los errores: {{ form.errors }}</div>
+                        {% endif %}
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">{{ form.description.label }}</label>
-                            {{ form.description }}
-                        </div>
-
-                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2 mt-5">📍 Ubicación</h5>
-                        
-                        <div class="row g-3">
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3"> Identidad</h5>
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ form.city.label }}</label>
+                                <label class="form-label fw-bold small">Nombre Negocio</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Ciudad</label>
                                 {{ form.city }}
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ form.address.label }}</label>
-                                {{ form.address }}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small">Dirección</label>
+                            {{ form.address }}
+                        </div>
+
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-5"> Redes (Para las Tarjetas)</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-success"><i class="fab fa-whatsapp"></i> WhatsApp</label>
+                                {{ form.whatsapp_number }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-danger"><i class="fab fa-instagram"></i> Instagram</label>
+                                {{ form.instagram_link }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-primary"><i class="fas fa-map-marker-alt"></i> Maps</label>
+                                {{ form.maps_link }}
                             </div>
                         </div>
 
-                        <h5 class="fw-bold mb-3 text-dark border-bottom pb-2 mt-5">📱 Redes y Contacto</h5>
-                        <div class="alert alert-info border-0 d-flex align-items-center rounded-3">
-                            <i class="fas fa-info-circle fs-4 me-3"></i>
-                            <div>
-                                <strong>Tip Pro:</strong> Tus clientes podrán contactarte directamente si llenas estos datos.
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-5"> Horario de Atención</h5>
+                        <div class="alert alert-info border-0 py-2 small"><i class="fas fa-info-circle me-1"></i> Esto define cuándo dice "ABIERTO" o "CERRADO" en el marketplace.</div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Hora Apertura</label>
+                                {{ form.opening_time }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Hora Cierre</label>
+                                {{ form.closing_time }}
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="fab fa-whatsapp text-success me-1"></i> {{ form.whatsapp_number.label }}</label>
-                            {{ form.whatsapp_number }}
-                            <div class="form-text">Ingresa tu número celular (ej: 3101234567). Nosotros agregamos el código de país.</div>
+                        <label class="form-label fw-bold small mb-2">Días Laborales</label>
+                        <div class="d-flex flex-wrap gap-3 mb-4">
+                            <div class="form-check">{{ form.work_monday }} <label class="form-check-label">Lun</label></div>
+                            <div class="form-check">{{ form.work_tuesday }} <label class="form-check-label">Mar</label></div>
+                            <div class="form-check">{{ form.work_wednesday }} <label class="form-check-label">Mié</label></div>
+                            <div class="form-check">{{ form.work_thursday }} <label class="form-check-label">Jue</label></div>
+                            <div class="form-check">{{ form.work_friday }} <label class="form-check-label">Vie</label></div>
+                            <div class="form-check">{{ form.work_saturday }} <label class="form-check-label">Sáb</label></div>
+                            <div class="form-check">{{ form.work_sunday }} <label class="form-check-label">Dom</label></div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="fab fa-instagram text-danger me-1"></i> {{ form.instagram_link.label }}</label>
-                            {{ form.instagram_link }}
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="fas fa-map-marked-alt text-primary me-1"></i> {{ form.maps_link.label }}</label>
-                            {{ form.maps_link }}
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-5"> Finanzas</h5>
+                        <div class="mb-3" style="max-width: 200px;">
+                            <label class="form-label fw-bold small">% de Abono para Reservar</label>
+                            <div class="input-group">
+                                {{ form.deposit_percentage }}
+                                <span class="input-group-text">%</span>
+                            </div>
                         </div>
 
                         <div class="d-grid mt-5">
@@ -74,12 +93,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    .hover-scale:hover { transform: scale(1.02); transition: 0.2s; }
-    .form-control:focus {
-        border-color: #000;
-        box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
-    }
-</style>
 {% endblock %}

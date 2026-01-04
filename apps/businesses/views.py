@@ -40,10 +40,19 @@ class SalonDetailView(DetailView):
 class LandingBusinessesView(TemplateView): template_name = 'landing_businesses.html'
 
 # --- BOOKING WIZARD ---
+# --- BOOKING WIZARD ---
 class BookingWizardStartView(View):
     def post(self, request):
-        request.session['booking_salon_id'] = request.POST.get('salon_id')
-        request.session['booking_service_id'] = request.POST.get('service_id')
+        salon_id = request.POST.get('salon_id')
+        service_id = request.POST.get('service_id')
+        
+        # VALIDACIÓN: Si no escoge servicio, error y devuelve
+        if not service_id:
+            messages.error(request, ' Debes seleccionar al menos un servicio para continuar.')
+            return redirect('salon_detail', pk=salon_id)
+
+        request.session['booking_salon_id'] = salon_id
+        request.session['booking_service_id'] = service_id
         return redirect('booking_step_employee')
 
 def booking_step_employee(request):
@@ -231,3 +240,4 @@ class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'dashboard/employee_confirm_delete.html'
     success_url = reverse_lazy('owner_employees')
     def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
+

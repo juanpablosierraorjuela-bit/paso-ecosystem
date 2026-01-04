@@ -2,24 +2,48 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-5">
+        <div class="col-md-6">
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="card-header bg-dark text-white p-4">
-                    <h4 class="mb-0 fw-bold">
-                        {% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} Profesional
-                    </h4>
+                    <h4 class="mb-0 fw-bold">{% if form.instance.pk %}Editar{% else %}Registrar{% endif %} Empleado</h4>
                 </div>
                 <div class="card-body p-5 bg-light">
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger small">{{ form.errors }}</div>
+                    {% endif %}
+
                     <form method="post">
                         {% csrf_token %}
+                        
+                        <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Datos Personales</h6>
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">Nombre Completo</label>
                             {{ form.name }}
                         </div>
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label fw-bold small text-muted">Teléfono</label>
                             {{ form.phone }}
                         </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted">Instagram (Opcional)</label>
+                            {{ form.instagram_link }}
+                        </div>
+
+                        {% if not form.instance.pk %}
+                        <h6 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">Credenciales de Acceso (Para su Panel)</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted">Usuario</label>
+                                {{ form.username }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted">Contraseña</label>
+                                {{ form.password }}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div class="form-check form-switch mb-4">
                             {{ form.is_active }}
                             <label class="form-check-label small" for="{{ form.is_active.id_for_label }}">Empleado Activo</label>
