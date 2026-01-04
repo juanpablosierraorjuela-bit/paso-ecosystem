@@ -12,6 +12,13 @@ class Salon(models.Model):
     whatsapp_number = models.CharField(max_length=50, blank=True, verbose_name="WhatsApp")
     instagram_link = models.URLField(blank=True, verbose_name="Link Instagram")
     maps_link = models.URLField(blank=True, verbose_name="Link Maps")
+    
+    # NUEVO: Configuración de Abonos
+    deposit_percentage = models.IntegerField(default=50, verbose_name="% de Abono (Ej: 50)")
+    
+    # NUEVO: Horario General del Negocio (Apertura/Cierre Global)
+    opening_time = models.TimeField(default="08:00", verbose_name="Apertura Global")
+    closing_time = models.TimeField(default="20:00", verbose_name="Cierre Global")
 
     def __str__(self):
         return self.name
@@ -21,7 +28,7 @@ class Service(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     duration = models.IntegerField(default=30, verbose_name="Duración (min)")
-    buffer_time = models.IntegerField(default=0, verbose_name="Tiempo de Limpieza (Buffer)")
+    buffer_time = models.IntegerField(default=10, verbose_name="Limpieza (min)")
     price = models.DecimalField(max_digits=10, decimal_places=0)
     is_active = models.BooleanField(default=True)
 
@@ -31,28 +38,16 @@ class Service(models.Model):
 class Employee(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='employee_profile', null=True, blank=True)
-    name = models.CharField(max_length=255) # Unificamos first/last name para simplificar
+    name = models.CharField(max_length=255)
     phone = models.CharField(max_length=50, blank=True)
-    instagram_handle = models.CharField(max_length=50, blank=True, verbose_name="Usuario Instagram")
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
 
-class SalonSchedule(models.Model):
-    salon = models.OneToOneField(Salon, on_delete=models.CASCADE, related_name='schedule')
-    # Simplificamos: Guardamos booleano si abre, luego podemos refinar horas
-    monday_open = models.BooleanField(default=True)
-    tuesday_open = models.BooleanField(default=True)
-    wednesday_open = models.BooleanField(default=True)
-    thursday_open = models.BooleanField(default=True)
-    friday_open = models.BooleanField(default=True)
-    saturday_open = models.BooleanField(default=True)
-    sunday_open = models.BooleanField(default=False)
-
 class EmployeeSchedule(models.Model):
     employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='schedule')
-    # Formato Texto Simple: "09:00-18:00" o "CERRADO"
+    # Horarios por día (Texto simple para flexibilidad: "09:00-18:00")
     monday_hours = models.CharField(max_length=50, default="09:00-18:00")
     tuesday_hours = models.CharField(max_length=50, default="09:00-18:00")
     wednesday_hours = models.CharField(max_length=50, default="09:00-18:00")
@@ -60,42 +55,45 @@ class EmployeeSchedule(models.Model):
     friday_hours = models.CharField(max_length=50, default="09:00-18:00")
     saturday_hours = models.CharField(max_length=50, default="09:00-18:00")
     sunday_hours = models.CharField(max_length=50, default="CERRADO")
+    
+    # NUEVO: Hora de Almuerzo (Bloqueo Sagrado)
+    lunch_start = models.TimeField(null=True, blank=True, verbose_name="Inicio Almuerzo")
+    lunch_end = models.TimeField(null=True, blank=True, verbose_name="Fin Almuerzo")
 
 class Booking(models.Model):
     STATUS_CHOICES = (
-        ('PENDING_PAYMENT', 'Pendiente de Pago'), # Naranja Oscuro (60 min timer)
-        ('IN_REVIEW', 'En Revisión'),             # Naranja Claro (Cliente envió comprobante)
-        ('VERIFIED', 'Verificado'),               # Verde (Dueño confirmó dinero)
-        ('COMPLETED', 'Completado'),              # Azul (Servicio realizado)
-        ('CANCELLED', 'Cancelado'),               # Rojo
+        ('PENDING_PAYMENT', 'Pendiente de Abono'), # Amarillo
+        ('VERIFIED', 'Confirmada'),                # Verde
+        ('COMPLETED', 'Completada'),               # Azul
+        ('CANCELLED', 'Cancelada'),                # Rojo
     )
     
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     
-    # Datos del Cliente (Registro Lazy)
+    # Datos Cliente
     customer_name = models.CharField(max_length=255)
     customer_phone = models.CharField(max_length=50)
-    customer_email = models.EmailField(blank=True, null=True)
     
-    # Datos de la Cita
+    # Datos Tiempo
     date_time = models.DateTimeField()
-    end_time = models.DateTimeField(null=True, blank=True) # Para calculo de traslape
+    end_time = models.DateTimeField()
     
-    # Datos Financieros
+    # Datos Dinero
     total_price = models.DecimalField(max_digits=10, decimal_places=0)
-    deposit_amount = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    deposit_amount = models.DecimalField(max_digits=10, decimal_places=0)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
     created_at = models.DateTimeField(auto_now_add=True)
     
     def save(self, *args, **kwargs):
+        # Calcular fin de cita automáticamente
         if not self.end_time and self.service:
-            # Calcular hora fin automágicamente: Inicio + Duración + Buffer
-            duration = self.service.duration + self.service.buffer_time
-            self.end_time = self.date_time + timedelta(minutes=duration)
+            total_min = self.service.duration + self.service.buffer_time
+            self.end_time = self.date_time + timedelta(minutes=total_min)
+        # Calcular abono automático según porcentaje del salón
+        if not self.deposit_amount and self.salon:
+            percentage = self.salon.deposit_percentage / 100
+            self.deposit_amount = self.total_price * percentage
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Cita #{self.id} - {self.customer_name}"

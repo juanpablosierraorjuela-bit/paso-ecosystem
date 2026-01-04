@@ -8,7 +8,7 @@ urlpatterns = [
     path('registro-dueno/', views.RegisterOwnerView.as_view(), name='register_owner'),
     path('salon/<int:pk>/', views.SalonDetailView.as_view(), name='salon_detail'),
     
-    # --- RUTAS DE RESERVA (WIZARD) ---
+    # Wizard
     path('reservar/inicio/', views.BookingWizardStartView.as_view(), name='booking_wizard_start'),
     path('reservar/empleado/', views.booking_step_employee, name='booking_step_employee'),
     path('reservar/calendario/', views.booking_step_calendar, name='booking_step_calendar'),
@@ -16,8 +16,10 @@ urlpatterns = [
     path('reservar/crear/', views.booking_create, name='booking_create'),
     path('reservar/exito/<int:booking_id>/', views.booking_success, name='booking_success'),
 
-    # --- RUTAS DASHBOARD ---
+    # Dashboard & Actions
     path('dashboard/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
+    path('dashboard/verificar/<int:booking_id>/', views.verify_booking, name='verify_booking'),
+    
     path('dashboard/servicios/', views.OwnerServicesView.as_view(), name='owner_services'),
     path('dashboard/servicios/nuevo/', views.ServiceCreateView.as_view(), name='service_create'),
     path('dashboard/servicios/<int:pk>/editar/', views.ServiceUpdateView.as_view(), name='service_update'),

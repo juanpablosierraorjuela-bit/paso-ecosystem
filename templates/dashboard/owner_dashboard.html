@@ -1,81 +1,107 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+{% load humanize %}
+
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h2 class="fw-bold mb-0">{{ salon.name }}</h2>
-            <p class="text-muted">Centro de Comando</p>
+            <h1 class="fw-bold mb-0">Panel de Control</h1>
+            <p class="text-muted mb-0">Bienvenido, {{ user.salon.name }}</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'owner_services' %}" class="btn btn-outline-dark"><i class="fas fa-cut me-2"></i>Servicios</a>
-            <a href="{% url 'owner_employees' %}" class="btn btn-outline-dark"><i class="fas fa-users me-2"></i>Equipo</a>
-            <a href="{% url 'owner_settings' %}" class="btn btn-dark"><i class="fas fa-cog me-2"></i>Configurar</a>
+            <a href="{% url 'owner_settings' %}" class="btn btn-outline-dark rounded-pill"><i class="fas fa-cog"></i> Configuración</a>
+            <a href="{% url 'salon_detail' user.salon.id %}" target="_blank" class="btn btn-dark rounded-pill"><i class="fas fa-external-link-alt"></i> Ver mi Negocio</a>
         </div>
     </div>
 
     <div class="row g-4 mb-5">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm bg-primary text-white h-100">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-warning bg-opacity-10 h-100">
                 <div class="card-body p-4">
-                    <h5 class="opacity-75">Citas Hoy</h5>
-                    <h1 class="display-4 fw-bold">{{ today_count }}</h1>
+                    <h6 class="fw-bold text-warning text-uppercase small">Por Verificar</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ pending_bookings.count }}</h2>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm bg-warning text-dark h-100">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success bg-opacity-10 h-100">
                 <div class="card-body p-4">
-                    <h5 class="opacity-75">Pendientes de Pago</h5>
-                    <h1 class="display-4 fw-bold">{{ pending_count }}</h1>
-                    <p class="small mb-0">Revisa tu WhatsApp y confirma.</p>
+                    <h6 class="fw-bold text-success text-uppercase small">Confirmadas Hoy</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ confirmed_bookings.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-light h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-muted text-uppercase small">Equipo</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ user.salon.employees.count }}</h2>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h5 class="fw-bold m-0">Agenda Reciente</h5>
-        </div>
+    <h4 class="fw-bold mb-3"><i class="fas fa-bell text-warning me-2"></i> Pagos por Verificar</h4>
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-5">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th>Cliente</th>
+                        <th class="ps-4 py-3">Cliente</th>
                         <th>Servicio</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
+                        <th>Fecha/Hora</th>
+                        <th>Abono Esperado</th>
+                        <th class="text-end pe-4">Acción</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for b in bookings %}
+                    {% for booking in pending_bookings %}
                     <tr>
-                        <td>
-                            <div class="fw-bold">{{ b.customer_name }}</div>
-                            <div class="small text-muted">{{ b.customer_phone }}</div>
+                        <td class="ps-4 fw-bold">
+                            {{ booking.customer_name }}<br>
+                            <span class="small text-muted fw-normal">{{ booking.customer_phone }}</span>
                         </td>
-                        <td>{{ b.service.name }} <br> <small>{{ b.employee.name }}</small></td>
-                        <td>{{ b.date }} <br> <span class="badge bg-light text-dark border">{{ b.time }}</span></td>
-                        <td>
-                            {% if b.status == 'pending_payment' %}
-                                <span class="badge bg-warning text-dark">Pendiente</span>
-                            {% elif b.status == 'confirmed' %}
-                                <span class="badge bg-success">Confirmada</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ b.status }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if b.status == 'pending_payment' %}
-                                <a href="{% url 'booking_confirm_payment' b.id %}" class="btn btn-success btn-sm fw-bold">
-                                    <i class="fas fa-check"></i> Verificar
-                                </a>
-                            {% endif %}
+                        <td>{{ booking.service.name }}<br><span class="badge bg-light text-dark border">{{ booking.employee.name }}</span></td>
+                        <td>{{ booking.date_time|date:"d M, Y" }}<br><span class="fw-bold">{{ booking.date_time|time:"H:i" }}</span></td>
+                        <td class="text-success fw-bold">$ {{ booking.deposit_amount|intcomma }}</td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'verify_booking' booking.id %}" class="btn btn-success rounded-pill btn-sm px-3 fw-bold shadow-sm">
+                                <i class="fas fa-check-circle me-1"></i> Verificar Pago
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="text-center py-4">No hay citas registradas.</td></tr>
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">No hay pagos pendientes por revisar.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h4 class="fw-bold mb-3 text-muted">Agenda Confirmada</h4>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3">Cliente</th>
+                        <th>Servicio</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in confirmed_bookings %}
+                    <tr>
+                        <td class="ps-4">{{ booking.customer_name }}</td>
+                        <td>{{ booking.service.name }}</td>
+                        <td>{{ booking.date_time|date:"d M, H:i" }}</td>
+                        <td><span class="badge bg-success">Confirmada</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-4">Agenda libre.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

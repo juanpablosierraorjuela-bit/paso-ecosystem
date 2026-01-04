@@ -3,79 +3,23 @@
 
 {% block content %}
 <style>
-    .marketplace-header {
-        background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
-        padding: 6rem 0 4rem;
-        color: white;
-        border-radius: 0 0 40px 40px;
-        margin-bottom: 4rem;
-    }
-    .salon-card {
-        border: none;
-        border-radius: 20px;
-        background: #fff;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        overflow: hidden;
-        height: 100%;
-    }
-    .salon-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    }
-    .initial-avatar {
-        width: 90px;
-        height: 90px;
-        background: #000;
-        color: #fff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.8rem;
-        font-weight: 800;
-        margin: -45px auto 0;
-        border: 5px solid #fff;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-        position: relative;
-        z-index: 2;
-    }
-    .card-banner {
-        height: 110px;
-        background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
-    }
-    .btn-social {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 5px;
-        transition: transform 0.2s;
-        text-decoration: none;
-        color: white;
-        font-size: 1.2rem;
-    }
-    .btn-social:hover { transform: scale(1.15); }
-    .bg-whatsapp { background: #25D366; }
-    .bg-instagram { background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D); }
-    .bg-maps { background: #4285F4; }
+    .marketplace-header { background: linear-gradient(135deg, #000 0%, #1a1a1a 100%); padding: 6rem 0 4rem; color: white; border-radius: 0 0 40px 40px; margin-bottom: 4rem; }
+    .salon-card { border: none; border-radius: 20px; background: #fff; transition: all 0.4s; overflow: hidden; height: 100%; }
+    .salon-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .initial-avatar { width: 90px; height: 90px; background: #000; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.8rem; font-weight: 800; margin: -45px auto 0; border: 5px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.15); position: relative; z-index: 2; }
+    .card-banner { height: 110px; background: linear-gradient(45deg, #f0f0f0, #e0e0e0); }
+    .filter-box { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 50px; padding: 10px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); margin-top: -30px; }
     
-    .filter-box {
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 50px;
-        padding: 10px 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-        margin-top: -30px;
-    }
+    /* Estado Abierto/Cerrado */
+    .status-badge { position: absolute; top: 15px; right: 15px; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.75rem; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .status-open { background: #198754; }
+    .status-closed { background: #dc3545; }
 </style>
 
 <div class="marketplace-header text-center">
     <div class="container">
         <h1 class="display-4 fw-bold mb-3 tracking-wide">Paso Marketplace</h1>
-        <p class="lead text-white-50">Encuentra los servicios más exclusivos cerca de ti.</p>
+        <p class="lead text-white-50">Reserva 24/7 en los mejores sitios de tu ciudad.</p>
     </div>
 </div>
 
@@ -83,12 +27,12 @@
     <form method="GET" class="filter-box d-flex flex-column flex-md-row align-items-center gap-3 p-4">
         <div class="input-group input-group-lg border-0 bg-transparent">
             <span class="input-group-text bg-transparent border-0"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" name="q" class="form-control bg-transparent border-0 shadow-none" placeholder="Buscar servicio (Uñas, Barbería...)" value="{{ request.GET.q }}">
+            <input type="text" name="q" class="form-control bg-transparent border-0 shadow-none" placeholder="Buscar..." value="{{ request.GET.q }}">
         </div>
         <div class="border-start d-none d-md-block" style="height: 40px; border-color: #eee !important;"></div>
         <div class="input-group input-group-lg border-0 bg-transparent" style="max-width: 300px;">
             <span class="input-group-text bg-transparent border-0"><i class="fas fa-map-marker-alt text-muted"></i></span>
-            <select name="city" class="form-select bg-transparent border-0 shadow-none" onchange="this.form.submit()">
+            <select name="city" id="citySelector" class="form-select bg-transparent border-0 shadow-none" onchange="this.form.submit()">
                 <option value="">Todas las Ciudades</option>
                 {% for city in cities %}
                 <option value="{{ city }}" {% if request.GET.city == city %}selected{% endif %}>{{ city }}</option>
@@ -99,34 +43,38 @@
     </form>
 </div>
 
+<div class="modal fade" id="geoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 p-3">
+            <div class="modal-body text-center">
+                <i class="fas fa-map-marked-alt fs-1 text-primary mb-3"></i>
+                <h4 class="fw-bold">¿Buscar cerca de ti?</h4>
+                <p class="text-muted small">Podemos mostrarte solo los negocios en tu ciudad actual.</p>
+                <div class="d-grid gap-2 mt-4">
+                    <button type="button" class="btn btn-primary rounded-pill fw-bold" onclick="getLocation()">Si, usar mi ubicación</button>
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">No, ver todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container pb-5">
     <div class="row g-4">
         {% for salon in salons %}
         <div class="col-md-6 col-lg-4">
             <div class="card salon-card shadow-sm">
                 <div class="card-banner"></div>
+                <div class="status-badge status-open">ABIERTO</div>
+                
                 <div class="initial-avatar">{{ salon.name|slice:":1"|upper }}</div>
                 
                 <div class="card-body text-center pt-3 pb-4">
                     <h4 class="fw-bold mb-1">{{ salon.name }}</h4>
                     <p class="text-muted small mb-3"><i class="fas fa-map-pin me-1"></i> {{ salon.city }}</p>
-                    
                     <p class="text-muted mb-4 px-3 small">
-                        {% if salon.description %}{{ salon.description|truncatechars:80 }}{% else %}Servicios profesionales de belleza y bienestar.{% endif %}
+                        {% if salon.description %}{{ salon.description|truncatechars:80 }}{% else %}Expertos en belleza.{% endif %}
                     </p>
-
-                    <div class="d-flex justify-content-center mb-4">
-                        {% if salon.whatsapp_number %}
-                        <a href="https://wa.me/{{ salon.whatsapp_number }}" target="_blank" class="btn-social bg-whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        {% endif %}
-                        {% if salon.instagram_link %}
-                        <a href="{{ salon.instagram_link }}" target="_blank" class="btn-social bg-instagram" title="Instagram"><i class="fab fa-instagram"></i></a>
-                        {% endif %}
-                        {% if salon.maps_link %}
-                        <a href="{{ salon.maps_link }}" target="_blank" class="btn-social bg-maps" title="Ubicación"><i class="fas fa-map-marked-alt"></i></a>
-                        {% endif %}
-                    </div>
-
                     <div class="d-grid px-4">
                         <a href="{% url 'salon_detail' salon.id %}" class="btn btn-dark rounded-pill py-2 fw-bold">Ver Servicios</a>
                     </div>
@@ -134,12 +82,26 @@
             </div>
         </div>
         {% empty %}
-        <div class="col-12 text-center py-5">
-            <h3 class="text-muted">No hay resultados.</h3>
-            <p>Intenta cambiar el filtro de búsqueda.</p>
-            <a href="{% url 'marketplace' %}" class="btn btn-outline-dark rounded-pill">Ver todo</a>
-        </div>
+        <div class="col-12 text-center py-5"><h3 class="text-muted">No hay resultados.</h3></div>
         {% endfor %}
     </div>
 </div>
+
+<script>
+    // Geo Lógica Simple
+    window.onload = function() {
+        if (!sessionStorage.getItem('geoAsked')) {
+            new bootstrap.Modal(document.getElementById('geoModal')).show();
+            sessionStorage.setItem('geoAsked', 'true');
+        }
+    }
+    function getLocation() {
+        // En producción real esto conectaría con una API de coords -> ciudad
+        // Por ahora, simulamos enfocando el selector
+        document.getElementById('geoModal').classList.remove('show');
+        document.querySelector('.modal-backdrop').remove();
+        document.getElementById('citySelector').focus();
+        alert('Por favor selecciona tu ciudad en la lista.');
+    }
+</script>
 {% endblock %}
