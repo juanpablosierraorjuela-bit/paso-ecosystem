@@ -1,52 +1,61 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-dark">Mis Empleados</h2>
-        <a href="{% url 'employee_add' %}" class="btn btn-dark">
-            <i class="bi bi-person-plus-fill"></i> Nuevo Empleado
+        <div>
+            <h2 class="fw-bold mb-1">Mi Equipo</h2>
+            <p class="text-muted small mb-0">Profesionales disponibles para citas.</p>
+        </div>
+        <a href="{% url 'employee_create' %}" class="btn btn-dark rounded-pill px-4 shadow-sm hover-scale">
+            <i class="fas fa-user-plus me-2"></i> Nuevo Empleado
         </a>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4">Nombre</th>
-                            <th>Usuario</th>
-                            <th>Teléfono</th>
-                            <th class="text-end pe-4">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for employee in employees %}
-                        <tr>
-                            <td class="ps-4 fw-bold">{{ employee.first_name }} {{ employee.last_name }}</td>
-                            <td><span class="badge bg-secondary">{{ employee.user.username }}</span></td>
-                            <td>{{ employee.phone }}</td>
-                            <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-dark" title="Editar (Próximamente)"><i class="bi bi-pencil"></i></button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">
-                                <i class="bi bi-people display-4 d-block mb-3"></i>
-                                No tienes empleados registrados.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="row g-4">
+        {% for employee in employees %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 employee-card">
+                <div class="card-body p-4 text-center">
+                    <div class="avatar-circle mx-auto mb-3 fw-bold fs-3 text-white bg-dark">
+                        {{ employee.name|slice:":1"|upper }}
+                    </div>
+                    
+                    <h5 class="fw-bold mb-1">{{ employee.name }}</h5>
+                    <p class="text-muted small mb-3"><i class="fas fa-phone-alt me-1"></i> {{ employee.phone|default:"Sin teléfono" }}</p>
+                    
+                    <div class="d-flex justify-content-center gap-2 mt-4">
+                        <a href="{% url 'employee_update' employee.pk %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                            <i class="fas fa-pen small"></i> Editar
+                        </a>
+                        <a href="{% url 'employee_delete' employee.pk %}" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                            <i class="fas fa-trash small"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-     <div class="mt-4">
-        <a href="{% url 'owner_dashboard' %}" class="text-muted text-decoration-none">
-            <i class="bi bi-arrow-left"></i> Volver al Panel
-        </a>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5 bg-light rounded-4 border border-dashed">
+                <i class="fas fa-users fs-1 text-muted mb-3 opacity-50"></i>
+                <h4 class="fw-bold text-muted">Tu equipo está vacío</h4>
+                <p class="text-muted small mb-4">Registra a tus colaboradores.</p>
+                <a href="{% url 'employee_create' %}" class="btn btn-outline-dark rounded-pill">Agregar Empleado</a>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 </div>
+
+<style>
+    .avatar-circle {
+        width: 70px; height: 70px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(45deg, #212529, #495057);
+    }
+    .employee-card { transition: all 0.3s; border: 1px solid #f0f0f0; }
+    .employee-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
+</style>
 {% endblock %}

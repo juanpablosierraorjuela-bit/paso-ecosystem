@@ -1,42 +1,43 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4">
                     <h4 class="mb-0 fw-bold">
-                        {% if object %}Editar Servicio{% else %}Nuevo Servicio{% endif %}
+                        {% if form.instance.pk %}Editar{% else %}Crear{% endif %} Servicio
                     </h4>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body p-5 bg-light">
                     <form method="post">
                         {% csrf_token %}
-                        
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Nombre del Servicio</label>
+                            <label class="form-label fw-bold small text-muted">Nombre del Servicio</label>
                             {{ form.name }}
                         </div>
-                        
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Descripción (Opcional)</label>
+                            <label class="form-label fw-bold small text-muted">Descripción</label>
                             {{ form.description }}
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Duración (Min)</label>
-                                {{ form.duration_minutes }}
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted">Duración (Min)</label>
+                                {{ form.duration }}
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Precio ($)</label>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small text-muted">Precio ($)</label>
                                 {{ form.price }}
                             </div>
                         </div>
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-dark btn-lg">Guardar Servicio</button>
-                            <a href="{% url 'owner_services' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <div class="form-check form-switch mb-4">
+                            {{ form.is_active }}
+                            <label class="form-check-label small" for="{{ form.is_active.id_for_label }}">Servicio disponible para reservas</label>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-dark rounded-pill py-2 fw-bold">Guardar Servicio</button>
+                            <a href="{% url 'owner_services' %}" class="btn btn-link text-muted text-decoration-none small">Cancelar</a>
                         </div>
                     </form>
                 </div>
