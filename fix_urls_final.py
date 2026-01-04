@@ -1,4 +1,12 @@
-from django.urls import path
+import os
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.join(BASE_DIR, "apps", "businesses")
+URLS_PATH = os.path.join(APP_DIR, "urls.py")
+
+# --- CONTENIDO DE URLS.PY SINCRONIZADO ---
+CONTENIDO_URLS = """from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
 
@@ -40,3 +48,13 @@ urlpatterns = [
     # --- PANEL DE EMPLEADO ---
     path('dashboard/employee/', views.employee_dashboard, name='employee_dashboard'),
 ]
+"""
+
+def arreglar_urls():
+    print("🔗 Sincronizando urls.py con las nuevas vistas...")
+    with open(URLS_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_URLS)
+    print("✅ ¡urls.py corregido! Ya no buscará funciones fantasmas.")
+
+if __name__ == "__main__":
+    arreglar_urls()
