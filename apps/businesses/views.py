@@ -1,25 +1,17 @@
-﻿from django.shortcuts import render, redirect
-from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView
+﻿from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import ListView, DetailView, TemplateView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Salon, Service, Employee, Booking
 from .forms import SalonForm, ServiceForm, EmployeeForm, OwnerSignUpForm
 
+# --- PÚBLICO ---
 def home(request):
     return render(request, 'home.html')
 
 class LandingBusinessesView(TemplateView):
     template_name = 'landing_businesses.html'
-
-class RegisterOwnerView(CreateView):
-    template_name = 'registration/register_owner.html'
-    form_class = OwnerSignUpForm
-    success_url = reverse_lazy('saas_login') # Redirigir al login al terminar
-
-    def form_valid(self, form):
-        # Login automático tras registro (Opcional, aquí solo guardamos)
-        return super().form_valid(form)
 
 class MarketplaceView(ListView):
     model = Salon
@@ -29,22 +21,15 @@ class MarketplaceView(ListView):
     def get_queryset(self):
         query = self.request.GET.get('q')
         city = self.request.GET.get('city')
-        
         queryset = Salon.objects.all()
-
         if city and city != 'Todas':
             queryset = queryset.filter(city__iexact=city)
-
         if query:
-            queryset = queryset.filter(
-                Q(name__icontains=query) | 
-                Q(description__icontains=query)
-            )
+            queryset = queryset.filter(Q(name__icontains=query))
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Ciudades únicas y ordenadas para el filtro
         cities = Salon.objects.values_list('city', flat=True).distinct()
         context['cities'] = sorted(list(set(filter(None, cities))))
         return context
@@ -54,6 +39,24 @@ class SalonDetailView(DetailView):
     template_name = 'salon_detail.html'
     context_object_name = 'salon'
 
+# --- LÓGICA DE RESERVA (Esta era la que faltaba y causaba Error 500) ---
+class BookingWizardStartView(View):
+    def post(self, request):
+        # Por ahora, redirigimos a una página de contacto simple o WhatsApp
+        # Esto evita el error 500 inmediato
+        salon_slug = request.POST.get('salon_slug') # O ID
+        service_ids = request.POST.getlist('service_ids')
+        
+        # Aquí podrías redirigir a un formulario de fecha, por ahora volvemos
+        return redirect(request.META.get('HTTP_REFERER', 'marketplace'))
+
+# --- REGISTRO Y LOGIN ---
+class RegisterOwnerView(CreateView):
+    template_name = 'registration/register_owner.html'
+    form_class = OwnerSignUpForm
+    success_url = reverse_lazy('saas_login')
+
+# --- DASHBOARD DUEÑO ---
 class OwnerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
 
@@ -113,10 +116,10 @@ class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('owner_employees')
     def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
 
+# Configuración (Arreglado para usar modelo Salon, no Schedule)
 class OwnerSettingsView(LoginRequiredMixin, UpdateView):
     model = Salon
     form_class = SalonForm
     template_name = 'dashboard/owner_settings.html'
     success_url = reverse_lazy('owner_dashboard')
     def get_object(self): return self.request.user.salon
-

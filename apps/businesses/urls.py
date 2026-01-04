@@ -2,18 +2,16 @@
 from . import views
 
 urlpatterns = [
-    # Vista Home (Función)
     path('', views.home, name='home'),
-    
-    # Vistas de Clase (Deben llevar .as_view())
     path('marketplace/', views.MarketplaceView.as_view(), name='marketplace'),
     path('negocios/', views.LandingBusinessesView.as_view(), name='landing_businesses'),
     path('registro-dueno/', views.RegisterOwnerView.as_view(), name='register_owner'),
-    
-    # Detalle
     path('salon/<int:pk>/', views.SalonDetailView.as_view(), name='salon_detail'),
     
-    # Dashboard Dueño
+    # Ruta Mágica para arreglar el botón 'Reservar'
+    path('reservar/inicio/', views.BookingWizardStartView.as_view(), name='booking_wizard_start'),
+
+    # Dashboard
     path('dashboard/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
     path('dashboard/servicios/', views.OwnerServicesView.as_view(), name='owner_services'),
     path('dashboard/servicios/nuevo/', views.ServiceCreateView.as_view(), name='service_create'),
