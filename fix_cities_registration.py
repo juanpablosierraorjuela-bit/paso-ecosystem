@@ -1,4 +1,11 @@
-from django import forms
+﻿import os
+import subprocess
+
+# RUTA DE FORMS.PY
+forms_path = os.path.join('apps', 'businesses', 'forms.py')
+print(f" Implementando ciudades de Colombia en {forms_path}...")
+
+new_forms_code = r"""from django import forms
 from django.contrib.auth import get_user_model
 from .models import Salon, Service, Employee, EmployeeSchedule
 from datetime import datetime
@@ -194,3 +201,21 @@ class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = ['name', 'phone', 'instagram_link', 'is_active']
+"""
+
+with open(forms_path, 'w', encoding='utf-8') as f:
+    f.write(new_forms_code)
+
+print(" Subiendo actualización de Ciudades a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Feat: Lista de Ciudades Colombia y Fix Registro"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡LISTO! Ciudades estandarizadas y registro corregido.")
+except Exception as e:
+    print(f" Nota de Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass
