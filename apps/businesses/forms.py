@@ -4,10 +4,56 @@ from django.db import transaction
 from apps.core_saas.models import User
 from .models import Salon, Service, Employee, EmployeeSchedule
 
-# ... (Se mantiene OwnerSignUpForm igual, no lo toco para no romper registro) ...
+# --- LISTA MAESTRA DE CIUDADES ---
+CIUDADES_COLOMBIA = [
+    ('', 'Selecciona una ciudad...'),
+    ('Arauca', 'Arauca'),
+    ('Armenia', 'Armenia'),
+    ('Barranquilla', 'Barranquilla'),
+    ('Bogotá', 'Bogotá'),
+    ('Bucaramanga', 'Bucaramanga'),
+    ('Cali', 'Cali'),
+    ('Cartagena', 'Cartagena'),
+    ('Cúcuta', 'Cúcuta'),
+    ('Florencia', 'Florencia'),
+    ('Ibagué', 'Ibagué'),
+    ('Leticia', 'Leticia'),
+    ('Manizales', 'Manizales'),
+    ('Medellín', 'Medellín'),
+    ('Mitú', 'Mitú'),
+    ('Mocoa', 'Mocoa'),
+    ('Montería', 'Montería'),
+    ('Neiva', 'Neiva'),
+    ('Pasto', 'Pasto'),
+    ('Pereira', 'Pereira'),
+    ('Popayán', 'Popayán'),
+    ('Puerto Carreño', 'Puerto Carreño'),
+    ('Inírida', 'Inírida'),
+    ('Quibdó', 'Quibdó'),
+    ('Riohacha', 'Riohacha'),
+    ('San Andrés', 'San Andrés'),
+    ('San José del Guaviare', 'San José del Guaviare'),
+    ('Santa Marta', 'Santa Marta'),
+    ('Sincelejo', 'Sincelejo'),
+    ('Soacha', 'Soacha'),
+    ('Sogamoso', 'Sogamoso'),
+    ('Tunja', 'Tunja'),
+    ('Valledupar', 'Valledupar'),
+    ('Villavicencio', 'Villavicencio'),
+    ('Yopal', 'Yopal'),
+    ('Zipaquirá', 'Zipaquirá'),
+]
+
 class OwnerSignUpForm(UserCreationForm):
     salon_name = forms.CharField(label="Nombre del Negocio", widget=forms.TextInput(attrs={'class': 'form-control'}))
-    city = forms.CharField(label="Ciudad", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    
+    # CAMBIO: Usamos ChoiceField para la ciudad
+    city = forms.ChoiceField(
+        label="Ciudad",
+        choices=CIUDADES_COLOMBIA,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
     address = forms.CharField(label="Dirección", widget=forms.TextInput(attrs={'class': 'form-control'}))
     phone = forms.CharField(label="WhatsApp", widget=forms.TextInput(attrs={'class': 'form-control'}))
     instagram_link = forms.URLField(label="Instagram", required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
@@ -30,6 +76,13 @@ class OwnerSignUpForm(UserCreationForm):
         return user
 
 class SalonForm(forms.ModelForm):
+    # CAMBIO: También en la edición del perfil
+    city = forms.ChoiceField(
+        label="Ciudad",
+        choices=CIUDADES_COLOMBIA,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
     class Meta:
         model = Salon
         fields = ['name', 'description', 'city', 'address', 'whatsapp_number', 'instagram_link', 'maps_link', 
@@ -38,7 +91,6 @@ class SalonForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'city': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
             'whatsapp_number': forms.TextInput(attrs={'class': 'form-control'}),
             'instagram_link': forms.URLInput(attrs={'class': 'form-control'}),
@@ -61,7 +113,6 @@ class ServiceForm(forms.ModelForm):
         }
 
 class EmployeeForm(forms.ModelForm):
-    # Campos virtuales para crear el usuario del empleado
     username = forms.CharField(label="Usuario de Acceso", widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
@@ -76,7 +127,6 @@ class EmployeeForm(forms.ModelForm):
     
     def save(self, commit=True):
         employee = super().save(commit=False)
-        # Aquí la magia de crear el User se hace en la vista o manualmente
         return employee
 
 class EmployeeScheduleForm(forms.ModelForm):
