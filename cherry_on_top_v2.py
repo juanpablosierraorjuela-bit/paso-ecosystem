@@ -1,4 +1,115 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿import os
+import subprocess
+import urllib.parse # Para codificar el mensaje de WhatsApp
+
+# -----------------------------------------------------------------------------
+# 1. ACTUALIZAR SUCCESS.HTML (Diseño Hermoso + Política Clara + Cronómetro)
+# -----------------------------------------------------------------------------
+success_path = os.path.join('templates', 'booking', 'success.html')
+print(f" Puliendo la joya en {success_path}...")
+
+success_code = r"""{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            
+            <div class="mb-4 animate-up">
+                <div class="display-1 text-success mb-3"><i class="fas fa-check-circle"></i></div>
+                <h1 class="fw-bold">¡Reserva Creada!</h1>
+                <p class="lead text-muted">Tienes <span class="fw-bold text-danger bg-danger bg-opacity-10 px-2 rounded" id="timer">60:00</span> para realizar el abono.</p>
+            </div>
+
+            <div class="alert alert-warning border-0 rounded-4 mb-4 shadow-sm text-start animate-up" style="animation-delay: 0.1s;">
+                <div class="d-flex">
+                    <div class="me-3"><i class="fas fa-exclamation-triangle fs-4 text-warning"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Política de Cancelación</h6>
+                        <p class="mb-0 small opacity-75">
+                             Si no asistes a la cita, <strong>pierdes el abono</strong>.<br>
+                             Para reagendar sin penalidad, debes avisar con mínimo <strong>4 horas de anticipación</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 bg-light mb-4 text-start animate-up" style="animation-delay: 0.2s;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">Resumen de Pago</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Servicio</span>
+                        <span class="fw-bold">${{ booking.total_price|floatformat:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Abono Requerido ({{ booking.salon.deposit_percentage }}%)</span>
+                        <span class="fw-bold fs-5">{{ deposit_fmt }}</span>
+                    </div>
+                    <small class="text-muted d-block mt-3 text-center bg-white p-2 rounded border border-dashed">
+                        <i class="fas fa-info-circle me-1"></i> Paga el abono ahora. El restante lo pagas en el sitio.
+                    </small>
+                </div>
+            </div>
+
+            <a href="{{ whatsapp_url }}" target="_blank" class="btn btn-success btn-lg rounded-pill w-100 py-3 fw-bold shadow hover-scale mb-3 animate-up" style="animation-delay: 0.3s;">
+                <i class="fab fa-whatsapp me-2 display-6 align-middle"></i> Enviar Comprobante y Confirmar
+            </a>
+            
+            <p class="text-muted small mb-5">Al hacer clic, se abrirá WhatsApp con los datos de tu cita listos para enviar.</p>
+            
+            <a href="{% url 'marketplace' %}" class="btn btn-link text-muted text-decoration-none fw-bold">Volver al Inicio</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CRONÓMETRO AUTOMÁTICO DE 60 MINUTOS
+    // Si el cliente no paga en este tiempo, sabe que su cita corre peligro.
+    let duration = 60 * 60; // 60 minutos en segundos
+    const display = document.querySelector('#timer');
+    
+    const timer = setInterval(function () {
+        let minutes = parseInt(duration / 60, 10);
+        let seconds = parseInt(duration % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+
+        if (--duration < 0) {
+            clearInterval(timer);
+            display.textContent = "TIEMPO AGOTADO";
+            display.classList.remove('text-danger', 'bg-danger');
+            display.classList.add('text-muted', 'bg-secondary');
+            alert("El tiempo de reserva ha expirado. Por favor contacta al negocio.");
+        }
+    }, 1000);
+</script>
+
+<style>
+    .hover-scale { transition: transform 0.2s; }
+    .hover-scale:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(25, 135, 84, 0.3) !important; }
+    
+    .animate-up { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.6s forwards; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    
+    .border-dashed { border-style: dashed !important; }
+</style>
+{% endblock %}
+"""
+with open(success_path, 'w', encoding='utf-8') as f:
+    f.write(success_code)
+
+
+# -----------------------------------------------------------------------------
+# 2. ASEGURAR URLS.PY y VIEWS.PY (Por si no corriste el script anterior)
+# -----------------------------------------------------------------------------
+# Re-aplicamos la lógica de views y urls para garantizar que el sistema funcione completo.
+views_path = os.path.join('apps', 'businesses', 'views.py')
+print(f" Asegurando lógica en {views_path}...")
+
+# (Nota: Usamos el mismo código de vista robusto del script anterior para no romper nada)
+new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -242,3 +353,24 @@ def owner_settings(request):
     s=request.user.salon
     if request.method=='POST': f=SalonSettingsForm(request.POST, instance=s); f.save(); messages.success(request, 'Guardado'); return redirect('owner_dashboard') if f.is_valid() else None
     return render(request, 'dashboard/owner_settings.html', {'form': SalonSettingsForm(instance=s)})
+"""
+with open(views_path, 'w', encoding='utf-8') as f:
+    f.write(new_views_code)
+
+
+# -----------------------------------------------------------------------------
+# 3. SUBIR A GITHUB
+# -----------------------------------------------------------------------------
+print(" Subiendo mejoras finales a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Final Polish: Politica de Cancelacion + Cronometro 60min"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡PERFECTO! La cereza del pastel ha sido colocada.")
+except Exception as e:
+    print(f" Error Git: {e}")
+
+try:
+    os.remove(__file__)
+except:
+    pass
