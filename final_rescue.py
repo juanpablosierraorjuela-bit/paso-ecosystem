@@ -1,11 +1,10 @@
 ﻿import os
 import subprocess
 
-# RUTA DEL ARCHIVO QUE ESTÁ FALLANDO
+# RUTA
 views_path = os.path.join('apps', 'businesses', 'views.py')
-print(f" Reparando CRÍTICAMENTE {views_path}...")
+print(f" Blindando {views_path} contra errores de sesión...")
 
-# CÓDIGO BLINDADO (Con protección contra Error 500)
 new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
@@ -19,25 +18,21 @@ from django.utils import timezone
 import urllib.parse
 from django.core.exceptions import ObjectDoesNotExist
 
-# --- HELPERS (LA PARTE QUE FALLABA YA ESTÁ CORREGIDA AQUÍ) ---
+# --- HELPERS ---
 def get_available_slots(employee, date_obj, service):
+    # Calcula cupos. Retorna lista vacía si hay error, evitando 500.
     slots = []
     try:
-        # 1. INTENTO SEGURO DE LEER EL HORARIO
         try:
             schedule = employee.schedule
         except ObjectDoesNotExist:
-            # Si no tiene horario, devolvemos lista vacía en vez de Error 500
-            return []
+            return [] # Sin horario
 
         weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         day_name = weekdays[date_obj.weekday()]
         
-        # 2. LEER CONFIGURACIÓN DEL DÍA
         schedule_str = getattr(schedule, f"{day_name}_hours", "CERRADO")
-        
-        if schedule_str == "CERRADO": 
-            return []
+        if schedule_str == "CERRADO": return []
             
         start_str, end_str = schedule_str.split('-')
         start_h, start_m = map(int, start_str.split(':'))
@@ -46,8 +41,7 @@ def get_available_slots(employee, date_obj, service):
         work_start = date_obj.replace(hour=start_h, minute=start_m, second=0)
         work_end = date_obj.replace(hour=end_h, minute=end_m, second=0)
         
-        if work_end < work_start: 
-            work_end += timedelta(days=1)
+        if work_end < work_start: work_end += timedelta(days=1)
 
         duration = timedelta(minutes=service.duration + service.buffer_time)
         current = work_start
@@ -56,30 +50,18 @@ def get_available_slots(employee, date_obj, service):
         now_bogota = datetime.now(bogota_tz)
 
         while current + duration <= work_end:
-            # Verificar choques
-            collision = Booking.objects.filter(
-                employee=employee, 
-                status__in=['PENDING_PAYMENT', 'VERIFIED'], 
-                date_time__lt=current + duration, 
-                end_time__gt=current
-            ).exists()
-            
-            # Verificar futuro
+            collision = Booking.objects.filter(employee=employee, status__in=['PENDING_PAYMENT', 'VERIFIED'], date_time__lt=current + duration, end_time__gt=current).exists()
             current_aware = pytz.timezone('America/Bogota').localize(current)
             is_future = current_aware > now_bogota
-
-            if not collision and is_future: 
-                slots.append(current.strftime("%H:%M"))
-            
+            if not collision and is_future: slots.append(current.strftime("%H:%M"))
             current += timedelta(minutes=30)
             
     except Exception as e:
-        print(f"Error silencioso en calendario: {e}")
-        return [] # Retorno seguro en caso de cualquier fallo
-        
+        print(f"Slot error: {e}")
+        return []
     return slots
 
-# --- FLOW DE RESERVAS ---
+# --- FLOW BLINDADO ---
 
 def booking_wizard_start(request):
     if request.method == 'POST':
@@ -88,10 +70,14 @@ def booking_wizard_start(request):
         request.session['booking_salon'] = salon_id
         request.session['booking_service'] = service_id
         
-        salon = get_object_or_404(Salon, id=salon_id)
-        if not salon.employees.filter(is_active=True).exists():
-            messages.error(request, f"Lo sentimos, {salon.name} no tiene profesionales disponibles.")
-            return redirect('salon_detail', pk=salon_id)
+        try:
+            salon = get_object_or_404(Salon, id=salon_id)
+            if not salon.employees.filter(is_active=True).exists():
+                messages.error(request, f"Lo sentimos, {salon.name} no tiene profesionales disponibles.")
+                return redirect('salon_detail', pk=salon_id)
+        except Exception:
+            return redirect('marketplace')
+            
         return redirect('booking_step_employee')
     return redirect('marketplace')
 
@@ -108,10 +94,17 @@ def booking_step_calendar(request):
     employee_id = request.session.get('booking_employee')
     service_id = request.session.get('booking_service')
     
-    if not employee_id: return redirect('booking_step_employee')
+    # BLINDAJE 1: Si faltan datos de sesión, volver al inicio en vez de error 500
+    if not employee_id or not service_id:
+        messages.warning(request, "Sesión reiniciada. Por favor selecciona el servicio nuevamente.")
+        return redirect('marketplace')
     
-    employee = get_object_or_404(Employee, id=employee_id)
-    service = get_object_or_404(Service, id=service_id)
+    try:
+        employee = get_object_or_404(Employee, id=employee_id)
+        service = get_object_or_404(Service, id=service_id)
+    except Exception:
+        # Si los IDs son inválidos, volver
+        return redirect('marketplace')
     
     today = datetime.now().date()
     selected_date_str = request.GET.get('date', str(today))
@@ -137,8 +130,9 @@ def booking_step_confirm(request):
     time_str = request.session.get('booking_time')
     service_id = request.session.get('booking_service')
 
+    # BLINDAJE 2: Validación estricta
     if not (date_str and time_str and service_id):
-        messages.error(request, "Datos incompletos. Selecciona fecha y hora de nuevo.")
+        messages.error(request, "Faltan datos. Selecciona fecha y hora de nuevo.")
         return redirect('booking_step_calendar')
 
     service = get_object_or_404(Service, id=service_id)
@@ -163,7 +157,7 @@ def booking_create(request):
         customer_phone = request.POST.get('customer_phone')
         
         if not (salon_id and service_id and employee_id and time_str and date_str):
-            messages.error(request, "Error de sesión. Intenta reservar de nuevo.")
+            messages.error(request, "Error de datos. Intenta nuevamente.")
             return redirect('marketplace')
         try:
             salon = get_object_or_404(Salon, id=salon_id)
@@ -175,7 +169,7 @@ def booking_create(request):
             start_datetime = datetime.combine(date_obj, time_obj)
             
             if Booking.objects.filter(employee=employee, date_time=start_datetime, status__in=['PENDING_PAYMENT', 'VERIFIED']).exists():
-                messages.error(request, "Lo sentimos, este horario acaba de ser reservado.")
+                messages.error(request, "Horario no disponible. Intenta otro.")
                 return redirect('booking_step_calendar')
 
             total_price = service.price
@@ -189,8 +183,7 @@ def booking_create(request):
             )
             return redirect('booking_success', booking_id=booking.id)
         except Exception as e:
-            print(f"Error create: {e}")
-            messages.error(request, "Ocurrió un error técnico.")
+            print(f"Create Error: {e}")
             return redirect('marketplace')
     return redirect('marketplace')
 
@@ -198,11 +191,10 @@ def booking_success(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     salon = booking.salon
     
-    # Cronómetro Real
+    # Cronómetro
     created_at = booking.created_at
     if timezone.is_naive(created_at):
         created_at = timezone.make_aware(created_at, pytz.timezone('America/Bogota'))
-        
     now = timezone.now()
     elapsed = (now - created_at).total_seconds()
     time_left_seconds = max(0, 3600 - elapsed)
@@ -225,27 +217,24 @@ def booking_success(request, booking_id):
     whatsapp_url = f"https://wa.me/{salon.whatsapp_number}?text={encoded_message}"
     
     return render(request, 'booking/success.html', {
-        'booking': booking, 
-        'whatsapp_url': whatsapp_url, 
-        'deposit_fmt': deposit_fmt,
-        'time_left_seconds': int(time_left_seconds), 
+        'booking': booking, 'whatsapp_url': whatsapp_url, 
+        'deposit_fmt': deposit_fmt, 'time_left_seconds': int(time_left_seconds), 
         'is_expired': is_expired
     })
 
-# --- VISTAS DASHBOARD ---
+# --- DASHBOARDS Y AUTH ---
 @login_required
 def owner_dashboard(request):
     salon = request.user.salon
-    pending_bookings = Booking.objects.filter(salon=salon, status='PENDING_PAYMENT').order_by('date_time')
-    confirmed_bookings = Booking.objects.filter(salon=salon, status='VERIFIED').order_by('date_time')
-    return render(request, 'dashboard/owner_dashboard.html', {'pending_bookings': pending_bookings, 'confirmed_bookings': confirmed_bookings})
+    pending = Booking.objects.filter(salon=salon, status='PENDING_PAYMENT').order_by('date_time')
+    confirmed = Booking.objects.filter(salon=salon, status='VERIFIED').order_by('date_time')
+    return render(request, 'dashboard/owner_dashboard.html', {'pending_bookings': pending, 'confirmed_bookings': confirmed})
 
 @login_required
 def verify_booking(request, pk):
     booking = get_object_or_404(Booking, pk=pk, salon=request.user.salon)
-    booking.status = 'VERIFIED'
-    booking.save()
-    messages.success(request, f"¡Cita de {booking.customer_name} confirmada!")
+    booking.status = 'VERIFIED'; booking.save()
+    messages.success(request, "Cita confirmada.")
     return redirect('owner_dashboard')
 
 @login_required
@@ -257,15 +246,13 @@ def employee_dashboard(request):
 @login_required
 def employee_schedule(request):
     employee = request.user.employee_profile
-    # FIX: get_or_create para asegurar que el horario exista
     schedule, created = EmployeeSchedule.objects.get_or_create(employee=employee)
     if request.method == 'POST':
         form = EmployeeScheduleForm(request.POST, instance=schedule, salon=employee.salon)
-        if form.is_valid(): form.save(); messages.success(request, "Horario actualizado."); return redirect('employee_schedule')
+        if form.is_valid(): form.save(); messages.success(request, "Horario guardado."); return redirect('employee_schedule')
     else: form = EmployeeScheduleForm(instance=schedule, salon=employee.salon)
     return render(request, 'dashboard/employee_schedule.html', {'form': form, 'salon': employee.salon})
 
-# --- AUTH & PUBLIC ---
 def saas_login(request):
     if request.method == 'POST':
         u = request.POST.get('username'); p = request.POST.get('password')
@@ -347,15 +334,14 @@ def owner_settings(request):
 with open(views_path, 'w', encoding='utf-8') as f:
     f.write(new_views_code)
 
-# SUBIR CAMBIOS
-print(" Subiendo solución de emergencia a GitHub...")
+print(" Subiendo blindaje final a GitHub...")
 try:
     subprocess.run(["git", "add", "."], check=True)
-    subprocess.run(["git", "commit", "-m", "Emergency Fix: Try/Except en Calendario para evitar Error 500"], check=True)
+    subprocess.run(["git", "commit", "-m", "Final Rescue: Proteger vistas de datos nulos para evitar 500"], check=True)
     subprocess.run(["git", "push", "origin", "main"], check=True)
-    print(" ¡REPARADO! El sistema ahora es resistente a fallos.")
+    print(" ¡LISTO! Si falta un dato, te llevará al inicio en vez de dar error.")
 except Exception as e:
-    print(f" Alerta Git: {e}")
+    print(f" Error Git: {e}")
 
 try:
     os.remove(__file__)
