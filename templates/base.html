@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paso Marketplace | Tu Belleza, Tu Tiempo</title>
 
+    <link rel="shortcut icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
     <link rel="apple-touch-icon" href="{% static 'images/favicon.svg' %}">
     <meta name="theme-color" content="#ffffff">
@@ -15,7 +16,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        /* ESTILO ORIGINAL DEL BACKUP */
+        /* ESTILO GLOBAL DE LUJO MINIMALISTA */
         :root {
             --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
             --bs-body-bg: #ffffff;
@@ -30,7 +31,7 @@
             min-height: 100vh;
         }
 
-        /* Navbar Premium Original */
+        /* Navbar Premium */
         .navbar {
             padding: 1.2rem 0;
             background: rgba(255, 255, 255, 0.95);
@@ -52,7 +53,7 @@
         }
         .nav-link:hover { color: #000 !important; }
 
-        /* Botones Originales */
+        /* Botones Personalizados */
         .btn-dark {
             background-color: #111;
             border: 1px solid #111;
@@ -93,21 +94,24 @@
             box-shadow: 0 12px 24px rgba(0,0,0,0.06); 
         }
 
-        /* Utilidades */
-        .tracking-wide { letter-spacing: 0.05em; }
-        .text-gradient {
-            background: linear-gradient(135deg, #111 0%, #555 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        /* Ajuste para mensajes flotantes sin romper diseño */
-        .messages-wrapper {
-            position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;
-        }
+        /* Mensajes Flotantes */
+        .messages-container { position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; }
+        .alert { box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; border-radius: 10px; }
     </style>
 </head>
 <body>
+    <div class="messages-container">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {% if message.tags == 'error' %}<i class="fas fa-exclamation-circle me-2"></i>{% else %}<i class="fas fa-check-circle me-2"></i>{% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">
@@ -154,17 +158,6 @@
     <div style="height: 80px;"></div>
 
     <main class="flex-grow-1">
-        {% if messages %}
-            <div class="container mt-4">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm rounded-3">
-                        <i class="fas fa-info-circle me-2"></i> {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
         {% block content %}{% endblock %}
     </main>
 

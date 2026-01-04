@@ -32,26 +32,36 @@ class Salon(models.Model):
 
     @property
     def is_open_now(self):
-        """Calcula si está abierto considerando trasnochos (Ej: 10pm - 4am)"""
+        """Calcula si está abierto revisando el turno de HOY y el trasnocho de AYER"""
         bogota = pytz.timezone('America/Bogota')
         now = datetime.now(bogota)
         current_time = now.time()
-        weekday = now.weekday() # 0=Lunes
         
-        # Mapeo de días
+        # Índices: 0=Lunes, 6=Domingo
+        today_idx = now.weekday()
+        yesterday_idx = (today_idx - 1) % 7 # Si hoy es Lunes(0), ayer fue Domingo(6)
+        
         days_map = [self.work_monday, self.work_tuesday, self.work_wednesday, self.work_thursday, self.work_friday, self.work_saturday, self.work_sunday]
         
-        # Si hoy no trabaja, cerrado
-        if not days_map[weekday]: return False
-        
-        # LÓGICA NOCTURNA
-        if self.opening_time <= self.closing_time:
-            # Horario normal (Ej: 8am - 8pm)
-            return self.opening_time <= current_time <= self.closing_time
-        else:
-            # Horario trasnocho (Ej: 10pm - 4am)
-            # Está abierto si es mas tarde que la apertura O mas temprano que el cierre
-            return current_time >= self.opening_time or current_time <= self.closing_time
+        # CASO 1: Turno normal del día de HOY
+        if days_map[today_idx]:
+            if self.opening_time <= self.closing_time:
+                # Horario diurno (Ej: 8am - 8pm) -> Debe estar en el rango
+                if self.opening_time <= current_time <= self.closing_time:
+                    return True
+            else:
+                # Horario nocturno (Ej: 10pm - 3am) -> Si es HOY, debe ser tarde (>= 10pm)
+                if current_time >= self.opening_time:
+                    return True
+
+        # CASO 2: Turno de trasnocho de AYER (La Madrugada)
+        # Si ayer trabajaron y el horario era nocturno (Apertura > Cierre)
+        if days_map[yesterday_idx] and self.opening_time > self.closing_time:
+            # Estamos en la madrugada del turno de ayer (Ej: son las 2am y cierran a las 3am)
+            if current_time <= self.closing_time:
+                return True
+                
+        return False
 
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
