@@ -6,6 +6,8 @@ from django.contrib.auth import login, get_user_model
 from django.urls import reverse_lazy
 from django.utils import timezone
 from datetime import datetime, date, time
+from django.contrib import messages
+
 from .models import Salon, Service, Employee, SalonSchedule, EmployeeSchedule, Booking
 from .forms import (
     OwnerRegistrationForm, SalonForm, ServiceForm, 
@@ -14,41 +16,7 @@ from .forms import (
 
 User = get_user_model()
 
-# --- VISTA DE REGISTRO MEJORADA ---
-class RegisterOwnerView(CreateView):
-    template_name = 'registration/register_owner.html'
-    form_class = OwnerRegistrationForm
-    success_url = '/dashboard/'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['user_form'] = OwnerRegistrationForm()
-        ctx['salon_form'] = SalonForm()
-        return ctx
-
-    def post(self, request, *args, **kwargs):
-        user_form = OwnerRegistrationForm(request.POST)
-        salon_form = SalonForm(request.POST)
-        
-        if user_form.is_valid() and salon_form.is_valid():
-            user = user_form.save(commit=False)
-            user.set_password(user_form.cleaned_data['password'])
-            user.save()
-            
-            salon = salon_form.save(commit=False)
-            salon.owner = user
-            
-            # TRUCO: Copiamos el teléfono al campo whatsapp automáticamente
-            salon.whatsapp = salon_form.cleaned_data['phone']
-            
-            salon.save()
-            SalonSchedule.objects.create(salon=salon)
-            login(request, user)
-            return redirect('owner_dashboard')
-        
-        return render(request, self.template_name, {'user_form': user_form, 'salon_form': salon_form})
-
-# --- OTRAS VISTAS (MANTENIDAS) ---
+# ... (Vistas generales mantenidas) ...
 def home(request): return render(request, 'home.html')
 def marketplace(request): return render(request, 'marketplace.html', {'salons': Salon.objects.all()})
 def salon_detail(request, salon_id): return render(request, 'salon_detail.html', {'salon': get_object_or_404(Salon, id=salon_id)})
@@ -70,6 +38,34 @@ def dashboard_redirect(request):
     elif hasattr(request.user, 'employee_profile'): return redirect('employee_dashboard')
     else: return redirect('client_dashboard')
 
+# --- REGISTRO (CON LA LÓGICA DE WHATSAPP AUTOMÁTICO) ---
+class RegisterOwnerView(CreateView):
+    template_name = 'registration/register_owner.html'
+    form_class = OwnerRegistrationForm
+    success_url = '/dashboard/'
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['user_form'] = OwnerRegistrationForm()
+        ctx['salon_form'] = SalonForm()
+        return ctx
+    def post(self, request, *args, **kwargs):
+        user_form = OwnerRegistrationForm(request.POST)
+        salon_form = SalonForm(request.POST)
+        if user_form.is_valid() and salon_form.is_valid():
+            user = user_form.save(commit=False)
+            user.set_password(user_form.cleaned_data['password'])
+            user.save()
+            salon = salon_form.save(commit=False)
+            salon.owner = user
+            # Lógica rescatada: Si ponen teléfono, se asume WhatsApp
+            salon.whatsapp = salon_form.cleaned_data['phone']
+            salon.save()
+            SalonSchedule.objects.create(salon=salon)
+            login(request, user)
+            return redirect('owner_dashboard')
+        return render(request, self.template_name, {'user_form': user_form, 'salon_form': salon_form})
+
+# --- DASHBOARD ---
 @method_decorator(login_required, name='dispatch')
 class OwnerDashboardView(TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
@@ -81,6 +77,45 @@ class OwnerDashboardView(TemplateView):
             ctx['pending_bookings'] = Booking.objects.filter(salon=ctx['salon'], status='pending')
         return ctx
 
+# --- CONFIGURACIÓN (LÓGICA MEJORADA) ---
+@login_required
+def owner_settings_view(request):
+    try:
+        salon = request.user.salon
+    except Salon.DoesNotExist:
+        return redirect('home')
+
+    schedule, created = SalonSchedule.objects.get_or_create(salon=salon)
+
+    if request.method == 'POST':
+        salon_form = SalonForm(request.POST, instance=salon)
+        schedule_form = SalonScheduleForm(request.POST, instance=schedule)
+
+        if salon_form.is_valid() and schedule_form.is_valid():
+            salon_obj = salon_form.save(commit=False)
+            # Aseguramos que el WhatsApp se actualice si cambian el teléfono
+            if salon_obj.phone:
+                salon_obj.whatsapp = salon_obj.phone
+            salon_obj.save()
+            schedule_form.save()
+            messages.success(request, '¡Tu negocio se ha actualizado correctamente!')
+            return redirect('owner_settings')
+        else:
+            messages.error(request, 'Hubo un error. Revisa los campos en rojo.')
+    else:
+        salon_form = SalonForm(instance=salon)
+        schedule_form = SalonScheduleForm(instance=schedule)
+
+    return render(request, 'dashboard/owner_settings.html', {
+        'salon_form': salon_form,
+        'schedule_form': schedule_form
+    })
+
+class OwnerSettingsView(TemplateView):
+    def as_view(self=None, **initkwargs):
+        return owner_settings_view
+
+# --- VISTAS CRUD DE SERVICIOS Y EMPLEADOS ---
 @method_decorator(login_required, name='dispatch')
 class OwnerServicesView(ListView):
     model = Service
@@ -134,16 +169,6 @@ class EmployeeCreateView(CreateView):
         employee.save()
         EmployeeSchedule.objects.create(employee=employee)
         return super().form_valid(form)
-        
-@method_decorator(login_required, name='dispatch')
-class OwnerSettingsView(UpdateView):
-    model = SalonSchedule
-    template_name = 'dashboard/owner_settings.html'
-    form_class = SalonScheduleForm
-    success_url = reverse_lazy('owner_settings')
-    def get_object(self, queryset=None):
-        schedule, created = SalonSchedule.objects.get_or_create(salon=self.request.user.salon)
-        return schedule
 
 @login_required
 def employee_dashboard(request):
