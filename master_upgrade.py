@@ -1,4 +1,138 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿import os
+import subprocess
+
+# -----------------------------------------------------------------------------
+# 1. MEJORAR REGISTER_OWNER.HTML (Feedback de errores explícito)
+# -----------------------------------------------------------------------------
+reg_path = os.path.join('templates', 'registration', 'register_owner.html')
+print(f" Mejorando feedback en {reg_path}...")
+
+new_reg_code = r"""{% extends 'master.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    body { background-color: #f8f9fa; }
+    .register-container {
+        background: white;
+        border-radius: 30px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        overflow: hidden;
+        min-height: 80vh;
+    }
+    .register-sidebar {
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 4rem;
+        position: relative;
+    }
+    .gold-accent { color: #d4af37; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; font-size: 0.9rem; }
+    .form-control { border-radius: 12px; padding: 0.8rem 1rem; border: 1px solid #e9ecef; }
+    .form-select { border-radius: 12px; padding: 0.8rem 1rem; border: 1px solid #e9ecef; }
+    .btn-register { background: #000; color: white; padding: 1rem; border-radius: 50px; width: 100%; font-weight: bold; transition: 0.3s; }
+    .btn-register:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); color: #d4af37; }
+    .error-msg { font-size: 0.75rem; color: #dc3545; margin-top: 4px; font-weight: 600; }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-11">
+            <div class="row g-0 register-container">
+                <div class="col-lg-5 register-sidebar d-none d-lg-flex text-center text-lg-start">
+                    <div style="z-index: 2;">
+                        <div class="gold-accent mb-3">Paso Ecosystem</div>
+                        <h1 class="display-4 fw-bold mb-4">Potencia tu<br>Marca.</h1>
+                        <p class="lead text-white-50 mb-5">Gestión inteligente para negocios que quieren crecer.</p>
+                    </div>
+                </div>
+
+                <div class="col-lg-7 p-5 bg-white">
+                    <h3 class="fw-bold mb-1 text-dark">Crear Cuenta de Negocio</h3>
+                    <p class="text-muted small mb-4">Únete a la revolución digital.</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4">
+                                <i class="fas fa-exclamation-triangle me-2"></i> {{ form.non_field_errors.0 }}
+                            </div>
+                        {% endif %}
+
+                        <h6 class="fw-bold text-muted text-uppercase small border-bottom pb-2 mb-3">Datos de Acceso</h6>
+                        <div class="row g-3 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Usuario</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}<div class="error-msg">{{ form.username.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<div class="error-msg">{{ form.email.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Contraseña</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}<div class="error-msg">{{ form.password1.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Confirmar</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}<div class="error-msg">{{ form.password2.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-muted text-uppercase small border-bottom pb-2 mb-3">Tu Negocio</h6>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre del Establecimiento</label>
+                            {{ form.salon_name }}
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Ciudad</label>
+                                {{ form.city }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Dirección</label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-success"><i class="fab fa-whatsapp me-1"></i> WhatsApp de Reservas</label>
+                            {{ form.phone }}
+                            <div class="form-text small">A este número llegarán los comprobantes de pago.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-register">
+                            CREAR CUENTA <i class="fas fa-rocket ms-2"></i>
+                        </button>
+                    </form>
+                    <div class="text-center mt-4 border-top pt-3">
+                        <p class="small text-muted">¿Ya tienes cuenta? <a href="{% url 'saas_login' %}" class="fw-bold text-dark">Iniciar Sesión</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+"""
+with open(reg_path, 'w', encoding='utf-8') as f:
+    f.write(new_reg_code)
+
+# -----------------------------------------------------------------------------
+# 2. ACTUALIZAR VIEWS.PY (Lógica de Reserva Blindada + Cliente Automático)
+# -----------------------------------------------------------------------------
+views_path = os.path.join('apps', 'businesses', 'views.py')
+print(f" Implantando cerebro inteligente en {views_path}...")
+
+new_views_code = r"""from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -346,3 +480,18 @@ def owner_settings(request):
     s=request.user.salon
     if request.method=="POST": f=SalonSettingsForm(request.POST, instance=s); f.save(); messages.success(request, "Guardado"); return redirect("owner_dashboard")
     return render(request, "dashboard/owner_settings.html", {"form": SalonSettingsForm(instance=s)})
+"""
+with open(views_path, 'w', encoding='utf-8') as f:
+    f.write(new_views_code)
+
+# -----------------------------------------------------------------------------
+# 3. SUBIR A PRODUCCIÓN
+# -----------------------------------------------------------------------------
+print(" Ejecutando Plan Maestro de Lanzamiento...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Master Upgrade: Auto-Cliente, Reservas Blindadas y Registro Pro"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡SISTEMA ACTUALIZADO! Espera 3 minutos y serás imparable.")
+except Exception as e:
+    print(f" Error Git: {e}")
