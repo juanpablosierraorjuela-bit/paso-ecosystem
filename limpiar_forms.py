@@ -1,4 +1,12 @@
-from django import forms
+import os
+
+# --- RUTAS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.join(BASE_DIR, "apps", "businesses")
+FORMS_PATH = os.path.join(APP_DIR, "forms.py")
+
+# --- CONTENIDO PERFECTO Y LIMPIO DE FORMS.PY ---
+CONTENIDO_FORMS = """from django import forms
 from django.contrib.auth import get_user_model
 from .models import Salon, Service, Employee, SalonSchedule
 
@@ -79,3 +87,13 @@ class SalonScheduleForm(forms.ModelForm):
         model = SalonSchedule
         fields = ['monday_open', 'tuesday_open', 'wednesday_open', 'thursday_open', 'friday_open', 'saturday_open', 'sunday_open']
         # Aquí puedes agregar widgets si quieres checkboxes bonitos, pero por defecto funcionan
+"""
+
+def limpiar_forms():
+    print("🧹 Limpiando forms.py de código viejo...")
+    with open(FORMS_PATH, "w", encoding="utf-8") as f:
+        f.write(CONTENIDO_FORMS)
+    print("✅ forms.py saneado. Adiós a SalonSettingsForm.")
+
+if __name__ == "__main__":
+    limpiar_forms()
