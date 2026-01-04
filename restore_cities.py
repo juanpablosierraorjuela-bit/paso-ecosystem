@@ -1,4 +1,11 @@
-from django import forms
+﻿import os
+
+# RUTA DEL ARCHIVO
+forms_path = os.path.join("apps", "businesses", "forms.py")
+print(f" Asegurando el desplegable de ciudades en {forms_path}...")
+
+# CONTENIDO ACTUALIZADO: Mantiene la lógica estable + Agrega el Desplegable
+new_forms_code = r"""from django import forms
 from django.contrib.auth import get_user_model
 from .models import Salon, Service, Employee, EmployeeSchedule
 from datetime import datetime
@@ -160,3 +167,17 @@ class EmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = ["name", "phone", "instagram_link", "is_active"]
+"""
+
+with open(forms_path, "w", encoding="utf-8") as f:
+    f.write(new_forms_code)
+
+import subprocess
+print(" Subiendo ajuste de Ciudades a GitHub...")
+try:
+    subprocess.run(["git", "add", "."], check=True)
+    subprocess.run(["git", "commit", "-m", "Feat: Desplegable Ciudades Colombia (Permanente)"], check=True)
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(" ¡LISTO! Ahora Tunja siempre será Tunja.")
+except Exception as e:
+    print(f" Alerta Git: {e}")
