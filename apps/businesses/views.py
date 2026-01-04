@@ -116,9 +116,9 @@ def booking_success(request, booking_id):
     return render(request, 'booking/success.html', {'booking': booking, 'wa_link': wa_link})
 
 # --- DUEÑO DASHBOARD ---
-# --- DUEÑO DASHBOARD ---
 class OwnerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/owner_dashboard.html'
+    
     def dispatch(self, request, *args, **kwargs):
         # SEGURIDAD: Si es empleado, fuera de aquí
         if request.user.is_authenticated and request.user.role == 'EMPLOYEE':
@@ -126,8 +126,6 @@ class OwnerDashboardView(LoginRequiredMixin, TemplateView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)(self, **kwargs):
-        if self.request.user.role == 'EMPLOYEE': return {'employee_mode': True} # Redirigir mentalmente
         ctx = super().get_context_data(**kwargs)
         salon = self.request.user.salon
         ctx['pending_bookings'] = Booking.objects.filter(salon=salon, status='PENDING_PAYMENT').order_by('date_time')
@@ -248,5 +246,6 @@ class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'dashboard/employee_confirm_delete.html'
     success_url = reverse_lazy('owner_employees')
     def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
+
 
 
