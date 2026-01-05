@@ -1,32 +1,43 @@
 {% extends 'businesses/base_dashboard.html' %}
-
 {% block dashboard_content %}
-    <h1 style="font-size: 2rem; margin-bottom: 10px;">Hola, {{ user.first_name }}</h1>
-    <p style="color: #888; margin-bottom: 30px;">Aquí tienes el resumen de tu Ecosistema hoy.</p>
+    <h1 style="font-size: 2rem; margin-bottom: 20px;">Hola, {{ user.first_name }}</h1>
 
-    <div style="background: linear-gradient(45deg, #2c3e50, #000); border: 1px solid #d4af37; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    {% if not user.is_verified_payment %}
+    <div style="background: linear-gradient(45deg, #b33939, #000); border: 1px solid #ff4d4d; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <h3 style="color: #d4af37; margin-bottom: 5px;">⚠️ Activación Pendiente</h3>
-            <p style="font-size: 0.9rem;">Tu cuenta está en periodo de prueba. Realiza el pago para verificar.</p>
+            <h3 style="color: #ff4d4d; margin-bottom: 5px;">⚠️ Cuenta no verificada</h3>
+            {% if payment_expired %}
+                <p>Tu tiempo de prueba ha expirado. El sistema limitará tu acceso pronto.</p>
+            {% else %}
+                <p>Tienes <strong style="color: white; font-size: 1.2rem;">{{ hours_remaining }} horas</strong> para activar tu Ecosistema.</p>
+            {% endif %}
         </div>
-        <div style="text-align: right;">
-            <h2 style="font-size: 1.5rem; font-family: monospace;">23:59:00</h2>
-            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.8rem;">Pagar Ahora</button>
-        </div>
+        <a href="https://wa.me/573228317702?text=Hola%20quiero%20activar%20mi%20cuenta%20de%20dueño%20ID:%20{{ user.username }}" target="_blank" class="btn btn-primary">Pagar Mensualidad</a>
     </div>
+    {% endif %}
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;">
-            <h3 style="color: #888; font-size: 0.9rem;">Citas Hoy</h3>
-            <p style="font-size: 2rem; font-weight: bold;">0</p>
+    <h2 style="color: #d4af37; margin-bottom: 20px;">🛎️ Solicitudes de Reserva</h2>
+    <div style="display: grid; gap: 20px;">
+        {% for cita in pending_appointments %}
+        <div style="background: #111; border-left: 4px solid #ffcc00; padding: 20px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px;">{{ cita.service.name }} (${{ cita.total_price }})</h3>
+                <p style="color: #ccc;">Cliente: <strong>{{ cita.client.first_name }} {{ cita.client.last_name }}</strong></p>
+                <p style="color: #888;">Abono esperado: <strong style="color: #d4af37;">${{ cita.deposit_amount }}</strong></p>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="color: #ff4d4d; font-family: monospace;">⏳ Esperando pago...</span>
+                <form action="{% url 'booking:verify_payment' cita.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="background: #4cd137; border-color: #4cd137; color: black; font-weight: bold;">
+                        ✅ Verificar Pago
+                    </button>
+                </form>
+            </div>
         </div>
-        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;">
-            <h3 style="color: #888; font-size: 0.9rem;">Ingresos (Est.)</h3>
-            <p style="font-size: 2rem; font-weight: bold; color: #4cd137;">$0</p>
-        </div>
-        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;">
-            <h3 style="color: #888; font-size: 0.9rem;">Empleados Activos</h3>
-            <p style="font-size: 2rem; font-weight: bold;">0</p>
-        </div>
+        {% empty %}
+        <p style="color: #666;">No hay solicitudes pendientes.</p>
+        {% endfor %}
     </div>
 {% endblock %}
