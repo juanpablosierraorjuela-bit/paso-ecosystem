@@ -1,175 +1,391 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import CreateView, TemplateView, UpdateView, ListView, DeleteView
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from django.contrib.auth import login, get_user_model
-from django.urls import reverse_lazy
-from django.utils import timezone
-from datetime import datetime, date, time
+from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .forms import SalonRegistrationForm, SalonSettingsForm, ServiceForm, EmployeeForm, EmployeeScheduleForm
+from apps.core_saas.models import User
+from .models import Salon, Service, Employee, Booking, EmployeeSchedule
+from datetime import datetime, timedelta
+import pytz
+from django.utils import timezone
+import urllib.parse
+from django.core.exceptions import ObjectDoesNotExist
 
-from .models import Salon, Service, Employee, SalonSchedule, EmployeeSchedule, Booking
-from .forms import (
-    OwnerRegistrationForm, SalonForm, ServiceForm, 
-    EmployeeForm, EmployeeCreationForm, SalonScheduleForm
-)
-
-User = get_user_model()
-
-# ... (Vistas generales mantenidas) ...
-def home(request): return render(request, 'home.html')
-def marketplace(request): return render(request, 'marketplace.html', {'salons': Salon.objects.all()})
-def salon_detail(request, salon_id): return render(request, 'salon_detail.html', {'salon': get_object_or_404(Salon, id=salon_id)})
-def landing_businesses(request): return render(request, 'landing_businesses.html')
-
-@login_required
-def booking_wizard(request, salon_id):
-    salon = get_object_or_404(Salon, id=salon_id)
-    return render(request, 'booking/step_calendar.html', {'salon': salon})
-
-@login_required
-def client_dashboard(request):
-    bookings = Booking.objects.filter(customer=request.user).order_by('-date')
-    return render(request, 'client_dashboard.html', {'bookings': bookings})
-
-@login_required
-def dashboard_redirect(request):
-    if hasattr(request.user, 'salon'): return redirect('owner_dashboard')
-    elif hasattr(request.user, 'employee_profile'): return redirect('employee_dashboard')
-    else: return redirect('client_dashboard')
-
-# --- REGISTRO (CON LA LÓGICA DE WHATSAPP AUTOMÁTICO) ---
-class RegisterOwnerView(CreateView):
-    template_name = 'registration/register_owner.html'
-    form_class = OwnerRegistrationForm
-    success_url = '/dashboard/'
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['user_form'] = OwnerRegistrationForm()
-        ctx['salon_form'] = SalonForm()
-        return ctx
-    def post(self, request, *args, **kwargs):
-        user_form = OwnerRegistrationForm(request.POST)
-        salon_form = SalonForm(request.POST)
-        if user_form.is_valid() and salon_form.is_valid():
-            user = user_form.save(commit=False)
-            user.set_password(user_form.cleaned_data['password'])
-            user.save()
-            salon = salon_form.save(commit=False)
-            salon.owner = user
-            # Lógica rescatada: Si ponen teléfono, se asume WhatsApp
-            salon.whatsapp = salon_form.cleaned_data['phone']
-            salon.save()
-            SalonSchedule.objects.create(salon=salon)
-            login(request, user)
-            return redirect('owner_dashboard')
-        return render(request, self.template_name, {'user_form': user_form, 'salon_form': salon_form})
-
-# --- DASHBOARD ---
-@method_decorator(login_required, name='dispatch')
-class OwnerDashboardView(TemplateView):
-    template_name = 'dashboard/owner_dashboard.html'
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        try: ctx['salon'] = self.request.user.salon
-        except: ctx['salon'] = None
-        if ctx['salon']:
-            ctx['pending_bookings'] = Booking.objects.filter(salon=ctx['salon'], status='pending')
-        return ctx
-
-# --- CONFIGURACIÓN (LÓGICA MEJORADA) ---
-@login_required
-def owner_settings_view(request):
+# --- HELPERS ---
+def get_available_slots(employee, date_obj, service):
+    slots = []
     try:
-        salon = request.user.salon
-    except Salon.DoesNotExist:
-        return redirect('home')
+        try:
+            schedule = employee.schedule
+        except ObjectDoesNotExist:
+            return []
 
-    schedule, created = SalonSchedule.objects.get_or_create(salon=salon)
+        weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        day_name = weekdays[date_obj.weekday()]
+        
+        schedule_str = getattr(schedule, f"{day_name}_hours", "CERRADO")
+        if schedule_str == "CERRADO": return []
+            
+        start_str, end_str = schedule_str.split("-")
+        start_h, start_m = map(int, start_str.split(":"))
+        end_h, end_m = map(int, end_str.split(":"))
+        
+        work_start = date_obj.replace(hour=start_h, minute=start_m, second=0)
+        work_end = date_obj.replace(hour=end_h, minute=end_m, second=0)
+        
+        if work_end < work_start: work_end += timedelta(days=1)
 
-    if request.method == 'POST':
-        salon_form = SalonForm(request.POST, instance=salon)
-        schedule_form = SalonScheduleForm(request.POST, instance=schedule)
+        duration = timedelta(minutes=service.duration + service.buffer_time)
+        current = work_start
+        
+        bogota_tz = pytz.timezone("America/Bogota")
+        now_bogota = datetime.now(bogota_tz)
 
-        if salon_form.is_valid() and schedule_form.is_valid():
-            salon_obj = salon_form.save(commit=False)
-            # Aseguramos que el WhatsApp se actualice si cambian el teléfono
-            if salon_obj.phone:
-                salon_obj.whatsapp = salon_obj.phone
-            salon_obj.save()
-            schedule_form.save()
-            messages.success(request, '¡Tu negocio se ha actualizado correctamente!')
-            return redirect('owner_settings')
-        else:
-            messages.error(request, 'Hubo un error. Revisa los campos en rojo.')
-    else:
-        salon_form = SalonForm(instance=salon)
-        schedule_form = SalonScheduleForm(instance=schedule)
+        while current + duration <= work_end:
+            collision = Booking.objects.filter(
+                employee=employee, 
+                status__in=["PENDING_PAYMENT", "VERIFIED"], 
+                date_time__lt=current + duration, 
+                end_time__gt=current
+            ).exists()
+            
+            current_aware = pytz.timezone("America/Bogota").localize(current)
+            is_future = current_aware > now_bogota
 
-    return render(request, 'dashboard/owner_settings.html', {
-        'salon_form': salon_form,
-        'schedule_form': schedule_form
+            if not collision and is_future: 
+                slots.append(current.strftime("%H:%M"))
+            
+            current += timedelta(minutes=30)
+            
+    except Exception as e:
+        print(f"Error slots: {e}")
+        return []
+    return slots
+
+# --- FLOW DE RESERVAS ---
+
+def booking_wizard_start(request):
+    if request.method == "POST":
+        salon_id = request.POST.get("salon_id")
+        service_id = request.POST.get("service_id")
+        request.session["booking_salon"] = salon_id
+        request.session["booking_service"] = service_id
+        
+        try:
+            salon = get_object_or_404(Salon, id=salon_id)
+            if not salon.employees.filter(is_active=True).exists():
+                messages.error(request, f"Lo sentimos, {salon.name} no tiene profesionales disponibles.")
+                return redirect("salon_detail", pk=salon_id)
+        except:
+            return redirect("marketplace")
+            
+        return redirect("booking_step_employee")
+    return redirect("marketplace")
+
+def booking_step_employee(request):
+    salon_id = request.session.get("booking_salon")
+    if not salon_id: return redirect("marketplace")
+    salon = get_object_or_404(Salon, id=salon_id)
+    return render(request, "booking/step_employee.html", {"employees": salon.employees.filter(is_active=True)})
+
+def booking_step_calendar(request):
+    if request.method == "POST":
+        request.session["booking_employee"] = request.POST.get("employee_id")
+    
+    employee_id = request.session.get("booking_employee")
+    service_id = request.session.get("booking_service")
+    
+    if not employee_id or not service_id:
+        messages.warning(request, "Sesión reiniciada.")
+        return redirect("marketplace")
+    
+    try:
+        employee = get_object_or_404(Employee, id=employee_id)
+        service = get_object_or_404(Service, id=service_id)
+    except:
+        return redirect("marketplace")
+    
+    today = datetime.now().date()
+    selected_date_str = request.GET.get("date", str(today))
+    try:
+        selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        selected_date = today
+        selected_date_str = str(today)
+
+    slots = get_available_slots(employee, datetime.combine(selected_date, datetime.min.time()), service)
+    
+    return render(request, "booking/step_calendar.html", {
+        "employee": employee,
+        "service": service,
+        "slots": slots,
+        "selected_date": selected_date_str,
+        "today": str(today)
     })
 
-class OwnerSettingsView(TemplateView):
-    def as_view(self=None, **initkwargs):
-        return owner_settings_view
+def booking_step_confirm(request):
+    if request.method == "POST":
+        request.session["booking_time"] = request.POST.get("time")
+        request.session["booking_date"] = request.POST.get("date_selected")
+    
+    date_str = request.session.get("booking_date")
+    time_str = request.session.get("booking_time")
+    service_id = request.session.get("booking_service")
 
-# --- VISTAS CRUD DE SERVICIOS Y EMPLEADOS ---
-@method_decorator(login_required, name='dispatch')
-class OwnerServicesView(ListView):
-    model = Service
-    template_name = 'dashboard/owner_services.html'
-    def get_queryset(self): return Service.objects.filter(salon__owner=self.request.user)
+    if not (date_str and time_str and service_id):
+        messages.error(request, "Datos incompletos.")
+        return redirect("booking_step_calendar")
 
-@method_decorator(login_required, name='dispatch')
-class ServiceCreateView(CreateView):
-    model = Service
-    form_class = ServiceForm
-    template_name = 'dashboard/service_form.html'
-    success_url = reverse_lazy('owner_services')
-    def form_valid(self, form):
-        form.instance.salon = self.request.user.salon
-        return super().form_valid(form)
+    service = get_object_or_404(Service, id=service_id)
+    try:
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    except:
+        date_obj = datetime.now()
 
-@method_decorator(login_required, name='dispatch')
-class ServiceUpdateView(UpdateView):
-    model = Service
-    form_class = ServiceForm
-    template_name = 'dashboard/service_form.html'
-    success_url = reverse_lazy('owner_services')
-    def get_queryset(self): return Service.objects.filter(salon__owner=self.request.user)
+    return render(request, "booking/step_confirm.html", {
+        "service": service, "time": time_str, "date": date_str, "date_pretty": date_obj
+    })
 
-@method_decorator(login_required, name='dispatch')
-class ServiceDeleteView(DeleteView):
-    model = Service
-    success_url = reverse_lazy('owner_services')
-    def get_queryset(self): return Service.objects.filter(salon__owner=self.request.user)
+def booking_create(request):
+    if request.method == "POST":
+        salon_id = request.session.get("booking_salon")
+        service_id = request.session.get("booking_service")
+        employee_id = request.session.get("booking_employee")
+        time_str = request.session.get("booking_time")
+        date_str = request.session.get("booking_date")
+        
+        customer_name = request.POST.get("customer_name")
+        customer_phone = request.POST.get("customer_phone")
+        
+        if not (salon_id and service_id and employee_id and time_str and date_str):
+            messages.error(request, "Error en la reserva.")
+            return redirect("marketplace")
+        try:
+            salon = get_object_or_404(Salon, id=salon_id)
+            service = get_object_or_404(Service, id=service_id)
+            employee = get_object_or_404(Employee, id=employee_id)
+            
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+            time_obj = datetime.strptime(time_str, "%H:%M").time()
+            start_datetime = datetime.combine(date_obj, time_obj)
+            
+            if Booking.objects.filter(employee=employee, date_time=start_datetime, status__in=["PENDING_PAYMENT", "VERIFIED"]).exists():
+                messages.error(request, "Horario ocupado.")
+                return redirect("booking_step_calendar")
 
-@method_decorator(login_required, name='dispatch')
-class OwnerEmployeesView(ListView):
-    model = Employee
-    template_name = 'dashboard/owner_employees.html'
-    def get_queryset(self): return Employee.objects.filter(salon__owner=self.request.user)
+            total_price = service.price
+            deposit_amount = total_price * (salon.deposit_percentage / 100)
+            
+            booking = Booking.objects.create(
+                salon=salon, service=service, employee=employee, 
+                customer_name=customer_name, customer_phone=customer_phone, 
+                date_time=start_datetime, total_price=total_price, 
+                deposit_amount=deposit_amount, status="PENDING_PAYMENT"
+            )
+            return redirect("booking_success", booking_id=booking.id)
+        except Exception as e:
+            print(f"Booking Error: {e}")
+            return redirect("marketplace")
+    return redirect("marketplace")
 
-@method_decorator(login_required, name='dispatch')
-class EmployeeCreateView(CreateView):
-    model = Employee
-    form_class = EmployeeCreationForm
-    template_name = 'dashboard/employee_form.html'
-    success_url = reverse_lazy('owner_employees')
-    def form_valid(self, form):
-        user = User.objects.create_user(username=form.cleaned_data['username'], email=form.cleaned_data['email'], password=form.cleaned_data['password'])
-        user.first_name = form.cleaned_data['first_name']
-        user.last_name = form.cleaned_data['last_name']
-        user.save()
-        employee = form.save(commit=False)
-        employee.salon = self.request.user.salon
-        employee.user = user
-        employee.save()
-        EmployeeSchedule.objects.create(employee=employee)
-        return super().form_valid(form)
+def booking_success(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    salon = booking.salon
+    
+    created_at = booking.created_at
+    if timezone.is_naive(created_at):
+        created_at = timezone.make_aware(created_at, pytz.timezone("America/Bogota"))
+    now = timezone.now()
+    elapsed = (now - created_at).total_seconds()
+    time_left_seconds = max(0, 3600 - elapsed)
+    is_expired = time_left_seconds <= 0
+
+    remaining = booking.total_price - booking.deposit_amount
+    total_fmt = "${:,.0f}".format(booking.total_price)
+    deposit_fmt = "${:,.0f}".format(booking.deposit_amount)
+    
+    # CORRECCIÓN DE COMILLAS AQUÍ ABAJO
+    message = (
+        f"Hola *{salon.name}*, soy {booking.customer_name}.\n"
+        f"Pago Abono Cita #{booking.id}\n"
+        f" {booking.date_time.strftime('%Y-%m-%d %H:%M')}\n" 
+        f" {booking.service.name}\n"
+        f" Abono: {deposit_fmt}\n"
+        f"¿Me regalas datos para transferir?"
+    )
+    encoded_message = urllib.parse.quote(message)
+    whatsapp_url = f"https://wa.me/{salon.whatsapp_number}?text={encoded_message}"
+    
+    return render(request, "booking/success.html", {
+        "booking": booking, "whatsapp_url": whatsapp_url, 
+        "deposit_fmt": deposit_fmt, "time_left_seconds": int(time_left_seconds), 
+        "is_expired": is_expired
+    })
+
+# --- VISTAS DASHBOARD ---
+
+@login_required
+def owner_dashboard(request):
+    return render(request, "dashboard/owner_dashboard.html")
 
 @login_required
 def employee_dashboard(request):
-    return render(request, 'employee_dashboard.html', {'employee': request.user.employee_profile})
+    employee = request.user.employee_profile
+    bookings = Booking.objects.filter(employee=employee).order_by("date_time")
+    return render(request, "employee_dashboard.html", {"employee": employee, "bookings": bookings})
+
+@login_required
+def employee_schedule(request):
+    employee = request.user.employee_profile
+    schedule, created = EmployeeSchedule.objects.get_or_create(employee=employee)
+    
+    if request.method == "POST":
+        form = EmployeeScheduleForm(request.POST, instance=schedule, salon=employee.salon)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Horario actualizado.")
+            return redirect("employee_schedule")
+    else:
+        form = EmployeeScheduleForm(instance=schedule, salon=employee.salon)
+    
+    return render(request, "dashboard/employee_schedule.html", {"form": form, "salon": employee.salon})
+
+# --- VISTAS AUTH ---
+
+def saas_login(request):
+    if request.method == "POST":
+        u = request.POST.get("username")
+        p = request.POST.get("password")
+        user = authenticate(username=u, password=p)
+        if user:
+            login(request, user)
+            if user.role == "OWNER": return redirect("owner_dashboard")
+            return redirect("employee_dashboard")
+        else:
+            messages.error(request, "Credenciales inválidas")
+    return render(request, "registration/login.html")
+
+def saas_logout(request):
+    logout(request)
+    return redirect("home")
+
+def register_owner(request):
+    if request.method == "POST":
+        form = SalonRegistrationForm(request.POST)
+        if form.is_valid():
+            user = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                email=form.cleaned_data["email"],
+                password=form.cleaned_data["password1"],
+                role="OWNER"
+            )
+            salon = Salon.objects.create(
+                owner=user,
+                name=form.cleaned_data["salon_name"],
+                city=form.cleaned_data["city"],
+                address=form.cleaned_data["address"],
+                whatsapp_number=form.cleaned_data["phone"], 
+                instagram_link=form.cleaned_data.get("instagram_link", ""),
+                maps_link=form.cleaned_data.get("maps_link", "")
+            )
+            login(request, user)
+            return redirect("owner_dashboard")
+    else:
+        form = SalonRegistrationForm()
+    return render(request, "registration/register_owner.html", {"form": form})
+
+# --- OTRAS VISTAS ---
+def home(request): return render(request, "home.html")
+
+def marketplace(request):
+    q = request.GET.get("q", "")
+    city = request.GET.get("city", "")
+    salons = Salon.objects.all()
+    if q: salons = salons.filter(name__icontains=q)
+    if city: salons = salons.filter(city=city)
+    cities = Salon.objects.values_list("city", flat=True).distinct()
+    return render(request, "marketplace.html", {"salons": salons, "cities": cities})
+
+def salon_detail(request, pk):
+    salon = get_object_or_404(Salon, pk=pk)
+    return render(request, "salon_detail.html", {"salon": salon})
+
+def landing_businesses(request): return render(request, "landing_businesses.html")
+
+@login_required
+def owner_services(request):
+    services = request.user.salon.services.all()
+    return render(request, "dashboard/owner_services.html", {"services": services})
+
+@login_required
+def service_create(request):
+    if request.method == "POST":
+        form = ServiceForm(request.POST)
+        if form.is_valid():
+            s = form.save(commit=False); s.salon = request.user.salon; s.save()
+            return redirect("owner_services")
+    else: form = ServiceForm()
+    return render(request, "dashboard/service_form.html", {"form": form})
+
+@login_required
+def service_update(request, pk):
+    s=get_object_or_404(Service, pk=pk, salon=request.user.salon)
+    if request.method == "POST": 
+        f=ServiceForm(request.POST, instance=s); f.save()
+        return redirect("owner_services")
+    return render(request, "dashboard/service_form.html", {"form": ServiceForm(instance=s)})
+
+@login_required
+def service_delete(request, pk):
+    s=get_object_or_404(Service, pk=pk, salon=request.user.salon)
+    if request.method == "POST": s.delete(); return redirect("owner_services")
+    return render(request, "dashboard/service_confirm_delete.html", {"object": s})
+
+@login_required
+def owner_employees(request):
+    employees = request.user.salon.employees.all()
+    return render(request, "dashboard/owner_employees.html", {"employees": employees})
+
+@login_required
+def employee_create(request):
+    if request.method == "POST":
+        form = EmployeeForm(request.POST)
+        if form.is_valid():
+            u=None; un=form.cleaned_data.get("username"); pw=form.cleaned_data.get("password")
+            if un and pw: u=User.objects.create_user(username=un, password=pw, role="EMPLOYEE")
+            e=form.save(commit=False); e.salon=request.user.salon; e.user=u; e.save()
+            EmployeeSchedule.objects.create(employee=e)
+            return redirect("owner_employees")
+    return render(request, "dashboard/employee_form.html", {"form": EmployeeForm()})
+
+@login_required
+def employee_update(request, pk):
+    e=get_object_or_404(Employee, pk=pk, salon=request.user.salon)
+    if request.method == "POST": 
+        f=EmployeeForm(request.POST, instance=e); f.save()
+        return redirect("owner_employees")
+    return render(request, "dashboard/employee_form.html", {"form": EmployeeForm(instance=e)})
+
+@login_required
+def employee_delete(request, pk):
+    e=get_object_or_404(Employee, pk=pk, salon=request.user.salon)
+    if request.method == "POST": 
+        if e.user: e.user.delete()
+        e.delete(); return redirect("owner_employees")
+    return render(request, "dashboard/employee_confirm_delete.html", {"object": e})
+
+@login_required
+def verify_booking(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, salon=request.user.salon)
+    booking.status = "VERIFIED"; booking.save()
+    messages.success(request, "Cita verificada.")
+    return redirect("owner_dashboard")
+
+@login_required
+def owner_settings(request):
+    s=request.user.salon
+    if request.method == "POST": 
+        f=SalonSettingsForm(request.POST, instance=s); f.save()
+        messages.success(request, "Guardado")
+        return redirect("owner_dashboard")
+    return render(request, "dashboard/owner_settings.html", {"form": SalonSettingsForm(instance=s)})
