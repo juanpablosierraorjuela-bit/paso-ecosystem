@@ -12,23 +12,30 @@ class User(AbstractUser):
 
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.CLIENT)
     
-    # --- Datos de Contacto ---
+    # Datos de Contacto
     phone = models.CharField("Teléfono / WhatsApp", max_length=20, blank=True, null=True)
     city = models.CharField("Ciudad", max_length=100, blank=True, null=True)
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
     instagram_link = models.URLField("Perfil de Instagram", blank=True, null=True)
     
-    # --- Vinculación Laboral (NUEVO) ---
-    # Si es empleado, aquí guardamos a qué negocio pertenece
+    # Vinculación Laboral
     workplace = models.ForeignKey('businesses.BusinessProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff')
 
-    # --- Lógica de Seguridad ---
+    # Lógica de Seguridad
     is_verified_payment = models.BooleanField("Pago Mensualidad Verificado", default=False)
     registration_timestamp = models.DateTimeField("Fecha de Registro", auto_now_add=True)
     is_active_account = models.BooleanField("Cuenta Activa", default=True)
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
+
+    # --- AQUÍ ESTÁ LA FÓRMULA MÁGICA QUE FALTABA ---
+    @property
+    def hours_since_registration(self):
+        if not self.registration_timestamp:
+            return 0
+        delta = timezone.now() - self.registration_timestamp
+        return delta.total_seconds() / 3600
 
 class PlatformSettings(models.Model):
     site_name = models.CharField("Nombre del Sitio", max_length=100, default="PASO Ecosistema")
