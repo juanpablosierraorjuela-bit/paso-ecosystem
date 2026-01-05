@@ -11,7 +11,13 @@ class BusinessProfile(models.Model):
     google_maps_url = models.URLField("Link Google Maps", blank=True)
     
     deposit_percentage = models.PositiveIntegerField("Porcentaje de Abono", default=30)
+    
     is_open_manually = models.BooleanField("Abierto Manualmente", default=True)
+
+    # --- CAMPOS DE SUSCRIPCIÓN (Ecosistema PASO) ---
+    is_active_subscription = models.BooleanField("Suscripción Activa", default=False)
+    subscription_end_date = models.DateField("Fecha Corte", null=True, blank=True)
+    
 
     def __str__(self):
         return self.business_name

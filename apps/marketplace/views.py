@@ -4,7 +4,7 @@ from apps.businesses.models import BusinessProfile
 
 def marketplace_home(request):
     query = request.GET.get('q')
-    businesses = BusinessProfile.objects.all()
+    businesses = BusinessProfile.objects.filter(is_active_subscription=True)
     
     if query:
         # LÓGICA DE BÚSQUEDA SEMÁNTICA

@@ -30,9 +30,26 @@
         </div>
     </aside>
 
-    <main style="flex: 1; padding: 40px; margin-left: 250px; background: #000; color: white;">
+
+    <main style="flex: 1; padding: 40px; margin-left: 250px; background: #000; color: white; position: relative;">
+        
+        {% if request.user.business_profile and not request.user.business_profile.is_active_subscription and request.resolver_match.url_name != 'settings' %}
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+            <h1 style="font-size: 3rem; margin-bottom: 20px;">⚠️</h1>
+            <h2 style="color: white; margin-bottom: 10px;">Cuenta Suspendida Temporalmente</h2>
+            <p style="color: #888; max-width: 500px; margin-bottom: 30px;">
+                Tu mensualidad de <strong>$50.000 COP</strong> está pendiente. 
+                Para reactivar tu agenda y visibilidad en la App, por favor regulariza tu pago.
+            </p>
+            <a href="{% url 'businesses:settings' %}" style="background: #d4af37; color: black; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 50px;">
+                Ir a Pagar Ahora ➔
+            </a>
+        </div>
+        {% endif %}
+
         {% block dashboard_content %}{% endblock %}
     </main>
+    
 </div>
 
 <style>
