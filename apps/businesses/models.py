@@ -2,37 +2,28 @@ from django.db import models
 from django.conf import settings
 
 class BusinessProfile(models.Model):
-    """
-    El Cerebro del Negocio. Vinculado al usuario OWNER.
-    """
+    """El Cerebro del Negocio. Vinculado al usuario OWNER."""
     owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='business_profile')
     business_name = models.CharField("Nombre del Negocio", max_length=150)
-    description = models.TextField("Descripción", blank=True, help_text="Texto persuasivo para el buscador semántico")
+    description = models.TextField("Descripción", blank=True, help_text="Para el buscador semántico")
     
-    # --- Ubicación ---
     address = models.CharField("Dirección Física", max_length=255)
-    google_maps_url = models.URLField("Link Google Maps", blank=True, help_text="Para el botón flotante en la tarjeta")
+    google_maps_url = models.URLField("Link Google Maps", blank=True)
     
-    # --- Configuración Financiera ---
-    deposit_percentage = models.PositiveIntegerField("Porcentaje de Abono", default=30, help_text="Porcentaje (0-100) requerido para reservar")
-    
-    # --- Interruptores de Estado ---
-    is_open_manually = models.BooleanField("Abierto Manualmente", default=True, help_text="Switch de emergencia para cerrar el negocio en el Marketplace")
+    deposit_percentage = models.PositiveIntegerField("Porcentaje de Abono", default=30)
+    is_open_manually = models.BooleanField("Abierto Manualmente", default=True)
 
     def __str__(self):
         return self.business_name
 
 class Service(models.Model):
-    """
-    Catálogo de Servicios Inteligente.
-    """
+    """Catálogo de Servicios Inteligente."""
     business = models.ForeignKey(BusinessProfile, on_delete=models.CASCADE, related_name='services')
     name = models.CharField("Nombre del Servicio", max_length=100)
-    description = models.TextField("Descripción / Palabras Clave", help_text="Descripción para búsqueda semántica (Ej: 'Ideal para cabello seco')")
+    description = models.TextField("Descripción / Palabras Clave")
     
-    # --- Tiempos ---
-    duration_minutes = models.PositiveIntegerField("Duración del Servicio (min)")
-    buffer_minutes = models.PositiveIntegerField("Tiempo de Limpieza/Buffer (min)", default=10, help_text="Tiempo muerto entre citas para organizar")
+    duration_minutes = models.PositiveIntegerField("Duración (min)")
+    buffer_minutes = models.PositiveIntegerField("Tiempo de Limpieza (min)", default=10)
     
     price = models.DecimalField("Precio (COP)", max_digits=10, decimal_places=0)
     is_active = models.BooleanField(default=True)
@@ -44,10 +35,7 @@ class Service(models.Model):
         return f"{self.name} - ${self.price}"
 
 class OperatingHour(models.Model):
-    """
-    Capa 1 de Disponibilidad: Horario del Local.
-    Soporta 'Overnight Shift' (Ej: Abre Sábado 10PM -> Cierra Domingo 5AM).
-    """
+    """Horario del Local. Soporta turnos de madrugada."""
     DAYS = [
         (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), (3, 'Jueves'),
         (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
@@ -63,7 +51,6 @@ class OperatingHour(models.Model):
         unique_together = ('business', 'day_of_week')
 
     def crosses_midnight(self):
-        """Devuelve True si el turno termina al día siguiente"""
         return self.closing_time < self.opening_time
 
     def __str__(self):

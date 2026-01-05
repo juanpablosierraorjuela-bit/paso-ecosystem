@@ -14,19 +14,19 @@ class User(AbstractUser):
     
     # --- Datos de Contacto y Perfil ---
     phone = models.CharField("Teléfono / WhatsApp", max_length=20, blank=True, null=True)
-    city = models.CharField("Ciudad", max_length=100, blank=True, null=True, help_text="Ciudad seleccionada del dropdown de 1101 municipios")
+    city = models.CharField("Ciudad", max_length=100, blank=True, null=True, help_text="Ciudad seleccionada del dropdown")
     
     # Imagen: Si está vacía, el Template generará el avatar de lujo con iniciales
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
     
-    # Redes Sociales Personales (Para empleados o dueños)
+    # Redes Sociales Personales
     instagram_link = models.URLField("Perfil de Instagram", blank=True, null=True)
     
     # --- Lógica de Seguridad y Pagos (El Ciclo de 24h) ---
     is_verified_payment = models.BooleanField("Pago Mensualidad Verificado", default=False, help_text="Si es Falso pasadas 24h, el sistema lo eliminará.")
     registration_timestamp = models.DateTimeField("Fecha de Registro", auto_now_add=True)
     
-    # Soft Delete: En lugar de borrar directo, marcamos como inactivo antes de la purga final
+    # Soft Delete
     is_active_account = models.BooleanField("Cuenta Activa", default=True)
 
     def __str__(self):
@@ -38,11 +38,9 @@ class User(AbstractUser):
         return delta.total_seconds() / 3600
 
 class PlatformSettings(models.Model):
-    """
-    Configuración Global del Sistema controlada por el Superusuario.
-    """
+    """Configuración Global del Sistema."""
     site_name = models.CharField("Nombre del Sitio", max_length=100, default="PASO Ecosistema")
-    support_whatsapp = models.CharField("WhatsApp de Soporte", max_length=20, help_text="Número donde los dueños envían comprobantes")
+    support_whatsapp = models.CharField("WhatsApp de Soporte", max_length=20, help_text="Número para comprobantes")
     
     # --- Conexión Telegram ---
     telegram_bot_token = models.CharField("Token Bot Telegram", max_length=200, blank=True)
@@ -55,7 +53,7 @@ class PlatformSettings(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk and PlatformSettings.objects.exists():
-            raise ValidationError('Solo puede existir una configuración global del ecosistema.')
+            raise ValidationError('Solo puede existir una configuración global.')
         return super(PlatformSettings, self).save(*args, **kwargs)
 
     class Meta:

@@ -12,7 +12,7 @@ class OwnerRegisterView(CreateView):
     model = User
     form_class = OwnerRegistrationForm
     template_name = "registration/register_owner.html"
-    success_url = reverse_lazy('login') # Por ahora al login, luego al Dashboard
+    success_url = reverse_lazy('home') # Por ahora al login, luego al Dashboard
 
     def form_valid(self, form):
         messages.success(self.request, "¡Registro exitoso! Tienes 24 horas para activar tu cuenta.")
