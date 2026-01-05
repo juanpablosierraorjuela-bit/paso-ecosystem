@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,11 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PASO Ecosistema{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+    <style>
+        /* Navbar integrado */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 5%;
+            background: rgba(0, 0, 0, 0.95);
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-brand { font-size: 1.5rem; font-weight: bold; color: white; text-decoration: none; }
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-item { color: #ccc; text-decoration: none; font-size: 0.95rem; transition: color 0.3s; }
+        .nav-item:hover { color: #d4af37; }
+        .btn-nav { padding: 8px 20px; border-radius: 50px; font-size: 0.9rem; text-decoration: none; }
+        .btn-login { border: 1px solid #666; color: white; }
+        .btn-action { background: #d4af37; color: black; font-weight: bold; }
+    </style>
 </head>
 <body>
     
+    <nav class="navbar">
+        <a href="{% url 'home' %}" class="nav-brand">PASO.</a>
+        <div class="nav-links">
+            <a href="{% url 'marketplace:home' %}" class="nav-item">Marketplace</a>
+            
+            {% if user.is_authenticated %}
+                <span class="nav-item">Hola, {{ user.first_name|default:user.username }}</span>
+                {% if user.is_staff %}
+                    <a href="/admin/" class="btn-nav btn-action">Admin</a>
+                {% else %}
+                    <a href="#" class="btn-nav btn-action">Mi Panel</a>
+                {% endif %}
+                <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-item" style="background:none; border:none; cursor:pointer;">Salir</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn-nav btn-login">Entrar</a>
+                <a href="{% url 'register_owner' %}" class="btn-nav btn-action">Registrar Negocio</a>
+            {% endif %}
+        </div>
+    </nav>
+
     {% if messages %}
-        <div style="background: #d4af37; color: black; padding: 10px; text-align: center;">
+        <div style="background: #d4af37; color: black; padding: 10px; text-align: center; font-weight: bold;">
             {% for message in messages %}
                 {{ message }}
             {% endfor %}
@@ -21,10 +65,9 @@
 
     <footer class="footer">
         <div class="brand">{{ PASO_SETTINGS.site_name|default:"PASO Ecosistema" }}</div>
-        <div class="copyright"> 2026 - Ecosistema de Belleza</div>
+        <div class="copyright">© 2026 - Belleza Inteligente</div>
         <div class="socials">
-            {% if PASO_SETTINGS.instagram_link %}<a href="{{ PASO_SETTINGS.instagram_link }}" target="_blank" style="color:white; margin:0 5px;">IG</a>{% endif %}
-            {% if PASO_SETTINGS.facebook_link %}<a href="{{ PASO_SETTINGS.facebook_link }}" target="_blank" style="color:white; margin:0 5px;">FB</a>{% endif %}
+            {% if PASO_SETTINGS.instagram_link %}<a href="{{ PASO_SETTINGS.instagram_link }}" target="_blank" style="color:#ccc">Instagram</a>{% endif %}
         </div>
     </footer>
 </body>

@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
 <div class="hero">
@@ -6,7 +6,7 @@
     <p>El primer ecosistema digital que conecta la excelencia con la necesidad. Sin esperas. Sin errores.</p>
     
     <div class="action-buttons">
-        <a href="#" class="btn btn-primary">Buscar Servicios</a>
+        <a href="{% url 'marketplace:home' %}" class="btn btn-primary">Buscar Servicios</a>
         <a href="{% url 'register_owner' %}" class="btn btn-outline">Registrar Negocio</a>
     </div>
 </div>

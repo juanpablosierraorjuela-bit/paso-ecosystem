@@ -1,3 +1,4 @@
 from django.shortcuts import render
 
-# Create your views here.
+def marketplace_home(request):
+    return render(request, 'marketplace/index.html')
