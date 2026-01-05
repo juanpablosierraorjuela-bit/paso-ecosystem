@@ -1,7 +1,34 @@
 {% extends 'base.html' %}
 {% block content %}
 <div style="padding: 100px 5%; color: white;">
-    <h1>Panel de Empleado</h1>
-    <p>Tus citas asignadas aparecerán aquí.</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h1 style="color: #d4af37;">Hola, {{ user.first_name }}</h1>
+            <p style="color: #ccc;">Tu agenda de trabajo para hoy.</p>
+        </div>
+        <div style="background: #222; padding: 10px 20px; border-radius: 10px;">
+            <span style="color: #888;">Estado:</span> <span style="color: #4cd137;">● Activo</span>
+        </div>
+    </div>
+
+    <div style="display: grid; gap: 20px;">
+        {% for cita in appointments %}
+        <div style="background: #111; border-left: 4px solid #d4af37; padding: 20px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px;">{{ cita.service.name }}</h3>
+                <p style="color: #888;">Cliente: <strong style="color: white;">{{ cita.client.first_name }} {{ cita.client.last_name }}</strong></p>
+                <p style="color: #888;">Hora: <strong style="color: #d4af37;">{{ cita.start_time|time:"H:i" }} - {{ cita.end_time|time:"H:i" }}</strong></p>
+            </div>
+            <div>
+                <a href="#" class="btn btn-outline" style="font-size: 0.8rem;">Ver Detalles</a>
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 50px; background: #111; border-radius: 10px; border: 1px dashed #333;">
+            <h3 style="color: #666;">Todo tranquilo por ahora.</h3>
+            <p style="color: #444;">No tienes citas verificadas asignadas.</p>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
