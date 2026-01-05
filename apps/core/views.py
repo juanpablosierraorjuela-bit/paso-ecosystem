@@ -4,29 +4,41 @@ from django.views.generic import CreateView
 from .forms import OwnerRegistrationForm
 from django.urls import reverse_lazy
 from .models import User
-from django.utils import timezone
+from apps.businesses.models import BusinessProfile, OperatingHour
 
-# --- LANDING DE DOLORES (MARKETING) ---
 def pain_landing(request):
     return render(request, 'landing/pain_points.html')
 
-# --- REGISTRO ---
 class OwnerRegisterView(CreateView):
     model = User
     form_class = OwnerRegistrationForm
     template_name = 'registration/register_owner.html'
-    success_url = reverse_lazy('home') # Redirige al login/home tras registro
+    success_url = reverse_lazy('home')
 
     def form_valid(self, form):
         user = form.save(commit=False)
         user.role = User.Role.OWNER
         user.save()
+        
+        # BLINDAJE: Crear perfil inmediatamente
+        if not hasattr(user, 'business_profile'):
+            biz_name = form.cleaned_data.get('business_name', f"Negocio de {user.first_name}")
+            address = form.cleaned_data.get('address', "Dirección pendiente")
+            
+            profile = BusinessProfile.objects.create(
+                owner=user,
+                business_name=biz_name,
+                address=address
+            )
+            # Crear horarios
+            for day_code, _ in OperatingHour.DAYS:
+                OperatingHour.objects.create(business=profile, day_of_week=day_code, opening_time="09:00", closing_time="19:00", is_closed=(day_code==6))
+                
         return super().form_valid(form)
 
 def home(request):
     return render(request, 'home.html')
 
-# --- EL PORTERO (DISPATCHER) ---
 @login_required
 def dashboard_redirect(request):
     user = request.user
