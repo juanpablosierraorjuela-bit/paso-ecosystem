@@ -10,7 +10,7 @@ if IN_RENDER:
     DEBUG = False # <--- ¡CAMBIO TEMPORAL PARA VER EL ERROR!
     ALLOWED_HOSTS = ['*']
 else:
-    DEBUG = True
+    DEBUG = False
     ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
