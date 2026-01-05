@@ -14,30 +14,48 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
         {% for business in businesses %}
-        <div class="business-card" style="background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; transition: transform 0.3s ease;">
+        <div class="business-card" style="background: #111; border-radius: 15px; overflow: hidden; border: 1px solid #333; transition: transform 0.3s ease; position: relative;">
             
-            <div style="height: 150px; background: linear-gradient(45deg, #222, #333); position: relative;">
-                <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: #4cd137; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; border: 1px solid #4cd137;">
+            <div style="height: 140px; background: linear-gradient(135deg, #1a1a1a, #2c3e50); position: relative;">
+                <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: #4cd137; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; border: 1px solid #4cd137; font-weight: bold;">
                     ● Abierto
                 </span>
             </div>
             
-            <div style="padding: 20px; text-align: center; margin-top: -40px;">
-                <div style="width: 80px; height: 80px; background: #d4af37; color: black; font-size: 2rem; font-weight: bold; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 15px; border: 4px solid #111;">
+            <div style="padding: 0 20px 20px; text-align: center; margin-top: -50px;">
+                
+                <div style="width: 90px; height: 90px; background: #d4af37; color: #000; font-size: 2.5rem; font-weight: bold; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 15px; border: 5px solid #111; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                     {{ business.business_name|first }}
                 </div>
                 
-                <h3 style="color: white; margin-bottom: 5px;">{{ business.business_name }}</h3>
-                <p style="color: #888; font-size: 0.9rem; margin-bottom: 15px;">{{ business.address }}</p>
+                <h3 style="color: white; margin-bottom: 5px; font-size: 1.3rem;">{{ business.business_name }}</h3>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 20px;">{{ business.address }}</p>
                 
-                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
-                    <a href="#" class="btn-icon" style="color: #ccc; text-decoration: none;">📷 Instagram</a>
-                    <a href="#" class="btn-icon" style="color: #ccc; text-decoration: none;">📍 Mapa</a>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 25px;">
+                    {% if business.owner.instagram_link %}
+                    <a href="{{ business.owner.instagram_link }}" target="_blank" title="Instagram" style="color: #ccc; font-size: 1.2rem; transition: color 0.3s;">
+                        📷
+                    </a>
+                    {% endif %}
+                    
+                    {% if business.owner.phone %}
+                    <a href="https://wa.me/{{ business.owner.phone }}" target="_blank" title="WhatsApp" style="color: #ccc; font-size: 1.2rem; transition: color 0.3s;">
+                        💬
+                    </a>
+                    {% endif %}
+                    
+                    {% if business.google_maps_url %}
+                    <a href="{{ business.google_maps_url }}" target="_blank" title="Ver en Mapa" style="color: #ccc; font-size: 1.2rem; transition: color 0.3s;">
+                        📍
+                    </a>
+                    {% endif %}
                 </div>
                 
-                <button class="btn btn-outline" style="width: 100%; border-color: #d4af37; color: #d4af37;">Ver Servicios</button>
+                <a href="{% url 'marketplace:business_detail' business.id %}" class="btn btn-outline" style="display: block; width: 100%; border-color: #d4af37; color: #d4af37; font-weight: bold; padding: 10px;">
+                    Ver Servicios
+                </a>
             </div>
         </div>
         {% empty %}

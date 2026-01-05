@@ -1,10 +1,22 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from apps.businesses.models import BusinessProfile
-from django.utils import timezone
 
 def marketplace_home(request):
-    # Traemos todos los negocios del sistema
     businesses = BusinessProfile.objects.all()
-    
-    # Aquí podríamos agregar lógica de filtros por ciudad más adelante
     return render(request, 'marketplace/index.html', {'businesses': businesses})
+
+def business_detail(request, business_id):
+    # Buscamos el negocio
+    business = get_object_or_404(BusinessProfile, id=business_id)
+    
+    # Traemos sus servicios activos
+    services = business.services.filter(is_active=True)
+    
+    # Traemos sus empleados (staff)
+    employees = business.staff.filter(is_active=True)
+    
+    return render(request, 'marketplace/business_detail.html', {
+        'business': business,
+        'services': services,
+        'employees': employees
+    })

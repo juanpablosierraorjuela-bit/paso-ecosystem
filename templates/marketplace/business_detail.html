@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="padding-top: 80px;">
+    
+    <div style="background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), #222; padding: 60px 5%; text-align: center; border-bottom: 1px solid #333;">
+        <h1 style="color: #d4af37; font-size: 3rem; margin-bottom: 10px;">{{ business.business_name }}</h1>
+        <p style="color: #ccc; font-size: 1.2rem; max-width: 600px; margin: 0 auto;">{{ business.description|default:"La excelencia en cada detalle." }}</p>
+        
+        <div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center;">
+            <span style="background: rgba(76, 209, 55, 0.2); color: #4cd137; padding: 5px 15px; border-radius: 20px; border: 1px solid #4cd137;">● Abierto Ahora</span>
+            <span style="color: #888;">📍 {{ business.address }}</span>
+        </div>
+    </div>
+
+    <div style="display: flex; max-width: 1200px; margin: 50px auto; gap: 50px; padding: 0 5%; flex-wrap: wrap;">
+        
+        <div style="flex: 2; min-width: 300px;">
+            <h2 style="color: white; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">Nuestros Servicios</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                {% for service in services %}
+                <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s hover;">
+                    <div>
+                        <h3 style="color: white; font-size: 1.1rem; margin-bottom: 5px;">{{ service.name }}</h3>
+                        <p style="color: #888; font-size: 0.9rem;">⏱ {{ service.duration_minutes }} min • {{ service.description|truncatechars:60 }}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="color: #d4af37; font-weight: bold; font-size: 1.2rem; margin-bottom: 5px;">${{ service.price }}</p>
+                        <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.8rem;">Reservar</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: #666;">Este negocio aún no ha publicado sus servicios.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="flex: 1; min-width: 250px;">
+            <h2 style="color: white; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">Especialistas</h2>
+            
+            <div style="display: grid; gap: 15px;">
+                {% for employee in employees %}
+                <div style="background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; background: #333; border-radius: 50%; overflow: hidden;">
+                        {% if employee.profile_image %}
+                            <img src="{{ employee.profile_image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #888; font-weight: bold;">
+                                {{ employee.first_name|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h4 style="color: white; margin-bottom: 2px;">{{ employee.first_name }} {{ employee.last_name }}</h4>
+                        <a href="#" style="color: #d4af37; font-size: 0.8rem; text-decoration: none;">Ver Portafolio</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: #666;">No hay especialistas visibles.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
