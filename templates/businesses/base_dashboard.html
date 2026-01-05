@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="display: flex; min-height: 100vh; margin-top: -20px;"> <aside style="width: 250px; background: #111; padding: 30px 20px; border-right: 1px solid #333; position: fixed; height: 100%; overflow-y: auto;">
+        <h3 style="color: #d4af37; margin-bottom: 30px; font-size: 1.2rem;">PANEL DUEÑO</h3>
+        
+        <nav style="display: flex; flex-direction: column; gap: 15px;">
+            <a href="{% url 'businesses:dashboard' %}" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                📊 Dashboard
+            </a>
+            <a href="#" class="menu-item">
+                📅 Citas / Agenda
+            </a>
+            <a href="{% url 'businesses:services' %}" class="menu-item {% if request.resolver_match.url_name == 'services' %}active{% endif %}">
+                ✂️ Servicios
+            </a>
+            <a href="{% url 'businesses:employees' %}" class="menu-item {% if request.resolver_match.url_name == 'employees' %}active{% endif %}">
+                👥 Equipo / Staff
+            </a>
+            <a href="{% url 'businesses:schedule' %}" class="menu-item {% if request.resolver_match.url_name == 'schedule' %}active{% endif %}">
+                ⏰ Horarios
+            </a>
+            <a href="{% url 'businesses:settings' %}" class="menu-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                ⚙️ Mi Negocio
+            </a>
+        </nav>
+        
+        <div style="margin-top: 50px; padding: 15px; background: #222; border-radius: 10px; font-size: 0.8rem; color: #888;">
+            <p>Estado: <span style="color: #4cd137;">En Línea</span></p>
+            <p>Plan: <span style="color: #d4af37;">Pro</span></p>
+        </div>
+    </aside>
+
+    <main style="flex: 1; padding: 40px; margin-left: 250px; background: #000; color: white;">
+        {% block dashboard_content %}{% endblock %}
+    </main>
+</div>
+
+<style>
+    .menu-item {
+        color: #ccc;
+        text-decoration: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        transition: all 0.3s;
+        display: block;
+    }
+    .menu-item:hover, .menu-item.active {
+        background: #d4af37;
+        color: #000;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}

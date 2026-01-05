@@ -40,7 +40,7 @@
                 {% if user.is_staff %}
                     <a href="/admin/" class="btn-nav btn-action">Admin</a>
                 {% else %}
-                    <a href="#" class="btn-nav btn-action">Mi Panel</a>
+                    <a href="{% url 'dashboard' %}" class="btn-nav btn-action">Mi Panel</a>
                 {% endif %}
                 <form action="{% url 'logout' %}" method="post" style="display:inline;">
                     {% csrf_token %}

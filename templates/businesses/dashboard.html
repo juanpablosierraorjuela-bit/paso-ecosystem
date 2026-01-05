@@ -1,25 +1,32 @@
-{% extends 'base.html' %}
+{% extends 'businesses/base_dashboard.html' %}
 
-{% block content %}
-<div style="padding: 100px 5%; color: white;">
-    <h1 style="color: #d4af37;">Panel de Control (Dueño)</h1>
-    <p>Bienvenido, {{ user.first_name }}. Aquí gestionarás tu imperio.</p>
-    <hr style="border-color: #333;">
-    
-    <div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-        <div style="background: #222; padding: 20px; border-radius: 10px; flex: 1; min-width: 250px;">
-            <h3>⏰ Temporizador de Pago</h3>
-            <p style="color: #ff4d4d;">23h 59m restantes</p>
-            <button class="btn btn-primary" style="margin-top:10px;">Pagar Mensualidad</button>
+{% block dashboard_content %}
+    <h1 style="font-size: 2rem; margin-bottom: 10px;">Hola, {{ user.first_name }}</h1>
+    <p style="color: #888; margin-bottom: 30px;">Aquí tienes el resumen de tu Ecosistema hoy.</p>
+
+    <div style="background: linear-gradient(45deg, #2c3e50, #000); border: 1px solid #d4af37; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="color: #d4af37; margin-bottom: 5px;">⚠️ Activación Pendiente</h3>
+            <p style="font-size: 0.9rem;">Tu cuenta está en periodo de prueba. Realiza el pago para verificar.</p>
         </div>
-        <div style="background: #222; padding: 20px; border-radius: 10px; flex: 1; min-width: 250px;">
-            <h3>📅 Agenda de Hoy</h3>
-            <p>0 Citas pendientes</p>
-        </div>
-        <div style="background: #222; padding: 20px; border-radius: 10px; flex: 1; min-width: 250px;">
-            <h3>⚙️ Configuración</h3>
-            <p>Servicios, Empleados, Horarios</p>
+        <div style="text-align: right;">
+            <h2 style="font-size: 1.5rem; font-family: monospace;">23:59:00</h2>
+            <button class="btn btn-primary" style="padding: 5px 15px; font-size: 0.8rem;">Pagar Ahora</button>
         </div>
     </div>
-</div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+            <h3 style="color: #888; font-size: 0.9rem;">Citas Hoy</h3>
+            <p style="font-size: 2rem; font-weight: bold;">0</p>
+        </div>
+        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+            <h3 style="color: #888; font-size: 0.9rem;">Ingresos (Est.)</h3>
+            <p style="font-size: 2rem; font-weight: bold; color: #4cd137;">$0</p>
+        </div>
+        <div style="background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+            <h3 style="color: #888; font-size: 0.9rem;">Empleados Activos</h3>
+            <p style="font-size: 2rem; font-weight: bold;">0</p>
+        </div>
+    </div>
 {% endblock %}
