@@ -7,10 +7,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-genesis-key-2026')
 
 IN_RENDER = 'RENDER' in os.environ
 if IN_RENDER:
-    DEBUG = True # <--- ¡CAMBIO TEMPORAL PARA VER EL ERROR!
+    DEBUG = False # <--- ¡CAMBIO TEMPORAL PARA VER EL ERROR!
     ALLOWED_HOSTS = ['*']
 else:
-    DEBUG = True
+    DEBUG = False
     ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
