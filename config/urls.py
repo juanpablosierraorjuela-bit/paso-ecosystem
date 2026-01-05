@@ -6,7 +6,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
-    path('marketplace/', include('apps.marketplace.urls')), # NUEVA RUTA
+    path('marketplace/', include('apps.marketplace.urls')),
+    path('negocio/', include('apps.businesses.urls')),
+    path('reservas/', include('apps.booking.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
 ]
 

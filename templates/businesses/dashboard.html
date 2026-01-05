@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding: 100px 5%; color: white;">
+    <h1 style="color: #d4af37;">Panel de Control (Dueño)</h1>
+    <p>Bienvenido, {{ user.first_name }}. Aquí gestionarás tu imperio.</p>
+    <hr style="border-color: #333;">
+    
+    <div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
+        <div style="background: #222; padding: 20px; border-radius: 10px; flex: 1; min-width: 250px;">
+            <h3>⏰ Temporizador de Pago</h3>
+            <p style="color: #ff4d4d;">23h 59m restantes</p>
+            <button class="btn btn-primary" style="margin-top:10px;">Pagar Mensualidad</button>
+        </div>
+        <div style="background: #222; padding: 20px; border-radius: 10px; flex: 1; min-width: 250px;">
+            <h3>📅 Agenda de Hoy</h3>
+            <p>0 Citas pendientes</p>
+        </div>
+        <div style="background: #222; padding: 20px; border-radius: 10px; flex: 1; min-width: 250px;">
+            <h3>⚙️ Configuración</h3>
+            <p>Servicios, Empleados, Horarios</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
