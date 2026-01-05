@@ -1,46 +1,13 @@
-{% extends 'master.html' %}
+﻿{% extends 'base.html' %}
+
 {% block content %}
-<div class="container py-5 mt-5">
-    <div class="row align-items-center justify-content-center" style="min-height: 80vh;">
-        <div class="col-lg-8 text-center">
-
-            <div class="mb-4">
-                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 mb-3 tracking-wide fw-bold">
-                     El futuro de la belleza
-                </span>
-            </div>
-
-            <h1 class="display-3 fw-bold mb-4 lh-sm text-gradient" style="letter-spacing: -2px;">
-                Tu estilo, tu tiempo,<br>
-                <span class="text-dark">en un solo lugar.</span>
-            </h1>
-
-            <p class="lead text-muted mb-5 mx-auto" style="max-width: 600px; font-weight: 400;">
-                Reserva en los mejores salones, barberías y spas de toda Colombia sin llamadas ni esperas. 
-                Simple, rápido y exclusivo.
-            </p>
-
-            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-                <a href="{% url 'marketplace' %}" class="btn btn-dark btn-lg px-5 py-3 shadow-lg rounded-pill">
-                    <i class="fas fa-search me-2"></i> Buscar Servicios
-                </a>
-                <a href="{% url 'register_owner' %}" class="btn btn-outline-dark btn-lg px-5 py-3 rounded-pill">
-                    Registrar mi Negocio
-                </a>
-            </div>
-
-            <div class="row mt-5 pt-4 g-4 justify-content-center text-muted small">
-                <div class="col-auto d-flex align-items-center gap-2">
-                    <i class="fas fa-check-circle text-success"></i> Reserva 24/7
-                </div>
-                <div class="col-auto d-flex align-items-center gap-2">
-                    <i class="fas fa-shield-alt text-success"></i> Pagos Seguros
-                </div>
-                <div class="col-auto d-flex align-items-center gap-2">
-                    <i class="fas fa-bolt text-success"></i> Confirmación Inmediata
-                </div>
-            </div>
-        </div>
+<div class="hero">
+    <h1>Belleza Inteligente.</h1>
+    <p>El primer ecosistema digital que conecta la excelencia con la necesidad. Sin esperas. Sin errores.</p>
+    
+    <div class="action-buttons">
+        <a href="#" class="btn btn-primary">Buscar Servicios</a>
+        <a href="{% url 'register_owner' %}" class="btn btn-outline">Registrar Negocio</a>
     </div>
 </div>
 {% endblock %}

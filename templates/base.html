@@ -1,0 +1,31 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PASO Ecosistema{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body>
+    
+    {% if messages %}
+        <div style="background: #d4af37; color: black; padding: 10px; text-align: center;">
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer">
+        <div class="brand">{{ PASO_SETTINGS.site_name|default:"PASO Ecosistema" }}</div>
+        <div class="copyright"> 2026 - Ecosistema de Belleza</div>
+        <div class="socials">
+            {% if PASO_SETTINGS.instagram_link %}<a href="{{ PASO_SETTINGS.instagram_link }}" target="_blank" style="color:white; margin:0 5px;">IG</a>{% endif %}
+            {% if PASO_SETTINGS.facebook_link %}<a href="{{ PASO_SETTINGS.facebook_link }}" target="_blank" style="color:white; margin:0 5px;">FB</a>{% endif %}
+        </div>
+    </footer>
+</body>
+</html>
