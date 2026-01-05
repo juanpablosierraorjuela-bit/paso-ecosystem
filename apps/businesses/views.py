@@ -204,11 +204,10 @@ def booking_success(request, booking_id):
     total_fmt = "${:,.0f}".format(booking.total_price)
     deposit_fmt = "${:,.0f}".format(booking.deposit_amount)
     
-    # CORRECCIÓN DE COMILLAS AQUÍ ABAJO
     message = (
         f"Hola *{salon.name}*, soy {booking.customer_name}.\n"
         f"Pago Abono Cita #{booking.id}\n"
-        f" {booking.date_time.strftime('%Y-%m-%d %H:%M')}\n" 
+        f" {booking.date_time.strftime("%Y-%m-%d %H:%M")}\n"
         f" {booking.service.name}\n"
         f" Abono: {deposit_fmt}\n"
         f"¿Me regalas datos para transferir?"
@@ -222,7 +221,7 @@ def booking_success(request, booking_id):
         "is_expired": is_expired
     })
 
-# --- VISTAS DASHBOARD ---
+# --- VISTAS DASHBOARD (LAS QUE FALTABAN) ---
 
 @login_required
 def owner_dashboard(request):
@@ -284,7 +283,7 @@ def register_owner(request):
                 name=form.cleaned_data["salon_name"],
                 city=form.cleaned_data["city"],
                 address=form.cleaned_data["address"],
-                whatsapp_number=form.cleaned_data["phone"], 
+                whatsapp_number=form.cleaned_data["phone"], # Fix: Mapeo correcto
                 instagram_link=form.cleaned_data.get("instagram_link", ""),
                 maps_link=form.cleaned_data.get("maps_link", "")
             )
@@ -303,6 +302,7 @@ def marketplace(request):
     salons = Salon.objects.all()
     if q: salons = salons.filter(name__icontains=q)
     if city: salons = salons.filter(city=city)
+    
     cities = Salon.objects.values_list("city", flat=True).distinct()
     return render(request, "marketplace.html", {"salons": salons, "cities": cities})
 
