@@ -1,9 +1,25 @@
 {% extends 'businesses/base_dashboard.html' %}
 {% block dashboard_content %}
-    <h1>Configuración del Negocio</h1>
-    <p style="color: #888;">Gestión de Configuración del Negocio del negocio.</p>
-    <div style="margin-top: 30px; padding: 40px; border: 2px dashed #333; border-radius: 10px; text-align: center;">
-        <p>🚧 Módulo en construcción 🚧</p>
-        <button class="btn btn-outline" style="margin-top: 10px;">Agregar Nuevo</button>
+<h1 style="color: #d4af37; margin-bottom: 20px;">⚙️ Configuración del Negocio</h1>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    
+    <div style="background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333;">
+        <h3 style="margin-bottom: 20px;">Datos Públicos</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary" style="margin-top: 20px; width: 100%;">Guardar Cambios</button>
+        </form>
     </div>
+
+    <div style="background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333; height: fit-content;">
+        <h3 style="margin-bottom: 20px;">Pagos y Abonos</h3>
+        <p style="color: #888; font-size: 0.9rem; margin-bottom: 15px;">
+            Define cuánto deben pagar tus clientes por adelantado para asegurar su cita.
+        </p>
+        <div style="padding: 15px; background: rgba(212, 175, 55, 0.1); border: 1px solid #d4af37; border-radius: 5px; color: #d4af37;">
+            ℹ️ El dinero del abono llega directamente a tu cuenta.
+        </div>
+    </div>
+</div>
 {% endblock %}

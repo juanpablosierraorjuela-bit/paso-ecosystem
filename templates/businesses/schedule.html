@@ -1,9 +1,26 @@
 {% extends 'businesses/base_dashboard.html' %}
 {% block dashboard_content %}
-    <h1>Horarios y Turnos</h1>
-    <p style="color: #888;">Gestión de Horarios y Turnos del negocio.</p>
-    <div style="margin-top: 30px; padding: 40px; border: 2px dashed #333; border-radius: 10px; text-align: center;">
-        <p>🚧 Módulo en construcción 🚧</p>
-        <button class="btn btn-outline" style="margin-top: 10px;">Agregar Nuevo</button>
-    </div>
+<h1 style="color: #d4af37; margin-bottom: 20px;">⏰ Horario Operativo</h1>
+<div style="background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333;">
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: grid; gap: 15px;">
+            {% for hour in hours %}
+            <div style="display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #222; padding-bottom: 10px;">
+                <div style="width: 100px; font-weight: bold;">{{ hour.get_day_of_week_display }}</div>
+                
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" name="day_{{ hour.day_of_week }}_closed" {% if hour.is_closed %}checked{% endif %}>
+                    <span style="font-size: 0.9rem; color: #ff4d4d;">Cerrado</span>
+                </label>
+                
+                <input type="time" name="day_{{ hour.day_of_week }}_open" value="{{ hour.opening_time|date:'H:i' }}" class="form-input" style="width: auto; padding: 5px;">
+                <span>a</span>
+                <input type="time" name="day_{{ hour.day_of_week }}_close" value="{{ hour.closing_time|date:'H:i' }}" class="form-input" style="width: auto; padding: 5px;">
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 30px;">Guardar Horario</button>
+    </form>
+</div>
 {% endblock %}
