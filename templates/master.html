@@ -4,203 +4,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASO | Gestión Inteligente</title>
-    
-    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <title>Paso Marketplace | Tu Belleza, Tu Tiempo</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc1MCcgZmlsbD0nd2hpdGUnLz48dGV4dCB4PSc1MCcgeT0nNzUnIGZvbnQtZmFtaWx5PSdBcmlhbCwgc2Fucy1zZXJpZicgZm9udC13ZWlnaHQ9J2JvbGQnIGZvbnQtc2l6ZT0nNzUnIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9J2JsYWNrJz5QPC90ZXh0Pjwvc3ZnPg==">
+    <meta name="theme-color" content="#ffffff">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
     <style>
-        /* ESTILO GLOBAL LIMPIO */
+        :root {
+            --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+            --bs-body-bg: #ffffff;
+            --bs-body-color: #1a1a1a;
+        }
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #ffffff; 
-            color: #111;
-            display: flex; 
-            flex-direction: column; 
-            min-height: 100vh; 
+            font-family: var(--bs-font-sans-serif); 
+            -webkit-font-smoothing: antialiased; 
+            display: flex; flex-direction: column; min-height: 100vh;
         }
-
-        /* NAVBAR BLANCA Y MINIMALISTA */
-        .navbar { 
-            background-color: #ffffff; 
-            padding: 18px 0; 
-            border-bottom: 1px solid #f2f2f2; /* Línea sutil */
+        .navbar {
+            padding: 1.2rem 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
-        .navbar-brand { 
-            font-weight: 900; 
-            font-size: 1.6rem; 
-            letter-spacing: -1px; 
-            color: #000 !important; 
-        }
-        .nav-link { 
-            font-weight: 500; 
-            color: #555 !important; 
-            margin-left: 20px; 
-            font-size: 0.95rem;
-            transition: color 0.2s;
-        }
+        .navbar-brand { font-weight: 800; font-size: 1.6rem; letter-spacing: -1px; color: #000 !important; }
+        .nav-link { font-weight: 500; color: #555 !important; font-size: 0.95rem; margin: 0 0.5rem; transition: color 0.2s; }
         .nav-link:hover { color: #000 !important; }
-
-        /* BOTONES ELEGANTES */
-        .btn-dark-paso {
-            background-color: #000;
-            color: #fff;
-            padding: 8px 25px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-            border: 1px solid #000;
+        .btn-dark {
+            background-color: #111; border: 1px solid #111; padding: 0.6rem 1.4rem;
+            border-radius: 8px; font-weight: 600; letter-spacing: 0.3px; transition: all 0.3s ease;
         }
-        .btn-dark-paso:hover {
-            background-color: #333;
-            color: #fff;
-            transform: translateY(-1px);
-        }
-        .btn-outline-paso {
-            background-color: transparent;
-            color: #000;
-            padding: 8px 25px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            border: 1px solid #ddd;
-            transition: all 0.3s;
-        }
-        .btn-outline-paso:hover {
-            border-color: #000;
-        }
-
-        /* CONTENIDO PRINCIPAL */
+        .btn-dark:hover { background-color: #333; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .messages-container { position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; }
+        .alert { box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; border-radius: 10px; }
         main { flex: 1; }
-
-        /* FOOTER BLANCO (ESTILO BACKUP) */
-        footer { 
-            background-color: #ffffff; /* FONDO BLANCO */
-            color: #333; 
-            padding: 60px 0; 
-            border-top: 1px solid #f0f0f0; 
-            margin-top: 80px;
-        }
-        footer h5 { font-weight: 800; color: #000; margin-bottom: 20px; }
-        footer a { color: #666; text-decoration: none; transition: 0.2s; }
-        footer a:hover { color: #000; }
-        
-        .social-icon {
-            font-size: 1.5rem;
-            margin-left: 15px;
-            color: #333;
-            transition: 0.2s;
-        }
-        .social-icon:hover { color: #000; transform: scale(1.1); }
     </style>
 </head>
 <body>
+    <div class="messages-container">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show bg-white border-0 shadow">
+                <i class="fas fa-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 
-    <nav class="navbar navbar-expand-lg sticky-top">
+    <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="/">PASO</a>
-            
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">PASO</a>
+
+            <button class="navbar-toggler border-0 p-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Inicio</a></li>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="{% url 'marketplace' %}">Explorar</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'landing_businesses' %}">Negocios</a></li>
-                    
-                    {% if user.is_authenticated %}
-                        <li class="nav-item ms-3">
-                            <a class="btn btn-dark-paso" href="{% url 'dashboard_redirect' %}">Mi Panel</a>
-                        </li>
-                        <li class="nav-item ms-2">
-                             <form action="{% url 'logout' %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-link nav-link text-danger border-0 p-0 ms-2">
-                                    <i class="bi bi-box-arrow-right fs-5"></i>
-                                </button>
-                            </form>
-                        </li>
-                    {% else %}
-                        <li class="nav-item ms-3">
-                            <a class="btn btn-outline-paso" href="{% url 'login' %}">Ingresar</a>
-                        </li>
-                        <li class="nav-item ms-2">
-                            <a class="btn btn-dark-paso" href="{% url 'register_owner' %}">Crear Negocio</a>
-                        </li>
-                    {% endif %}
                 </ul>
+                <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    {% if user.is_authenticated %}
+                        {% if user.role == 'OWNER' %}
+                            <a href="{% url 'owner_dashboard' %}" class="btn btn-dark btn-sm">Mi Panel</a>
+                        {% elif user.role == 'EMPLOYEE' %}
+                            <a href="{% url 'employee_dashboard' %}" class="btn btn-dark btn-sm">Mi Panel</a>
+                        {% endif %}
+                        <form action="{% url 'saas_logout' %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link text-muted text-decoration-none small fw-bold px-2" style="border: none;">Salir</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'saas_login' %}" class="fw-bold text-dark text-decoration-none me-2">Entrar</a>
+                        <a href="{% url 'landing_businesses' %}" class="btn btn-dark btn-sm">Crear Cuenta</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
 
-    <main>
-        {% block content %}
-        {% endblock %}
+    <div style="height: 80px;"></div>
+
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
     </main>
 
-    <footer>
+    <footer class="bg-white py-5 mt-5 border-top">
         <div class="container">
-            <div class="row">
-                <div class="col-md-5 mb-4">
-                    <h5>PASO</h5>
-                    <p class="text-muted small">
-                        La plataforma definitiva para digitalizar tu negocio de belleza y bienestar.
-                        Ahorra tiempo y crece sin límites.
-                    </p>
-                    <p class="text-muted small mt-3">
-                        &copy; 2026 {{ global_settings.site_name|default:"Paso Ecosystem" }}. 
-                        {{ global_settings.footer_text }}
-                    </p>
+            <div class="row gy-4 justify-content-between align-items-center">
+                <div class="col-md-4 text-center text-md-start">
+                    <h5 class="fw-bold mb-1">PASO.</h5>
+                    <p class="text-muted small mb-0">Ecosistema digital de belleza.</p>
                 </div>
-                
-                <div class="col-md-2 mb-4">
-                    <h6 class="fw-bold text-uppercase small mb-3">Plataforma</h6>
-                    <ul class="list-unstyled small d-grid gap-2">
-                        <li><a href="{% url 'marketplace' %}">Buscar Servicios</a></li>
-                        <li><a href="{% url 'landing_businesses' %}">Para Negocios</a></li>
-                        <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
-                    </ul>
-                </div>
-
-                <div class="col-md-2 mb-4">
-                    <h6 class="fw-bold text-uppercase small mb-3">Legal</h6>
-                    <ul class="list-unstyled small d-grid gap-2">
-                        <li><a href="#">Términos de Uso</a></li>
-                        <li><a href="#">Privacidad</a></li>
-                    </ul>
-                </div>
-
-                <div class="col-md-3 mb-4 text-md-end">
-                    <h6 class="fw-bold text-uppercase small mb-3">Síguenos</h6>
-                    <div class="d-flex justify-content-md-end">
-                        {% if global_settings.instagram_link %}
-                        <a href="{{ global_settings.instagram_link }}" target="_blank" class="social-icon">
-                            <i class="bi bi-instagram"></i>
-                        </a>
-                        {% else %}
-                        <a href="#" class="social-icon text-muted" title="Instagram no configurado"><i class="bi bi-instagram"></i></a>
-                        {% endif %}
-
-                        {% if global_settings.whatsapp_number %}
-                        <a href="https://wa.me/{{ global_settings.whatsapp_number }}" target="_blank" class="social-icon">
-                            <i class="bi bi-whatsapp"></i>
-                        </a>
-                        {% else %}
-                        <a href="#" class="social-icon text-muted" title="WhatsApp no configurado"><i class="bi bi-whatsapp"></i></a>
-                        {% endif %}
-                    </div>
+                <div class="col-md-4 text-center"><small class="text-muted">&copy; 2026 Paso Ecosystem.</small></div>
+                <div class="col-md-4 text-center text-md-end">
+                    {% if global_settings.instagram_link %}<a href="{{ global_settings.instagram_link }}" target="_blank" class="text-muted me-3"><i class="fab fa-instagram"></i></a>{% endif %}
+                    {% if global_settings.whatsapp_number %}<a href="https://wa.me/{{ global_settings.whatsapp_number }}" target="_blank" class="text-muted"><i class="fab fa-whatsapp"></i></a>{% endif %}
                 </div>
             </div>
         </div>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
 </body>
 </html>
