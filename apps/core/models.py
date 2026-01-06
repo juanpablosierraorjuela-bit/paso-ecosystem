@@ -19,7 +19,7 @@ class User(AbstractUser):
     instagram_link = models.URLField("Perfil de Instagram", blank=True, null=True)
     
     # Vinculación Laboral
-    workplace = models.ForeignKey('businesses.BusinessProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff')
+    workplace = models.ForeignKey('businesses.Salon', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff')
 
     # Lógica de Seguridad
     is_verified_payment = models.BooleanField("Pago Mensualidad Verificado", default=False)
