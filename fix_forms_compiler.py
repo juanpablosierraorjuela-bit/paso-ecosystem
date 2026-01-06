@@ -1,4 +1,9 @@
-from django import forms
+import os
+
+# ==========================================
+# REPARACIÓN: APPS/BUSINESSES/FORMS.PY
+# ==========================================
+forms_content = """from django import forms
 from django.contrib.auth import get_user_model
 from .models import Service, BusinessProfile, OperatingHour
 
@@ -66,3 +71,22 @@ class BusinessSettingsForm(forms.ModelForm):
             'deposit_percentage': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_open_manually': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+"""
+
+def main():
+    path = 'apps/businesses/forms.py'
+    print(f"🚑 REPARANDO {path}...")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(forms_content)
+        print("✅ Archivo de formularios reconstruido correctamente.")
+        print("\n👉 EJECUTA AHORA:")
+        print("   git add .")
+        print("   git commit -m 'Fix: Missing forms in businesses app'")
+        print("   git push origin main")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    main()
