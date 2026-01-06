@@ -1,5 +1,5 @@
 import requests
-from .models import PlatformSettings
+from apps.core.models import PlatformSettings
 
 def send_telegram_message(message):
     try:

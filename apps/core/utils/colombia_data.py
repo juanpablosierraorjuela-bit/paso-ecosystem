@@ -1,7 +1,4 @@
 
-# Lista simplificada para el prototipo. 
-# En producción podemos cargar el JSON completo de 1.101 municipios.
-
 COLOMBIA_CITIES = [
     ('', 'Selecciona tu Ciudad...'),
     ('Bogotá D.C.', 'Bogotá D.C.'),
@@ -27,5 +24,5 @@ COLOMBIA_CITIES = [
     ('Bello', 'Bello'),
     ('Itagüí', 'Itagüí'),
     ('Envigado', 'Envigado'),
-    # ... Se pueden agregar más aquí
+    # Agrega más ciudades según necesites
 ]
