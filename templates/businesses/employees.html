@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between mb-4">
+        <h2 class="text-white">Mi Equipo</h2>
+        <a href="{% url 'businesses:dashboard' %}" class="btn btn-outline-light">Volver</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card bg-dark border-secondary p-4">
+                <h5 class="text-warning mb-3">Registrar Empleado</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-warning w-100 mt-3">Crear Perfil</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="row g-3">
+                {% for emp in employees %}
+                <div class="col-md-6">
+                    <div class="card bg-dark border-secondary h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-white">{{ emp.first_name }} {{ emp.last_name }}</h5>
+                            <p class="card-text text-muted small">{{ emp.email }}</p>
+                            <p class="text-warning small">{{ emp.phone }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-white">No hay empleados registrados.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

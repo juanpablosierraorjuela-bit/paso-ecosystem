@@ -1,68 +1,61 @@
-
 {% extends 'base.html' %}
 {% block content %}
 <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h1 class="fw-bold">Hola, {{ user.first_name }}</h1>
-            <p class="text-secondary">{{ salon.name }} | {{ salon.get_city_display }}</p>
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1 class="text-white fw-bold">Panel de Control</h1>
+            <p class="text-secondary">{{ salon.name }}</p>
         </div>
-        <div class="text-end">
-            <span class="badge {% if is_verified %}bg-success{% else %}bg-warning text-dark{% endif %} p-2">
-                {% if is_verified %}Cuenta Verificada{% else %}Pago Pendiente{% endif %}
-            </span>
+        <div class="col-auto">
+            {% if is_verified %}
+                <span class="badge bg-success p-2">✅ Cuenta Verificada</span>
+            {% else %}
+                <span class="badge bg-warning text-dark p-2">⚠️ Pago Pendiente: {{ hours_remaining }}h restantes</span>
+            {% endif %}
         </div>
     </div>
 
-    {% if not is_verified %}
-    <div class="card mb-5 border-warning" style="background: rgba(212, 175, 55, 0.1);">
-        <div class="card-body d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="text-warning">⚠️ Activación Requerida</h4>
-                <p class="mb-0">Tu ecosistema está en modo prueba. Tienes <strong>{{ hours_remaining }} horas</strong> para activar tu cuenta.</p>
-            </div>
-            <a href="{{ wa_link }}" target="_blank" class="btn btn-warning fw-bold">
-                📲 Activar por WhatsApp ($50k)
+    <div class="row g-3 mb-5">
+        <div class="col-md-3">
+            <a href="{% url 'businesses:services' %}" class="card bg-dark border-secondary text-decoration-none h-100 hover-effect">
+                <div class="card-body text-center text-white">
+                    <div class="display-6 mb-2">✂️</div>
+                    <h5>Servicios</h5>
+                    <p class="text-muted small">{{ services_count }} Activos</p>
+                </div>
             </a>
         </div>
-        <div class="progress" style="height: 5px;">
-            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ hours_percent }}%;"></div>
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="row g-4">
         <div class="col-md-3">
-            <div class="card bg-dark border-secondary h-100">
-                <div class="card-body text-center">
-                    <h3 class="display-4 fw-bold text-white">0</h3>
-                    <p class="text-muted">Citas Hoy</p>
+            <a href="{% url 'businesses:employees' %}" class="card bg-dark border-secondary text-decoration-none h-100 hover-effect">
+                <div class="card-body text-center text-white">
+                    <div class="display-6 mb-2">👥</div>
+                    <h5>Equipo</h5>
+                    <p class="text-muted small">{{ employees_count }} Empleados</p>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card bg-dark border-secondary h-100">
-                <div class="card-body text-center">
-                    <h3 class="display-4 fw-bold text-white">0</h3>
-                    <p class="text-muted">Empleados Activos</p>
+            <a href="{% url 'businesses:settings' %}" class="card bg-dark border-secondary text-decoration-none h-100 hover-effect">
+                <div class="card-body text-center text-white">
+                    <div class="display-6 mb-2">⚙️</div>
+                    <h5>Configuración</h5>
+                    <p class="text-muted small">Horarios y Datos</p>
                 </div>
-            </div>
+            </a>
         </div>
         <div class="col-md-3">
-            <div class="card bg-dark border-secondary h-100">
-                <div class="card-body text-center">
-                    <h3 class="display-4 fw-bold text-white">$0</h3>
-                    <p class="text-muted">Ventas del Mes</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-dark border-secondary h-100" style="border-style: dashed !important;">
-                <div class="card-body text-center d-flex flex-column justify-content-center">
-                    <a href="#" class="text-decoration-none text-warning stretched-link">+ Nuevo Servicio</a>
+            <div class="card bg-dark border-warning h-100">
+                <div class="card-body text-center text-white">
+                    <div class="display-6 mb-2 text-warning">📅</div>
+                    <h5 class="text-warning">Citas</h5>
+                    <p class="text-muted small">Ver Agenda (Pronto)</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.hover-effect:hover { border-color: #d4af37 !important; transform: translateY(-5px); transition: 0.3s; }
+</style>
 {% endblock %}

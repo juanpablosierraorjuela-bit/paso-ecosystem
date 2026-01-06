@@ -1,4 +1,9 @@
+import os
 
+# ==============================================================================
+# EL FORMULARIO MAESTRO (FUSIÓN DE FASE 2 Y FASE 3)
+# ==============================================================================
+full_forms_content = """
 from django import forms
 from django.contrib.auth import get_user_model
 from .models import Salon, Service, EmployeeSchedule
@@ -95,3 +100,25 @@ class SalonSettingsForm(forms.ModelForm):
             'maps_link': forms.URLInput(attrs={'class': 'form-control'}),
             'instagram_link': forms.URLInput(attrs={'class': 'form-control'}),
         }
+"""
+
+def main():
+    path = 'apps/businesses/forms.py'
+    print(f"🚑 RECONSTRUYENDO {path} CON TODOS LOS FORMULARIOS...")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(full_forms_content)
+        print("✅ Archivo forms.py reparado correctamente.")
+        
+        print("\n👉 EJECUTA AHORA (Sin copiar los números):")
+        print("python manage.py makemigrations")
+        print("python manage.py migrate")
+        print("git add .")
+        print("git commit -m 'Fix: Restore missing OwnerRegistrationForm'")
+        print("git push origin main")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    main()
