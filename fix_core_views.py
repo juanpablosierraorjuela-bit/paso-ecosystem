@@ -1,4 +1,9 @@
-from django.shortcuts import render, redirect
+import os
+
+# ==========================================
+# NUEVO CONTENIDO PARA APPS/CORE/VIEWS.PY
+# ==========================================
+core_views_content = """from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 # Importamos el modelo correcto (Salon)
 from apps.businesses.models import Salon 
@@ -31,3 +36,27 @@ def OwnerRegisterView(request):
     # Si alguien intenta usar la url vieja de registro,
     # lo mandamos a la nueva que sí funciona.
     return redirect('businesses:register_owner')
+"""
+
+def main():
+    path = 'apps/core/views.py'
+    print(f"🚑 REESCRIBIENDO {path} PARA ELIMINAR ERRORES...")
+    
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(core_views_content)
+        print("✅ Archivo core/views.py reparado y compatible con Salon.")
+        
+        print("\n👉 EJECUTA AHORA EN ORDEN:")
+        print("   1. python manage.py makemigrations")
+        print("   2. python manage.py migrate")
+        print("   3. git add .")
+        print("   4. git commit -m 'Fix: Core views compatible with Salon'")
+        print("   5. git push origin main")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    main()
