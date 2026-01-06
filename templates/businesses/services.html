@@ -1,61 +1,57 @@
 {% extends 'businesses/base_dashboard.html' %}
-{% block dashboard_content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h1 style="color: #d4af37;">✂️ Mis Servicios</h1>
-    <button onclick="document.getElementById('modal-service').style.display='flex'" class="btn btn-primary">
-        + Nuevo Servicio
-    </button>
-</div>
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 fw-bold text-gray-800">🛠️ Mis Servicios</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+            <i class="fas fa-plus me-2"></i> Nuevo Servicio
+        </button>
+    </div>
 
-<div style="overflow-x: auto;">
-    <table style="width: 100%; border-collapse: collapse; color: #eee;">
-        <thead>
-            <tr style="border-bottom: 1px solid #444; text-align: left;">
-                <th style="padding: 15px;">Nombre</th>
-                <th style="padding: 15px;">Precio</th>
-                <th style="padding: 15px;">Duración</th>
-                <th style="padding: 15px;">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for service in services %}
-            <tr style="border-bottom: 1px solid #222;">
-                <td style="padding: 15px;">
-                    <strong>{{ service.name }}</strong><br>
-                    <small style="color: #888;">{{ service.description|truncatechars:50 }}</small>
-                </td>
-                <td style="padding: 15px; color: #4cd137;">${{ service.price }}</td>
-                <td style="padding: 15px;">{{ service.duration_minutes }} min (+{{ service.buffer_minutes }} lim)</td>
-                <td style="padding: 15px;">
-                    {% if service.is_active %}
-                        <span style="background: rgba(76, 209, 55, 0.2); color: #4cd137; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">Activo</span>
-                    {% else %}
-                        <span style="background: rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">Inactivo</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" style="text-align: center; padding: 40px; color: #888;">
-                    No has creado servicios aún. ¡Dale vida a tu negocio!
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div id="modal-service" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 2000;">
-    <div style="background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333; width: 500px; max-width: 90%;">
-        <h2 style="margin-bottom: 20px; color: #d4af37;">Crear Servicio</h2>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" onclick="document.getElementById('modal-service').style.display='none'" class="btn btn-outline" style="border: none; color: #888;">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar</button>
+    <div class="row">
+        {% for service in services %}
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm h-100 hover-scale">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h5 class="fw-bold">{{ service.name }}</h5>
+                        <span class="badge bg-success">${{ service.price }}</span>
+                    </div>
+                    <p class="text-muted small">{{ service.description|truncatechars:80 }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted"><i class="far fa-clock"></i> {{ service.total_duration }} min</small>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" {% if service.is_active %}checked{% endif %} disabled>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </form>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">Aún no has creado servicios.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="addServiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Nuevo Servicio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {{ form.as_p }}
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">Guardar Servicio</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -1,26 +1,61 @@
 {% extends 'businesses/base_dashboard.html' %}
-{% block dashboard_content %}
-<h1 style="color: #d4af37; margin-bottom: 20px;">⏰ Horario Operativo</h1>
-<div style="background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333;">
-    <form method="post">
-        {% csrf_token %}
-        <div style="display: grid; gap: 15px;">
-            {% for hour in hours %}
-            <div style="display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #222; padding-bottom: 10px;">
-                <div style="width: 100px; font-weight: bold;">{{ hour.get_day_of_week_display }}</div>
-                
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                    <input type="checkbox" name="day_{{ hour.day_of_week }}_closed" {% if hour.is_closed %}checked{% endif %}>
-                    <span style="font-size: 0.9rem; color: #ff4d4d;">Cerrado</span>
-                </label>
-                
-                <input type="time" name="day_{{ hour.day_of_week }}_open" value="{{ hour.opening_time|date:'H:i' }}" class="form-input" style="width: auto; padding: 5px;">
-                <span>a</span>
-                <input type="time" name="day_{{ hour.day_of_week }}_close" value="{{ hour.closing_time|date:'H:i' }}" class="form-input" style="width: auto; padding: 5px;">
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="h3 fw-bold text-gray-800 mb-4">📅 Horarios de Apertura</h2>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Configurar Día</h5>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-dark w-100 mt-3">Guardar Horario</button>
+                    </form>
+                </div>
             </div>
-            {% endfor %}
         </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 30px;">Guardar Horario</button>
-    </form>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Día</th>
+                                <th>Apertura</th>
+                                <th>Cierre</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hour in hours %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ hour.get_day_of_week_display }}</td>
+                                {% if hour.is_closed %}
+                                    <td colspan="2" class="text-muted">No laboral</td>
+                                    <td><span class="badge bg-secondary">CERRADO</span></td>
+                                {% else %}
+                                    <td>{{ hour.opening_time|time:"H:i" }}</td>
+                                    <td>{{ hour.closing_time|time:"H:i" }}</td>
+                                    <td>
+                                        {% if hour.crosses_midnight %}
+                                            <span class="badge bg-indigo text-white" style="background-color: #6610f2;">🌙 AMANECIDA</span>
+                                        {% else %}
+                                            <span class="badge bg-success">NORMAL</span>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4">No has configurado horarios. El negocio aparecerá CERRADO siempre.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
