@@ -1,1 +1,39 @@
-<h1>Registro Dueño Placeholder</h1>
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-dark text-white border-secondary shadow-lg mt-5">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4" style="color: #d4af37;">Registro de Aliado</h2>
+                <p class="text-center text-muted mb-4">Únete a la élite de la belleza en Colombia.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <h5 class="mt-4 mb-3 border-bottom border-secondary pb-2">Datos Personales</h5>
+                    <div class="row">
+                        <div class="col-6 mb-3">{{ form.first_name.label_tag }} {{ form.first_name }}</div>
+                        <div class="col-6 mb-3">{{ form.last_name.label_tag }} {{ form.last_name }}</div>
+                    </div>
+                    <div class="mb-3">{{ form.email.label_tag }} {{ form.email }}</div>
+                    <div class="mb-3">{{ form.phone.label_tag }} {{ form.phone }}</div>
+                    
+                    <h5 class="mt-4 mb-3 border-bottom border-secondary pb-2">Datos del Negocio</h5>
+                    <div class="mb-3">{{ form.salon_name.label_tag }} {{ form.salon_name }}</div>
+                    <div class="row">
+                        <div class="col-6 mb-3">{{ form.city.label_tag }} {{ form.city }}</div>
+                        <div class="col-6 mb-3">{{ form.address.label_tag }} {{ form.address }}</div>
+                    </div>
+                    
+                    <div class="mb-4">{{ form.password.label_tag }} {{ form.password }}</div>
+                    
+                    <button type="submit" class="btn btn-warning w-100 py-3 fw-bold" style="background-color: #d4af37; border: none;">
+                        🚀 CREAR MI ECOSISTEMA
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
