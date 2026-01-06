@@ -5,3 +5,4 @@ whitenoise
 django-environ
 requests
 Pillow
+pytz
