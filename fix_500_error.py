@@ -1,4 +1,11 @@
-from django.shortcuts import render, redirect
+import os
+
+# ==========================================
+# VISTA BLINDADA (SAFE MODE)
+# ==========================================
+# Esta versión del dashboard usa bloques 'try-except' para
+# evitar que un error de cálculo tumbe toda la página.
+safe_dashboard_view = """from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import BusinessProfile, OperatingHour
@@ -129,3 +136,25 @@ def business_settings(request):
     else:
         form = BusinessSettingsForm(instance=business)
     return render(request, 'businesses/settings.html', {'form': form})
+"""
+
+def write_file(path, content):
+    print(f"📝 Reparando: {path}...")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    print("🚑 APLICANDO PARCHE ANTI-ERROR 500 🚑")
+    write_file('apps/businesses/views.py', safe_dashboard_view)
+    print("\n✅ Código reparado.")
+    print("👉 IMPORTANTE: Haz esto ahora:")
+    print("1. Ejecuta: git add .")
+    print("2. Ejecuta: git commit -m 'Fix: Dashboard Blindado contra error 500'")
+    print("3. Ejecuta: git push origin main")
+    print("\n⏳ Y LUEGO, EN EL DASHBOARD DE RENDER:")
+    print("   Es posible que falte aplicar migraciones. Busca el botón 'Shell' o 'Console' en Render y escribe:")
+    print("   python manage.py migrate")
