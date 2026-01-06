@@ -1,64 +1,92 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta, datetime
+import pytz
 
-class BusinessProfile(models.Model):
-    """El Cerebro del Negocio. Vinculado al usuario OWNER."""
-    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='business_profile')
-    business_name = models.CharField("Nombre del Negocio", max_length=150)
-    description = models.TextField("Descripción", blank=True, help_text="Para el buscador semántico")
-    
-    address = models.CharField("Dirección Física", max_length=255)
-    google_maps_url = models.URLField("Link Google Maps", blank=True)
-    
-    deposit_percentage = models.PositiveIntegerField("Porcentaje de Abono", default=30)
-    
-    is_open_manually = models.BooleanField("Abierto Manualmente", default=True)
+class Salon(models.Model):
+    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='salon')
+    name = models.CharField(max_length=255, verbose_name="Nombre del Negocio")
+    description = models.TextField(verbose_name="Descripción", blank=True)
+    city = models.CharField(max_length=100, verbose_name="Ciudad", default="Bogotá")
+    address = models.CharField(max_length=255, verbose_name="Dirección Física")
+    whatsapp_number = models.CharField(max_length=50, blank=True)
+    instagram_link = models.URLField(blank=True)
+    maps_link = models.URLField(blank=True)
+    deposit_percentage = models.IntegerField(default=50)
+    opening_time = models.TimeField(default="08:00")
+    closing_time = models.TimeField(default="20:00")
+    work_monday = models.BooleanField(default=True)
+    work_tuesday = models.BooleanField(default=True)
+    work_wednesday = models.BooleanField(default=True)
+    work_thursday = models.BooleanField(default=True)
+    work_friday = models.BooleanField(default=True)
+    work_saturday = models.BooleanField(default=True)
+    work_sunday = models.BooleanField(default=False)
 
-    # --- CAMPOS DE SUSCRIPCIÓN (Ecosistema PASO) ---
-    is_active_subscription = models.BooleanField("Suscripción Activa", default=False)
-    subscription_end_date = models.DateField("Fecha Corte", null=True, blank=True)
-    
+    def __str__(self): return self.name
 
-    def __str__(self):
-        return self.business_name
+    @property
+    def is_open_now(self):
+        bogota = pytz.timezone('America/Bogota')
+        now = datetime.now(bogota)
+        current_time = now.time()
+        today_idx = now.weekday()
+        days_map = [self.work_monday, self.work_tuesday, self.work_wednesday, self.work_thursday, self.work_friday, self.work_saturday, self.work_sunday]
+        
+        if days_map[today_idx]:
+            if self.opening_time <= self.closing_time:
+                if self.opening_time <= current_time <= self.closing_time: return True
+            else: # Nocturno
+                if current_time >= self.opening_time: return True
+        return False
 
 class Service(models.Model):
-    """Catálogo de Servicios Inteligente."""
-    business = models.ForeignKey(BusinessProfile, on_delete=models.CASCADE, related_name='services')
-    name = models.CharField("Nombre del Servicio", max_length=100)
-    description = models.TextField("Descripción / Palabras Clave")
-    
-    duration_minutes = models.PositiveIntegerField("Duración (min)")
-    buffer_minutes = models.PositiveIntegerField("Tiempo de Limpieza (min)", default=10)
-    
-    price = models.DecimalField("Precio (COP)", max_digits=10, decimal_places=0)
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    duration = models.IntegerField(default=30)
+    buffer_time = models.IntegerField(default=10)
+    price = models.DecimalField(max_digits=10, decimal_places=0)
     is_active = models.BooleanField(default=True)
+    def __str__(self): return self.name
 
-    def total_duration(self):
-        return self.duration_minutes + self.buffer_minutes
+class Employee(models.Model):
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='employees')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='employee_profile', null=True, blank=True)
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50, blank=True)
+    instagram_link = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True)
+    def __str__(self): return self.name
 
-    def __str__(self):
-        return f"{self.name} - ${self.price}"
+class EmployeeSchedule(models.Model):
+    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='schedule')
+    monday_hours = models.CharField(max_length=50, default="09:00-18:00")
+    tuesday_hours = models.CharField(max_length=50, default="09:00-18:00")
+    wednesday_hours = models.CharField(max_length=50, default="09:00-18:00")
+    thursday_hours = models.CharField(max_length=50, default="09:00-18:00")
+    friday_hours = models.CharField(max_length=50, default="09:00-18:00")
+    saturday_hours = models.CharField(max_length=50, default="09:00-18:00")
+    sunday_hours = models.CharField(max_length=50, default="CERRADO")
 
-class OperatingHour(models.Model):
-    """Horario del Local. Soporta turnos de madrugada."""
-    DAYS = [
-        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), (3, 'Jueves'),
-        (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
-    ]
-    business = models.ForeignKey(BusinessProfile, on_delete=models.CASCADE, related_name='operating_hours')
-    day_of_week = models.IntegerField(choices=DAYS)
-    opening_time = models.TimeField("Apertura")
-    closing_time = models.TimeField("Cierre")
-    is_closed = models.BooleanField("Cerrado este día", default=False)
-
-    class Meta:
-        ordering = ['day_of_week']
-        unique_together = ('business', 'day_of_week')
-
-    def crosses_midnight(self):
-        return self.closing_time < self.opening_time
-
-    def __str__(self):
-        status = "Cerrado" if self.is_closed else f"{self.opening_time} - {self.closing_time}"
-        return f"{self.get_day_of_week_display()}: {status}"
+class Booking(models.Model):
+    STATUS_CHOICES = (('PENDING_PAYMENT', 'Pendiente'), ('VERIFIED', 'Confirmada'), ('COMPLETED', 'Completada'), ('CANCELLED', 'Cancelada'))
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='bookings')
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    customer_name = models.CharField(max_length=255)
+    customer_phone = models.CharField(max_length=50)
+    date_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    total_price = models.DecimalField(max_digits=10, decimal_places=0)
+    deposit_amount = models.DecimalField(max_digits=10, decimal_places=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING_PAYMENT')
+    created_at = models.DateTimeField(auto_now_add=True)
+    def save(self, *args, **kwargs):
+        if not self.end_time and self.service:
+            total_min = self.service.duration + self.service.buffer_time
+            self.end_time = self.date_time + timedelta(minutes=total_min)
+        if not self.deposit_amount and self.salon:
+            self.deposit_amount = self.total_price * (self.salon.deposit_percentage / 100)
+        super().save(*args, **kwargs)
