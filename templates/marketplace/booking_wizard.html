@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card bg-dark text-white border-secondary">
+            <div class="card-body p-5">
+                <h3 class="text-center mb-4">Reservar: {{ service.name }}</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hora</label>
+                        <input type="time" name="time" class="form-control" required>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Abono requerido (30%):</strong> ${{ service.price|multiply:0.3|floatformat:0 }}
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">Confirmar Reserva</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-white mb-4">Mis Citas</h2>
+<div class="row">
+    {% for appt in appointments %}
+    <div class="col-md-6 mb-3">
+        <div class="card bg-dark text-white border-{% if appt.status == 'VERIFIED' %}success{% else %}warning{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h5>{{ appt.service.name }}</h5>
+                    <span class="badge bg-{% if appt.status == 'VERIFIED' %}success{% else %}warning text-dark{% endif %}">{{ appt.get_status_display }}</span>
+                </div>
+                <p class="mb-1"><strong>Lugar:</strong> {{ appt.salon.name }}</p>
+                <p class="mb-1"><strong>Fecha:</strong> {{ appt.date_time }}</p>
+                {% if appt.status == 'PENDING' %}
+                <div class="alert alert-warning mt-2 small">
+                    ⚠️ Recuerda enviar tu abono para confirmar.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-white">No tienes citas agendadas.</p>
+    {% endfor %}
+</div>
+{% endblock %}
