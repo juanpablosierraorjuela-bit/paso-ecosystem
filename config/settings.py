@@ -29,7 +29,7 @@ LOCAL_APPS = [
     'apps.core',        # Usuarios, Landing, Telegram
     'apps.businesses',  # Negocios, Servicios, Horarios
     'apps.marketplace', # Buscador, Geo, Clientes
-    'apps.booking',     # Citas, Pagos
+#     'apps.booking',     # Citas, Pagos
 ]
 
 # LIBRERÍAS DE TERCEROS
