@@ -50,3 +50,9 @@ def schedule_list(request):
         form = OperatingHourForm()
 
     return render(request, 'businesses/schedule.html', {'hours': hours, 'form': form})
+
+
+@login_required
+def panel_negocio(request):
+    # Vista simple para renderizar el panel nuevo
+    return render(request, 'negocio/panel.html')
