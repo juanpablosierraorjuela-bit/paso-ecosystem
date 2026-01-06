@@ -1,4 +1,9 @@
+import os
 
+# ==============================================================================
+# CORE VIEWS (CORREGIDO)
+# ==============================================================================
+core_views_content = """
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required  # <--- ESTO FALTABA
@@ -41,3 +46,25 @@ def employee_dashboard(request):
     # Empleado ve sus citas asignadas y verificadas
     appointments = Appointment.objects.filter(employee=request.user, status='VERIFIED').order_by('date_time')
     return render(request, 'businesses/employee_dashboard.html', {'appointments': appointments})
+"""
+
+def main():
+    path = 'apps/core/views.py'
+    print(f"🚑 CORRIGIENDO {path} (Agregando importaciones faltantes)...")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(core_views_content)
+        print("✅ Archivo core/views.py reparado.")
+        
+        print("\n👉 EJECUTA AHORA:")
+        print("python manage.py makemigrations")
+        print("python manage.py migrate")
+        print("git add .")
+        print("git commit -m 'Fix: Add missing login_required import'")
+        print("git push origin main")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    main()
