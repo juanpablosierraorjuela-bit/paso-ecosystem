@@ -1,33 +1,8 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-# Importamos el modelo correcto (Salon)
-from apps.businesses.models import Salon 
 
 def home(request):
     return render(request, 'home.html')
-
-def pain_landing(request):
-    # Landing page simple
-    return render(request, 'landing/pain_points.html')
-
-@login_required
-def dashboard_redirect(request):
-    # Esta vista decide a dónde enviar al usuario cuando entra
-    user = request.user
-    
-    if user.role == 'OWNER':
-        # Redirigir al dashboard del dueño (en la app businesses)
-        return redirect('businesses:owner_dashboard')
-        
-    elif user.role == 'EMPLOYEE':
-        # Redirigir al dashboard del empleado
-        return redirect('businesses:employee_dashboard')
-        
-    else:
-        # Si es cliente o admin, al home por ahora
-        return redirect('home')
-
-def OwnerRegisterView(request):
-    # Si alguien intenta usar la url vieja de registro,
-    # lo mandamos a la nueva que sí funciona.
-    return redirect('businesses:register_owner')
+def register_owner(request):
+    return render(request, 'registration/register_owner.html') # Placeholder
+def login_view(request):
+    return render(request, 'registration/login.html') # Placeholder

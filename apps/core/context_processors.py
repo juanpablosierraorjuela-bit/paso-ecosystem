@@ -1,8 +1,5 @@
-﻿from .models import PlatformSettings
+from .models import GlobalSettings
 
 def global_settings(request):
-    """
-    Inyecta la configuración global en todos los templates.
-    """
-    settings = PlatformSettings.objects.first()
-    return {'PASO_SETTINGS': settings}
+    settings = GlobalSettings.objects.first()
+    return {'global_settings': settings}

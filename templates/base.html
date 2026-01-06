@@ -1,73 +1,44 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PASO Ecosistema{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Navbar integrado */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.2rem 5%;
-            background: rgba(0, 0, 0, 0.95);
-            border-bottom: 1px solid #333;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .nav-brand { font-size: 1.5rem; font-weight: bold; color: white; text-decoration: none; }
-        .nav-links { display: flex; gap: 20px; align-items: center; }
-        .nav-item { color: #ccc; text-decoration: none; font-size: 0.95rem; transition: color 0.3s; }
-        .nav-item:hover { color: #d4af37; }
-        .btn-nav { padding: 8px 20px; border-radius: 50px; font-size: 0.9rem; text-decoration: none; }
-        .btn-login { border: 1px solid #666; color: white; }
-        .btn-action { background: #d4af37; color: black; font-weight: bold; }
+        :root { --paso-gold: #d4af37; --paso-black: #111; }
+        body { background-color: var(--paso-black); color: white; font-family: 'Helvetica Neue', sans-serif; }
+        .btn-paso { background: var(--paso-gold); color: black; border: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; transition: 0.3s; }
+        .btn-paso:hover { transform: scale(1.05); background: white; }
+        .footer { border-top: 1px solid #333; padding: 20px; margin-top: 50px; font-size: 0.8rem; color: #666; }
     </style>
 </head>
 <body>
-    
-    <nav class="navbar">
-        <a href="{% url 'home' %}" class="nav-brand">PASO.</a>
-        <div class="nav-links">
-            <a href="{% url 'marketplace:home' %}" class="nav-item">Marketplace</a>
-            
-            {% if user.is_authenticated %}
-                <span class="nav-item">Hola, {{ user.first_name|default:user.username }}</span>
-                {% if user.is_staff %}
-                    <a href="/admin/" class="btn-nav btn-action">Admin</a>
+    <nav class="navbar navbar-dark bg-black border-bottom border-secondary">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold" href="/">PASO</a>
+            <div class="d-flex gap-3">
+                <a href="/marketplace/" class="text-white text-decoration-none">Marketplace</a>
+                {% if user.is_authenticated %}
+                    {% if user.role == 'OWNER' %}<a href="/dashboard/" class="btn btn-sm btn-outline-light">Mi Panel</a>{% endif %}
+                    {% if user.role == 'EMPLOYEE' %}<a href="/empleado/" class="btn btn-sm btn-outline-light">Mi Agenda</a>{% endif %}
                 {% else %}
-                    <a href="{% url 'dashboard' %}" class="btn-nav btn-action">Mi Panel</a>
+                    <a href="/login/" class="text-white">Entrar</a>
                 {% endif %}
-                <form action="{% url 'logout' %}" method="post" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="nav-item" style="background:none; border:none; cursor:pointer;">Salir</button>
-                </form>
-            {% else %}
-                <a href="{% url 'login' %}" class="btn-nav btn-login">Entrar</a>
-                <a href="{% url 'register_owner' %}" class="btn-nav btn-action">Registrar Negocio</a>
-            {% endif %}
+            </div>
         </div>
     </nav>
 
-    {% if messages %}
-        <div style="background: #d4af37; color: black; padding: 10px; text-align: center; font-weight: bold;">
-            {% for message in messages %}
-                {{ message }}
-            {% endfor %}
-        </div>
-    {% endif %}
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
 
-    {% block content %}{% endblock %}
-
-    <footer class="footer">
-        <div class="brand">{{ PASO_SETTINGS.site_name|default:"PASO Ecosistema" }}</div>
-        <div class="copyright">© 2026 - Belleza Inteligente</div>
-        <div class="socials">
-            {% if PASO_SETTINGS.instagram_link %}<a href="{{ PASO_SETTINGS.instagram_link }}" target="_blank" style="color:#ccc">Instagram</a>{% endif %}
+    <footer class="footer container d-flex justify-content-between align-items-center">
+        <div>{{ global_settings.site_name|default:"PASO Ecosistema" }}</div>
+        <div>&copy; 2026 Ecosistema PASO</div>
+        <div>
+            {% if global_settings.instagram_link %}<a href="{{ global_settings.instagram_link }}" class="text-secondary me-2">IG</a>{% endif %}
+            {% if global_settings.facebook_link %}<a href="{{ global_settings.facebook_link }}" class="text-secondary">FB</a>{% endif %}
         </div>
     </footer>
 </body>

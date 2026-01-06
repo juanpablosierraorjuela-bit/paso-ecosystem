@@ -1,13 +1,18 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="hero">
-    <h1>Belleza Inteligente.</h1>
-    <p>El primer ecosistema digital que conecta la excelencia con la necesidad. Sin esperas. Sin errores.</p>
+<div class="text-center" style="padding: 100px 0;">
+    <h1 style="font-size: 4rem; font-weight: 700; margin-bottom: 20px;">Ecosistema PASO</h1>
+    <p class="text-secondary mb-5" style="font-size: 1.5rem;">Donde la belleza encuentra la inteligencia.</p>
     
-    <div class="action-buttons">
-        <a href="{% url 'marketplace:home' %}" class="btn btn-primary">Buscar Servicios</a>
-        <a href="{% url 'register_owner' %}" class="btn btn-outline">Registrar Negocio</a>
+    <div class="d-flex justify-content-center gap-4">
+        <a href="/marketplace/" class="btn-paso">
+            🛍️ Encuentra la Excelencia
+            <div style="font-size: 0.8rem; font-weight: normal;">Soy Cliente</div>
+        </a>
+        <a href="/registro-dueno/" class="btn-paso" style="background: #333; color: white; border: 1px solid #555;">
+            💼 Potencia tu Negocio
+            <div style="font-size: 0.8rem; font-weight: normal;">Soy Dueño</div>
+        </a>
     </div>
 </div>
 {% endblock %}
