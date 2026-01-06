@@ -1,4 +1,9 @@
-from django.shortcuts import render, redirect
+import os
+
+# ==========================================
+# 1. RECUPERAR EL CEREBRO (VIEWS.PY)
+# ==========================================
+businesses_views = """from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import BusinessProfile, OperatingHour
@@ -114,3 +119,97 @@ def business_settings(request):
     else:
         form = BusinessSettingsForm(instance=business)
     return render(request, 'businesses/settings.html', {'form': form})
+"""
+
+# ==========================================
+# 2. CONECTAR LOS CABLES (URLS.PY)
+# ==========================================
+businesses_urls = """from django.urls import path
+from . import views
+
+app_name = 'businesses'
+
+urlpatterns = [
+    path('dashboard/', views.owner_dashboard, name='dashboard'),
+    path('services/', views.services_list, name='services'),
+    path('employees/', views.employees_list, name='employees'),
+    path('schedule/', views.schedule_config, name='schedule'),
+    path('settings/', views.business_settings, name='settings'),
+    
+    # Redirección de compatibilidad
+    path('panel/', views.owner_dashboard, name='panel_negocio'),
+]
+"""
+
+# ==========================================
+# 3. RECUPERAR FORMULARIOS (FORMS.PY)
+# ==========================================
+businesses_forms = """from django import forms
+from django.contrib.auth import get_user_model
+from .models import Service, BusinessProfile, OperatingHour
+
+User = get_user_model()
+
+class ServiceForm(forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ['name', 'description', 'duration_minutes', 'price', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Corte Caballero'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'duration_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+class EmployeeCreationForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password"])
+        user.role = User.Role.EMPLOYEE
+        if commit:
+            user.save()
+        return user
+
+class BusinessSettingsForm(forms.ModelForm):
+    class Meta:
+        model = BusinessProfile
+        fields = ['business_name', 'description', 'address', 'deposit_percentage']
+        widgets = {
+            'business_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'deposit_percentage': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+"""
+
+def write_file(path, content):
+    print(f"🚑 Restaurando: {path}...")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    print("🔋 INICIANDO PROTOCOLO DE RECUPERACIÓN DE PANEL 🔋")
+    write_file('apps/businesses/views.py', businesses_views)
+    write_file('apps/businesses/urls.py', businesses_urls)
+    write_file('apps/businesses/forms.py', businesses_forms)
+    print("\n✅ ¡Todo recuperado! Tu código ha vuelto a la vida.")
+    print("👉 EJECUTA AHORA:")
+    print("   git add .")
+    print("   git commit -m 'Fix: Restauracion total del Panel de Dueño'")
+    print("   git push origin main")
