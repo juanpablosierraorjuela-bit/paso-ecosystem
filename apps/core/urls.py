@@ -1,9 +1,12 @@
 from django.urls import path
-from .views import home, OwnerRegisterView, dashboard_redirect, pain_landing
+from . import views
 
 urlpatterns = [
-    path('', home, name='home'),
-    path('soluciones-negocios/', pain_landing, name='pain_landing'), # URL Marketing
-    path('registro-negocio/', OwnerRegisterView.as_view(), name='register_owner'),
-    path('dashboard/', dashboard_redirect, name='dashboard'),
+    # Rutas simples y directas
+    path('', views.home, name='home'),
+    path('dashboard/', views.dashboard_redirect, name='dashboard'),
+    path('soluciones-negocios/', views.pain_landing, name='pain_landing'),
+    
+    # AQUÍ ESTABA EL ERROR: Quitamos .as_view() porque ahora es una función
+    path('registro-negocio/', views.OwnerRegisterView, name='register_owner'),
 ]
