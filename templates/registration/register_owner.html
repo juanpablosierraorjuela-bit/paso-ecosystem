@@ -1,38 +1,153 @@
-
-{% extends 'base.html' %}
+{% extends 'master.html' %}
+{% load static %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card bg-dark text-white border-secondary shadow-lg mt-5">
-            <div class="card-body p-5">
-                <h2 class="text-center mb-4" style="color: #d4af37;">Registro de Aliado</h2>
-                <p class="text-center text-muted mb-4">Únete a la élite de la belleza en Colombia.</p>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <h5 class="mt-4 mb-3 border-bottom border-secondary pb-2">Datos Personales</h5>
-                    <div class="row">
-                        <div class="col-6 mb-3">{{ form.first_name.label_tag }} {{ form.first_name }}</div>
-                        <div class="col-6 mb-3">{{ form.last_name.label_tag }} {{ form.last_name }}</div>
-                    </div>
-                    <div class="mb-3">{{ form.email.label_tag }} {{ form.email }}</div>
-                    <div class="mb-3">{{ form.phone.label_tag }} {{ form.phone }}</div>
-                    
-                    <h5 class="mt-4 mb-3 border-bottom border-secondary pb-2">Datos del Negocio</h5>
-                    <div class="mb-3">{{ form.salon_name.label_tag }} {{ form.salon_name }}</div>
-                    <div class="row">
-                        <div class="col-6 mb-3">{{ form.city.label_tag }} {{ form.city }}</div>
-                        <div class="col-6 mb-3">{{ form.address.label_tag }} {{ form.address }}</div>
-                    </div>
-                    
-                    <div class="mb-4">{{ form.password.label_tag }} {{ form.password }}</div>
-                    
-                    <button type="submit" class="btn btn-warning w-100 py-3 fw-bold" style="background-color: #d4af37; border: none;">
-                        🚀 CREAR MI ECOSISTEMA
-                    </button>
-                </form>
+<style>
+    /* Estilos recuperados del Backup para mantener la estética oscura/premium */
+    body { background-color: #f8f9fa; }
+    .card-header-custom {
+        background: linear-gradient(135deg, #000000 0%, #333333 100%);
+        color: white;
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    .register-card {
+        border: none;
+        box-shadow: 0 1rem 3rem rgba(0,0,0,0.175);
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    .form-floating > label { padding-left: 1rem; }
+    .btn-dark-custom {
+        background-color: #000;
+        border: none;
+        padding: 1rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+    }
+    .btn-dark-custom:hover {
+        background-color: #333;
+        transform: translateY(-2px);
+    }
+    .section-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #6c757d;
+        font-weight: 700;
+        margin: 1.5rem 0 1rem;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="card register-card">
+                <div class="card-header-custom">
+                    <h2 class="fw-bold mb-1">Únete a Paso Ecosystem</h2>
+                    <p class="text-white-50 small mb-0">Lleva tu negocio al siguiente nivel digital.</p>
+                </div>
+
+                <div class="card-body p-5 bg-white">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger small rounded-3 mb-4">
+                                <i class="fas fa-exclamation-circle me-1"></i> Por favor corrige los errores abajo.
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="section-title">
+                            <i class="fas fa-user-circle me-1"></i> Tus Credenciales
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Usuario</label>
+                                {{ form.username }}
+                                {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Contraseña</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}<div class="text-danger small">{{ form.password1.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Confirmar Contraseña</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}<div class="text-danger small">{{ form.password2.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="section-title">
+                            <i class="fas fa-store me-1"></i> Tu Negocio
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre del Establecimiento</label>
+                            {{ form.salon_name }}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Ciudad</label>
+                                {{ form.city }} </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Dirección Física</label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-light border-end-0"><i class="fab fa-whatsapp text-success"></i></span>
+                            {{ form.phone }} </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fab fa-instagram text-danger"></i></span>
+                                    {{ form.instagram_link }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-map-marker-alt text-primary"></i></span>
+                                    {{ form.maps_link }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-dark-custom rounded-pill shadow-sm">
+                                CREAR CUENTA EMPRESARIAL <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card-footer bg-light text-center py-3">
+                    <p class="mb-0 text-muted small">
+                        ¿Ya tienes cuenta? <a href="{% url 'saas_login' %}" class="fw-bold text-dark text-decoration-none">Inicia Sesión</a>
+                    </p>
+                </div>
             </div>
+
+            <p class="text-center text-muted mt-4 small">
+                <i class="fas fa-lock me-1"></i> Tus datos están protegidos y encriptados.
+            </p>
         </div>
     </div>
 </div>

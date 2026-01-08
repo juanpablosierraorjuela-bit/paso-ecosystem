@@ -1,12 +1,84 @@
-{% extends 'base.html' %}
+{% extends 'master.html' %}
+{% load static %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-4">
-        <h2 class="text-center text-white">Iniciar Sesión</h2>
-        <form method="post">{% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-warning w-100">Entrar</button>
-        </form>
+<style>
+    /* Estilos recuperados del Backup para el Login */
+    body { background-color: #f8f9fa; }
+    .login-card {
+        border: none;
+        box-shadow: 0 1rem 3rem rgba(0,0,0,0.175);
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    .card-header-login {
+        background: linear-gradient(135deg, #000000 0%, #333333 100%);
+        color: white;
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    .btn-login-custom {
+        background-color: #000;
+        color: white;
+        padding: 0.8rem;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    .btn-login-custom:hover {
+        background-color: #333;
+        color: #fff;
+        transform: translateY(-2px);
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card login-card">
+                <div class="card-header-login">
+                    <h3 class="fw-bold mb-1">Bienvenido de Nuevo</h3>
+                    <p class="text-white-50 small mb-0">Ingresa a tu ecosistema.</p>
+                </div>
+
+                <div class="card-body p-5 bg-white">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} small mb-4">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="form-floating mb-3">
+                            <input type="text" name="username" class="form-control" id="id_username" placeholder="Usuario" required>
+                            <label for="id_username">Usuario</label>
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <input type="password" name="password" class="form-control" id="id_password" placeholder="Contraseña" required>
+                            <label for="id_password">Contraseña</label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-login-custom rounded-3 shadow-sm">
+                                INICIAR SESIÓN <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card-footer bg-light text-center py-3">
+                    <p class="mb-0 text-muted small">
+                        ¿Nuevo aquí? <a href="{% url 'register_owner' %}" class="fw-bold text-dark text-decoration-none">Registra tu Negocio</a>
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-center text-muted mt-4 small">
+                <i class="fas fa-shield-alt me-1"></i> Acceso Seguro SSL
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
