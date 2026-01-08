@@ -1,68 +1,33 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Q
-from .models import Salon, Appointment
-from apps.businesses.models import Service, EmployeeSchedule
-from django.utils import timezone
-from datetime import datetime, timedelta
+from django.shortcuts import render, redirect, get_object_or_404
+from apps.businesses.models import Salon, Service, Booking
+# Importamos la lógica de reserva que ya funciona en businesses
+# para no duplicar código ni romper la base de datos.
 
 def marketplace_home(request):
-    query = request.GET.get('q', '')
+    # Buscador simple
+    q = request.GET.get('q', '')
     city = request.GET.get('city', '')
-    
     salons = Salon.objects.all()
     
-    if query:
-        # Búsqueda Semántica básica (Nombre o Descripción)
-        salons = salons.filter(Q(name__icontains=query) | Q(description__icontains=query))
-    
+    if q:
+        salons = salons.filter(name__icontains=q)
     if city:
         salons = salons.filter(city=city)
         
-    return render(request, 'marketplace/index.html', {'salons': salons, 'query': query})
+    cities = Salon.objects.values_list('city', flat=True).distinct()
+    return render(request, 'marketplace/index.html', {'salons': salons, 'cities': cities})
 
 def salon_detail(request, pk):
     salon = get_object_or_404(Salon, pk=pk)
-    services = salon.services.filter(is_active=True)
-    return render(request, 'marketplace/salon_detail.html', {'salon': salon, 'services': services})
+    return render(request, 'marketplace/salon_detail.html', {'salon': salon})
 
-@login_required
 def booking_create(request, service_id):
+    # Redirige al wizard de businesses que ya está probado
+    # Guardamos el servicio en sesión para iniciar el flujo
+    request.session['booking_service'] = service_id
     service = get_object_or_404(Service, id=service_id)
-    salon = service.salon
-    
-    if request.method == 'POST':
-        # Simplificación para MVP: El usuario elige fecha/hora manualmente
-        # En versión 'Dios' aquí va la lógica de cruce de horarios
-        date_str = request.POST.get('date') # YYYY-MM-DD
-        time_str = request.POST.get('time') # HH:MM
-        
-        if date_str and time_str:
-            start_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-            start_dt = timezone.make_aware(start_dt)
-            end_dt = start_dt + timedelta(minutes=service.duration)
-            
-            # Crear la cita PENDIENTE
-            appt = Appointment.objects.create(
-                client=request.user,
-                salon=salon,
-                service=service,
-                employee=salon.owner, # Por defecto al dueño si no elige empleado (MVP)
-                date_time=start_dt,
-                end_time=end_dt,
-                total_price=service.price,
-                deposit_amount=service.price * (salon.deposit_percentage / 100)
-            )
-            return redirect('marketplace:booking_success', pk=appt.id)
-            
-    return render(request, 'marketplace/booking_wizard.html', {'service': service})
+    request.session['booking_salon'] = service.salon.id
+    return redirect('booking_step_employee')
 
-@login_required
 def booking_success(request, pk):
-    appt = get_object_or_404(Appointment, pk=pk, client=request.user)
-    # Link de WhatsApp para enviar comprobante
-    msg = f"Hola, reservé {appt.service.name} para el {appt.date_time.strftime('%d/%m %H:%M')}. Envío mi abono de ${appt.deposit_amount:,.0f}."
-    wa_link = f"https://wa.me/{appt.salon.owner.phone}?text={msg}"
-    
-    return render(request, 'marketplace/booking_success.html', {'appt': appt, 'wa_link': wa_link})
+    return render(request, 'marketplace/booking_success.html')
