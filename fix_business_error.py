@@ -1,4 +1,15 @@
-from django.shortcuts import render, redirect, get_object_or_404
+import os
+import subprocess
+import sys
+
+def reparar_negocios():
+    print("🚑 REPARANDO APPS/BUSINESSES/VIEWS.PY ...")
+
+    # 1. REESCRIBIR APPS/BUSINESSES/VIEWS.PY CON LOS IMPORTS CORRECTOS
+    # El cambio clave es usar 'EmployeeForm' en lugar de 'EmployeeCreationForm'
+    views_path = os.path.join('apps', 'businesses', 'views.py')
+    
+    views_content = """from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -280,3 +291,32 @@ def owner_settings(request):
     else:
         form = SalonSettingsForm(instance=salon)
     return render(request, 'dashboard/owner_settings.html', {'form': form})
+"""
+
+    os.makedirs(os.path.dirname(views_path), exist_ok=True)
+    with open(views_path, 'w', encoding='utf-8') as f:
+        f.write(views_content)
+    print("✅ apps/businesses/views.py reparado (EmployeeCreationForm -> EmployeeForm).")
+
+    # 2. REINTENTAR MIGRACIONES FINALMENTE
+    print("\n✨ Ejecutando makemigrations...")
+    try:
+        subprocess.run([sys.executable, 'manage.py', 'makemigrations', 'core_saas', 'businesses'], check=True)
+        print("✅ ¡MIGRACIONES ÉXITOSAS! El sistema está limpio.")
+        
+        print("📥 Migrando DB local...")
+        subprocess.run([sys.executable, 'manage.py', 'migrate'], check=True)
+        print("✅ DB Local lista.")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error: {e}")
+        return
+
+    print("\n🚀 LISTO PARA GITHUB")
+    print("Ejecuta:")
+    print("git add .")
+    print("git commit -m \"Fix: Correct imports in business views\"")
+    print("git push origin main")
+
+if __name__ == "__main__":
+    reparar_negocios()

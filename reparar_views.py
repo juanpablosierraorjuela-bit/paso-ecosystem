@@ -1,4 +1,15 @@
-from django.shortcuts import render, redirect
+import os
+import subprocess
+import sys
+
+def reparar_y_finalizar():
+    print("🚑 REPARANDO VIEWS.PY Y FINALIZANDO GÉNESIS...")
+
+    # 1. ARREGLAR APPS/CORE_SAAS/VIEWS.PY
+    # Agregamos la vista 'client_dashboard' que falta.
+    views_path = os.path.join('apps', 'core_saas', 'views.py')
+    
+    views_content = """from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -50,11 +61,37 @@ def login_view(request):
 
 @login_required
 def client_dashboard(request):
-    # Vista del perfil de cliente
+    # Vista placeholder para evitar el error en urls.py
     return render(request, 'client_dashboard.html')
+"""
 
-@login_required
-def employee_dashboard(request):
-    # Vista del panel de empleado (Agenda)
-    # Si no existe el template aun, usaremos uno generico o el dashboard
-    return render(request, 'employee_dashboard.html')
+    os.makedirs(os.path.dirname(views_path), exist_ok=True)
+    with open(views_path, 'w', encoding='utf-8') as f:
+        f.write(views_content)
+    print("✅ views.py reparado (se agregó client_dashboard).")
+
+    # 2. INTENTAR MIGRACIONES DE NUEVO
+    print("\n✨ Reintentando crear migraciones...")
+    try:
+        subprocess.run([sys.executable, 'manage.py', 'makemigrations', 'core_saas', 'businesses'], check=True)
+        print("✅ ¡MIGRACIONES CREADAS CON ÉXITO!")
+        
+        # 3. MIGRAR LA BASE DE DATOS (Para verificar que todo esté sano)
+        print("📥 Aplicando migraciones a la DB local...")
+        subprocess.run([sys.executable, 'manage.py', 'migrate'], check=True)
+        print("✅ Base de datos local lista y operativa.")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error crítico: {e}")
+        return
+
+    print("\n🚀 ¡SISTEMA RESUCITADO Y LISTO!")
+    print("Ahora sí, ejecuta estos comandos para subir la versión final a Render:")
+    print("---------------------------------------------------")
+    print("git add .")
+    print("git commit -m \"Genesis Complete: Fix views and regenerate migrations\"")
+    print("git push origin main")
+    print("---------------------------------------------------")
+
+if __name__ == "__main__":
+    reparar_y_finalizar()

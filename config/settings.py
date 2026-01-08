@@ -62,7 +62,7 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
-AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'core_saas.User'
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

@@ -1,17 +1,28 @@
 from django.urls import path
 from . import views
 
-app_name = 'businesses'
-
 urlpatterns = [
-    # Panel Principal
-    path('dashboard/', views.owner_dashboard, name='dashboard'),
+    # --- DASHBOARD DUEÑO ---
+    path('dashboard/', views.owner_dashboard, name='owner_dashboard'),
+    path('configuracion/', views.owner_settings, name='owner_settings'),
     
-    # Gestión (Sub-rutas necesarias para que el dashboard funcione)
-    path('servicios/', views.services_list, name='services'),
+    # --- GESTIÓN DE SERVICIOS ---
+    # Aquí estaba el error: antes buscaba 'services_list', ahora apunta a 'owner_services'
+    path('servicios/', views.owner_services, name='owner_services'), 
+    path('servicios/crear/', views.service_create, name='service_create'),
+    path('servicios/editar/<int:pk>/', views.service_update, name='service_update'),
     path('servicios/eliminar/<int:pk>/', views.service_delete, name='service_delete'),
     
-    path('equipo/', views.employees_list, name='employees'),
+    # --- GESTIÓN DE EMPLEADOS ---
+    path('empleados/', views.owner_employees, name='owner_employees'),
+    path('empleados/crear/', views.employee_create, name='employee_create'),
+    path('empleados/editar/<int:pk>/', views.employee_update, name='employee_update'),
+    path('empleados/eliminar/<int:pk>/', views.employee_delete, name='employee_delete'),
     
-    path('configuracion/', views.settings_view, name='settings'),
+    # --- DASHBOARD EMPLEADO ---
+    path('mi-agenda/', views.employee_dashboard, name='employee_dashboard'),
+    path('mi-horario/', views.employee_schedule, name='employee_schedule'),
+    
+    # --- VERIFICACIÓN DE CITAS ---
+    path('citas/verificar/<int:pk>/', views.verify_booking, name='verify_booking'),
 ]
