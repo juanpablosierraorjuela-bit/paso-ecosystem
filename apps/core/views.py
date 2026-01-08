@@ -1,43 +1,47 @@
-
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required  # <--- ESTO FALTABA
-from django.contrib.auth.views import LoginView
-from apps.businesses.forms import OwnerRegistrationForm
-from apps.marketplace.models import Appointment
+from django.contrib.auth import login, authenticate, logout
+from django.contrib import messages
+from apps.businesses.forms import SalonRegistrationForm
+from apps.core_saas.models import User
+from apps.businesses.models import Salon
 
 def home(request):
     return render(request, 'home.html')
 
 def register_owner(request):
-    if request.user.is_authenticated:
-        return redirect('businesses:dashboard')
-        
     if request.method == 'POST':
-        form = OwnerRegistrationForm(request.POST)
+        form = SalonRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user) # Auto-login
-            return redirect('businesses:dashboard')
+            user = User.objects.create_user(
+                username=form.cleaned_data['username'],
+                email=form.cleaned_data['email'],
+                password=form.cleaned_data['password1'],
+                role='OWNER'
+            )
+            Salon.objects.create(
+                owner=user,
+                name=form.cleaned_data['salon_name'],
+                city=form.cleaned_data['city'],
+                address=form.cleaned_data['address'],
+                phone=form.cleaned_data['phone'],
+                instagram_link=form.cleaned_data.get('instagram_link', ''),
+                maps_link=form.cleaned_data.get('maps_link', '')
+            )
+            login(request, user)
+            return redirect('owner_dashboard')
     else:
-        form = OwnerRegistrationForm()
-        
+        form = SalonRegistrationForm()
     return render(request, 'registration/register_owner.html', {'form': form})
 
 def login_view(request):
-    return LoginView.as_view(template_name='registration/login.html')(request)
-
-# --- PANELES FALTANTES ---
-
-@login_required
-def client_dashboard(request):
-    if request.user.role != 'CLIENT': return redirect('home')
-    appointments = Appointment.objects.filter(client=request.user).order_by('-date_time')
-    return render(request, 'core/client_dashboard.html', {'appointments': appointments})
-
-@login_required
-def employee_dashboard(request):
-    if request.user.role != 'EMPLOYEE': return redirect('home')
-    # Empleado ve sus citas asignadas y verificadas
-    appointments = Appointment.objects.filter(employee=request.user, status='VERIFIED').order_by('date_time')
-    return render(request, 'businesses/employee_dashboard.html', {'appointments': appointments})
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(username=u, password=p)
+        if user:
+            login(request, user)
+            if user.role == 'OWNER': return redirect('owner_dashboard')
+            return redirect('home')
+        else:
+            messages.error(request, "Usuario o contraseña incorrectos.")
+    return render(request, 'registration/login.html')

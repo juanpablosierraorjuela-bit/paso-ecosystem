@@ -1,4 +1,7 @@
-from django.db import models
+import os
+
+def get_models_content():
+    return """from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta, datetime
@@ -100,3 +103,79 @@ class Booking(models.Model):
         if not self.deposit_amount and self.salon:
             self.deposit_amount = self.total_price * (self.salon.deposit_percentage / 100)
         super().save(*args, **kwargs)
+"""
+
+def get_views_content():
+    return """from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate, logout
+from django.contrib import messages
+from apps.businesses.forms import SalonRegistrationForm
+from apps.core_saas.models import User
+from apps.businesses.models import Salon
+
+def home(request):
+    return render(request, 'home.html')
+
+def register_owner(request):
+    if request.method == 'POST':
+        form = SalonRegistrationForm(request.POST)
+        if form.is_valid():
+            user = User.objects.create_user(
+                username=form.cleaned_data['username'],
+                email=form.cleaned_data['email'],
+                password=form.cleaned_data['password1'],
+                role='OWNER'
+            )
+            Salon.objects.create(
+                owner=user,
+                name=form.cleaned_data['salon_name'],
+                city=form.cleaned_data['city'],
+                address=form.cleaned_data['address'],
+                phone=form.cleaned_data['phone'],
+                instagram_link=form.cleaned_data.get('instagram_link', ''),
+                maps_link=form.cleaned_data.get('maps_link', '')
+            )
+            login(request, user)
+            return redirect('owner_dashboard')
+    else:
+        form = SalonRegistrationForm()
+    return render(request, 'registration/register_owner.html', {'form': form})
+
+def login_view(request):
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(username=u, password=p)
+        if user:
+            login(request, user)
+            if user.role == 'OWNER': return redirect('owner_dashboard')
+            return redirect('home')
+        else:
+            messages.error(request, "Usuario o contraseña incorrectos.")
+    return render(request, 'registration/login.html')
+"""
+
+def write_file(path, content):
+    # Asegurar que el directorio existe
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f"✅ Archivo reparado: {path}")
+
+if __name__ == "__main__":
+    print("🚑 INICIANDO REPARACIÓN DEL BACKEND...")
+    
+    # 1. Reparar Models (Agrega Employee que faltaba)
+    write_file('apps/businesses/models.py', get_models_content())
+    
+    # 2. Reparar Core Views (Corrige importación de forms)
+    # Detectamos si es 'core' o 'core_saas'
+    if os.path.exists('apps/core_saas'):
+        write_file('apps/core_saas/views.py', get_views_content())
+    else:
+        write_file('apps/core/views.py', get_views_content())
+
+    print("\n✨ ¡Reparación completada! Ahora ejecuta:")
+    print("1. git add .")
+    print("2. git commit -m 'Fix: Repair backend models and views'")
+    print("3. git push origin main")
