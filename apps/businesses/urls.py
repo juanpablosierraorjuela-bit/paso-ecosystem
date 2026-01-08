@@ -7,7 +7,6 @@ urlpatterns = [
     path('configuracion/', views.owner_settings, name='owner_settings'),
     
     # --- GESTIÓN DE SERVICIOS ---
-    # Aquí estaba el error: antes buscaba 'services_list', ahora apunta a 'owner_services'
     path('servicios/', views.owner_services, name='owner_services'), 
     path('servicios/crear/', views.service_create, name='service_create'),
     path('servicios/editar/<int:pk>/', views.service_update, name='service_update'),
@@ -25,4 +24,11 @@ urlpatterns = [
     
     # --- VERIFICACIÓN DE CITAS ---
     path('citas/verificar/<int:pk>/', views.verify_booking, name='verify_booking'),
+
+    # --- WIZARD DE RESERVAS (ESTAS ERAN LAS QUE FALTABAN) ---
+    path('reserva/inicio/', views.booking_wizard_start, name='booking_wizard_start'),
+    path('reserva/profesional/', views.booking_step_employee, name='booking_step_employee'),
+    path('reserva/calendario/', views.booking_step_calendar, name='booking_step_calendar'),
+    path('reserva/confirmar/', views.booking_step_confirm, name='booking_step_confirm'),
+    path('reserva/crear/', views.booking_create, name='booking_create_internal'),
 ]

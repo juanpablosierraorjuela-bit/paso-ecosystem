@@ -11,7 +11,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-genesis-key-change-me')
 DEBUG = env('DEBUG', default=True)
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']  # Fix temporal para Render
 
 INSTALLED_APPS = [
     'django.contrib.admin',
