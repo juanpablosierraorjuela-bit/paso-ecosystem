@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Apps del Ecosistema
-    'apps.core',
+    'apps.core_saas',
     'apps.businesses',
     'apps.marketplace',
 ]

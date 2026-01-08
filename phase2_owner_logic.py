@@ -66,7 +66,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Salon
-from apps.core.models import GlobalSettings
+from apps.core_saas.models import GlobalSettings
 
 @login_required
 def owner_dashboard(request):

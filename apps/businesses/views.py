@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Salon, Service, EmployeeSchedule
-from apps.core.models import User, GlobalSettings
+from apps.core_saas.models import User, GlobalSettings
 from .forms import ServiceForm, EmployeeCreationForm, SalonSettingsForm
 
 @login_required

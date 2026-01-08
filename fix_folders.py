@@ -50,8 +50,8 @@ def fix_folders():
             with open(url_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            if 'apps.core.urls' in content:
-                new_content = content.replace('apps.core.urls', 'apps.core_saas.urls')
+            if 'apps.core_saas.urls' in content:
+                new_content = content.replace('apps.core_saas.urls', 'apps.core_saas.urls')
                 with open(url_path, 'w', encoding='utf-8') as f:
                     f.write(new_content)
                 print(f"✅ Referencia corregida en: {url_path}")

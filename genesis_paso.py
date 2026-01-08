@@ -312,7 +312,7 @@ class Appointment(models.Model):
 reaper_py = """
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from apps.core.models import User
+from apps.core_saas.models import User
 from apps.marketplace.models import Appointment
 from datetime import timedelta
 
@@ -400,7 +400,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('apps.core.urls')),
+    path('', include('apps.core_saas.urls')),
     path('negocio/', include('apps.businesses.urls')),
     path('marketplace/', include('apps.marketplace.urls')),
 ]
