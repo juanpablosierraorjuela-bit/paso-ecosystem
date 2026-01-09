@@ -1,3 +1,13 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# ACTUALIZACIÓN DE VIEWS.PY (BUSINESSES)
+# ==========================================
+# Agregamos la librería 're' para limpiar el número y aseguramos que se use el GlobalSettings
+views_content = """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -128,3 +138,17 @@ def settings_view(request):
         form = SalonScheduleForm(instance=salon)
     
     return render(request, 'businesses/settings.html', {'form': form, 'salon': salon})
+"""
+
+def fix_wa():
+    print("🔧 REPARANDO LÓGICA DE WHATSAPP...")
+    
+    file_path = BASE_DIR / 'apps' / 'businesses' / 'views.py'
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(views_content.strip())
+        
+    print("✅ apps/businesses/views.py actualizado.")
+    print("👉 El sistema ahora limpiará automáticamente espacios y símbolos del número de soporte.")
+
+if __name__ == "__main__":
+    fix_wa()
