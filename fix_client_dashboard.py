@@ -1,3 +1,13 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# CONTENIDO CORREGIDO (CLIENT DASHBOARD)
+# ==========================================
+# Quitamos '|floatform:0' en la línea 31
+html_client_dash_fixed = """
 {% extends 'base.html' %}
 
 {% block content %}
@@ -66,3 +76,17 @@
     </div>
 </div>
 {% endblock %}
+"""
+
+def apply_fix():
+    print("🚑 ARREGLANDO TEMPLATE CLIENT DASHBOARD...")
+    # Asegurar que el directorio existe
+    os.makedirs(BASE_DIR / 'templates' / 'core', exist_ok=True)
+    
+    with open(BASE_DIR / 'templates' / 'core' / 'client_dashboard.html', 'w', encoding='utf-8') as f:
+        f.write(html_client_dash_fixed.strip())
+    print("✅ Template reparado (floatform eliminado).")
+
+if __name__ == "__main__":
+    apply_fix()
+    
