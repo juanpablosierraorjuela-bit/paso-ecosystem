@@ -1,3 +1,12 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# CONTENIDO CORRECTO DE APPS/CORE/VIEWS.PY
+# ==========================================
+core_views_content = """
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
@@ -85,3 +94,14 @@ def client_dashboard(request):
             app.wa_link = f"https://wa.me/{clean_phone}?text={msg}"
             
     return render(request, 'core/client_dashboard.html', {'appointments': appointments})
+"""
+
+def fix_imports():
+    print("🚑 ARREGLANDO IMPORTS EN CORE VIEWS...")
+    file_path = BASE_DIR / 'apps' / 'core' / 'views.py'
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(core_views_content.strip())
+    print("✅ apps/core/views.py reescrito con timezone importado.")
+
+if __name__ == "__main__":
+    fix_imports()
