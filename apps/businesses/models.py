@@ -11,6 +11,9 @@ class Salon(models.Model):
     opening_time = models.TimeField()
     closing_time = models.TimeField()
     
+    # NUEVO: Días que abre el negocio (0=Lunes)
+    active_days = models.CharField(max_length=20, default="0,1,2,3,4,5") 
+    
     deposit_percentage = models.IntegerField(default=50)
     instagram_url = models.URLField(blank=True)
     google_maps_url = models.URLField(blank=True)
@@ -30,18 +33,11 @@ class Service(models.Model):
 
 class EmployeeSchedule(models.Model):
     employee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='schedule')
-    
-    # Configuración de Turno
     work_start = models.TimeField(default='09:00')
     work_end = models.TimeField(default='18:00')
-    
-    # Configuración de Almuerzo
     lunch_start = models.TimeField(default='13:00')
     lunch_end = models.TimeField(default='14:00')
-    
-    # Días Activos (Guardados como string "0,1,2,3,4" donde 0=Lunes)
     active_days = models.CharField(max_length=20, default="0,1,2,3,4,5") 
-    
     is_active_today = models.BooleanField(default=True)
     
     def __str__(self):

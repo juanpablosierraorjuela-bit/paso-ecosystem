@@ -1,8 +1,21 @@
 from django import forms
 from .models import Service, Salon, EmployeeSchedule
 from apps.core.models import User
+from datetime import time
 
-# Lista de ciudades
+# Generador de opciones de tiempo (cada 30 min)
+def get_time_choices():
+    choices = []
+    for h in range(0, 24):
+        for m in (0, 30):
+            t = time(h, m)
+            label = t.strftime('%I:%M %p')
+            val = t.strftime('%H:%M')
+            choices.append((val, label))
+    return choices
+
+TIME_CHOICES = get_time_choices()
+
 COLOMBIA_CITIES = [
     ('Bogotá D.C.', 'Bogotá D.C.'), ('Medellín', 'Medellín'), ('Cali', 'Cali'),
     ('Barranquilla', 'Barranquilla'), ('Cartagena', 'Cartagena'), ('Bucaramanga', 'Bucaramanga'),
@@ -15,28 +28,13 @@ COLOMBIA_CITIES = [
     ('Itagüí', 'Itagüí'), ('Bello', 'Bello'), ('Otro', 'Otro (Escribir en dirección)'),
 ]
 
-# --- REGISTRO DE DUEÑO (CORREGIDO PARA PASSWORD1 y PASSWORD2) ---
 class OwnerRegistrationForm(forms.ModelForm):
-    # Campos del Negocio
     salon_name = forms.CharField(label="Nombre del Negocio", required=True)
     salon_address = forms.CharField(label="Dirección del Local", required=True)
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad", required=True)
     phone = forms.CharField(label="WhatsApp (Soporte)", required=True)
-    
-    # --- AQUI ESTA EL ARREGLO ---
-    # Definimos password1 y password2 para coincidir con tu HTML
-    password1 = forms.CharField(
-        label="Contraseña", 
-        widget=forms.PasswordInput(attrs={'placeholder': '********'}),
-        required=True
-    )
-    password2 = forms.CharField(
-        label="Confirmar Contraseña", 
-        widget=forms.PasswordInput(attrs={'placeholder': '********'}),
-        required=True
-    )
-    
-    # Campos Opcionales
+    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********'}), required=True)
+    password2 = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********'}), required=True)
     instagram_url = forms.URLField(label="Link Instagram", required=False)
     google_maps_url = forms.URLField(label="Link Google Maps", required=False)
 
@@ -44,24 +42,20 @@ class OwnerRegistrationForm(forms.ModelForm):
         model = User
         fields = ['first_name', 'last_name', 'username', 'email']
 
-    # Validación de contraseñas iguales
     def clean(self):
         cleaned_data = super().clean()
         p1 = cleaned_data.get("password1")
         p2 = cleaned_data.get("password2")
-        
         if p1 and p2 and p1 != p2:
             self.add_error('password2', "Las contraseñas no coinciden.")
         return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        # Usamos password1 para establecer la contraseña
         user.set_password(self.cleaned_data["password1"])
         user.role = 'OWNER'
         user.phone = self.cleaned_data["phone"]
         user.city = self.cleaned_data["city"]
-        
         if commit:
             user.save()
             Salon.objects.create(
@@ -75,98 +69,93 @@ class OwnerRegistrationForm(forms.ModelForm):
                 closing_time="20:00"
             )
         return user
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm'
 
-
-# --- ACTUALIZAR DATOS DUEÑO ---
 class OwnerUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'phone']
-        labels = {
-            'first_name': 'Nombre',
-            'last_name': 'Apellido',
-            'phone': 'WhatsApp Personal',
-            'email': 'Correo Electrónico'
-        }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- ACTUALIZAR DATOS NEGOCIO ---
 class SalonUpdateForm(forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
-
     class Meta:
         model = Salon
         fields = ['name', 'address', 'city', 'instagram_url', 'google_maps_url']
-        labels = {
-            'name': 'Nombre del Negocio',
-            'address': 'Dirección Física',
-            'instagram_url': 'Link Instagram',
-            'google_maps_url': 'Link Google Maps'
-        }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
-            
-# --- SERVICIOS ---
+
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
         fields = ['name', 'duration_minutes', 'price', 'buffer_time']
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- EMPLEADOS ---
 class EmployeeCreationForm(forms.ModelForm):
     username = forms.CharField(label="Usuario de Acceso", required=True)
     password = forms.CharField(widget=forms.PasswordInput, label="Contraseña", required=True)
     first_name = forms.CharField(label="Nombre", required=True)
     last_name = forms.CharField(label="Apellido", required=True)
-
     class Meta:
         model = User
         fields = ['username', 'password', 'first_name', 'last_name', 'phone']
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- HORARIOS SALÓN ---
+# --- NUEVO: HORARIO DE APERTURA DEL SALÓN CON DÍAS Y DROPDOWNS ---
 class SalonScheduleForm(forms.ModelForm):
-    opening_time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Apertura")
-    closing_time = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Cierre")
+    opening_time = forms.ChoiceField(choices=TIME_CHOICES, label="Apertura")
+    closing_time = forms.ChoiceField(choices=TIME_CHOICES, label="Cierre")
+    
+    # Días que abre el negocio
+    DAYS_CHOICES = [
+        ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
+        ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
+    ]
+    active_days = forms.MultipleChoiceField(
+        choices=DAYS_CHOICES, 
+        widget=forms.CheckboxSelectMultiple,
+        label="Días de Apertura"
+    )
 
     class Meta:
         model = Salon
-        fields = ['opening_time', 'closing_time', 'deposit_percentage']
+        fields = ['opening_time', 'closing_time', 'active_days', 'deposit_percentage']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.active_days:
+            self.initial['active_days'] = self.instance.active_days.split(',')
+        
         for field in self.fields.values():
-            field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- HORARIO DEL EMPLEADO ---
+    def clean_active_days(self):
+        days = self.cleaned_data['active_days']
+        return ','.join(days)
+
+# --- NUEVO: HORARIO EMPLEADO CON DROPDOWNS ---
 class EmployeeScheduleUpdateForm(forms.ModelForm):
-    work_start = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Inicio de Turno")
-    work_end = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Fin de Turno")
-    lunch_start = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Inicio Almuerzo")
-    lunch_end = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Fin Almuerzo")
+    work_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio de Turno")
+    work_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin de Turno")
+    lunch_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio Almuerzo")
+    lunch_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin Almuerzo")
     
-    # Días laborales
     DAYS_CHOICES = [
         ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
         ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
@@ -185,6 +174,10 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk and self.instance.active_days:
             self.initial['active_days'] = self.instance.active_days.split(',')
+            
+        for field in self.fields.values():
+            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
     def clean_active_days(self):
         days = self.cleaned_data['active_days']
