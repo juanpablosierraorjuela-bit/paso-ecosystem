@@ -74,3 +74,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# --- REDIRECCIÓN INTELIGENTE ---
+LOGIN_REDIRECT_URL = 'dispatch'
+LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = 'login'

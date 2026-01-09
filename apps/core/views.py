@@ -24,3 +24,30 @@ def register_owner(request):
 
 def login_view(request):
     return render(request, 'registration/login.html')
+
+# --- SEMÁFORO DE BIENVENIDA ---
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def dispatch_user(request):
+    user = request.user
+    
+    # 1. Si es Dueño -> Panel de Negocio (Ruta 'dashboard' de businesses)
+    if user.role == 'OWNER':
+        return redirect('dashboard')
+    
+    # 2. Si es Cliente -> Marketplace (Ruta 'marketplace_home' de marketplace)
+    elif user.role == 'CLIENT':
+        return redirect('marketplace_home')
+        
+    # 3. Si es Empleado -> Su Agenda (Ruta actual de lista de empleados)
+    # Nota: Cuando creemos el dashboard de empleado en Fase 3, cambiaremos esto a 'employee_dashboard'
+    elif user.role == 'EMPLOYEE':
+        return redirect('employees_list')
+        
+    # 4. Si eres TÚ (Superuser) -> Admin de Django
+    elif user.is_superuser:
+        return redirect('/admin/')
+        
+    else:
+        return redirect('home')
