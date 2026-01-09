@@ -3,7 +3,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-genesis-key-change-me-in-production'
-DEBUG = True
+DEBUG = 'RENDER' not in os.environ
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
@@ -78,3 +78,41 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'dispatch'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+
+
+# --- SEGURIDAD DE PRODUCCIÓN (EL BÚNKER) ---
+import os
+import dj_database_url
+
+# 1. CLAVE SECRETA (Busca en variables de entorno o usa una de respaldo LOCAL)
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-cambiar-esto-en-produccion-urgente')
+
+# 2. DEBUG: Solo True si NO estamos en Render (o si forzamos la variable)
+DEBUG = 'RENDER' not in os.environ
+
+# 3. HOSTS PERMITIDOS
+ALLOWED_HOSTS = ['*'] # En producción Render maneja el filtrado, pero puedes poner tu dominio aquí.
+
+# 4. BLINDAJE HTTPS & COOKIES (Solo se activan si DEBUG es False)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY' # Evita que te metan en un iframe
+    SECURE_HSTS_SECONDS = 31536000 # 1 año forzando HTTPS
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# 5. BASE DE DATOS (Auto-configuración en Render)
+DATABASES = {
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600
+    )
+}
+
+# 6. ARCHIVOS ESTÁTICOS (WhiteNoise - Ya lo tienes, pero aseguramos)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
