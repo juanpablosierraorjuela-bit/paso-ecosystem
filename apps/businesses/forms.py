@@ -91,3 +91,35 @@ class SalonScheduleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+
+# --- HORARIO DEL EMPLEADO ---
+class EmployeeScheduleUpdateForm(forms.ModelForm):
+    work_start = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Inicio de Turno")
+    work_end = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Fin de Turno")
+    lunch_start = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Inicio Almuerzo")
+    lunch_end = forms.TimeField(widget=forms.TimeInput(attrs={'type': 'time'}), label="Fin Almuerzo")
+    
+    # Días laborales (Checkboxes)
+    DAYS_CHOICES = [
+        ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
+        ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
+    ]
+    active_days = forms.MultipleChoiceField(
+        choices=DAYS_CHOICES, 
+        widget=forms.CheckboxSelectMultiple,
+        label="Días Laborales"
+    )
+
+    class Meta:
+        model = EmployeeSchedule
+        fields = ['work_start', 'work_end', 'lunch_start', 'lunch_end', 'active_days']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Parsear string a lista para los checkboxes si hay datos
+        if self.instance and self.instance.pk and self.instance.active_days:
+            self.initial['active_days'] = self.instance.active_days.split(',')
+
+    def clean_active_days(self):
+        days = self.cleaned_data['active_days']
+        return ','.join(days)

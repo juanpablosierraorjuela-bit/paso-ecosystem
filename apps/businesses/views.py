@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from apps.core.models import GlobalSettings, User
-from .models import Service, Salon
-from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm, OwnerUpdateForm, SalonUpdateForm
+from .models import Service, Salon, EmployeeSchedule
+from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm, OwnerUpdateForm, SalonUpdateForm, EmployeeScheduleUpdateForm
 import re
 
 # --- DASHBOARD PRINCIPAL ---
@@ -141,4 +141,28 @@ def settings_view(request):
         'salon_form': salon_form,
         'schedule_form': schedule_form,
         'salon': salon
+    })
+
+# --- PANEL DEL EMPLEADO (MI AGENDA) ---
+@login_required
+def employee_dashboard(request):
+    if request.user.role != 'EMPLOYEE':
+        return redirect('dashboard') # Si es dueño, a su panel
+    
+    # Asegurar que tenga un horario creado
+    schedule, created = EmployeeSchedule.objects.get_or_create(employee=request.user)
+    
+    if request.method == 'POST':
+        form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tu disponibilidad ha sido actualizada.")
+            return redirect('employee_dashboard')
+    else:
+        form = EmployeeScheduleUpdateForm(instance=schedule)
+    
+    return render(request, 'businesses/employee_dashboard.html', {
+        'form': form,
+        'schedule': schedule,
+        'salon': request.user.workplace
     })

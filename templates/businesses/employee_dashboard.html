@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    
+    <div class="flex justify-between items-center mb-8 border-b pb-4">
+        <div>
+            <h1 class="text-3xl font-serif font-bold text-gray-900">Hola, {{ user.first_name }}</h1>
+            <p class="text-gray-500">Talento en <strong>{{ salon.name }}</strong></p>
+        </div>
+        <div class="text-right">
+            <span class="bg-black text-white text-xs font-bold px-3 py-1 rounded-full">
+                PANEL EMPLEADO
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    ⏰ Mi Disponibilidad
+                </h2>
+                <p class="text-sm text-gray-500 mb-6">Define cuándo puedes recibir clientes. El sistema bloqueará automáticamente tu hora de almuerzo.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                        <label class="text-xs font-bold text-gray-400 uppercase">Jornada Laboral</label>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div>
+                                <span class="text-xs text-gray-600">Entrada</span>
+                                {{ form.work_start }}
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600">Salida</span>
+                                {{ form.work_end }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                        <label class="text-xs font-bold text-gray-400 uppercase">Hora de Almuerzo</label>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div>
+                                <span class="text-xs text-gray-600">Inicio</span>
+                                {{ form.lunch_start }}
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600">Fin</span>
+                                {{ form.lunch_end }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Días Activos</label>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            {% for checkbox in form.active_days %}
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                {{ checkbox.tag }}
+                                <span>{{ checkbox.choice_label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                        Actualizar Mi Horario
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100 min-h-[400px]">
+                <h2 class="text-xl font-bold mb-6">📅 Mis Citas Confirmadas</h2>
+                
+                <div class="text-center py-12 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                    <div class="text-4xl mb-3">📭</div>
+                    <p class="text-gray-500 font-medium">No tienes citas verificadas para hoy.</p>
+                    <p class="text-xs text-gray-400 mt-2">Las citas aparecerán aquí cuando el dueño confirme el pago.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Estilo simple para los inputs de hora */
+    input[type="time"] {
+        width: 100%;
+        padding: 4px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}

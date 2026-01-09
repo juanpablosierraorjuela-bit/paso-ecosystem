@@ -8,13 +8,10 @@ class Salon(models.Model):
     address = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     
-    # Configuración de Horario del Negocio
     opening_time = models.TimeField()
-    closing_time = models.TimeField() # Maneja lógica nocturna si close < open
+    closing_time = models.TimeField()
     
-    deposit_percentage = models.IntegerField(default=50, help_text="Porcentaje de abono requerido")
-    
-    # Redes para el Marketplace
+    deposit_percentage = models.IntegerField(default=50)
     instagram_url = models.URLField(blank=True)
     google_maps_url = models.URLField(blank=True)
 
@@ -25,7 +22,7 @@ class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
     name = models.CharField(max_length=100)
     duration_minutes = models.IntegerField(help_text="Duración en minutos")
-    buffer_time = models.IntegerField(default=15, help_text="Tiempo de limpieza post-servicio")
+    buffer_time = models.IntegerField(default=15, help_text="Limpieza (min)")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__(self):
@@ -33,8 +30,18 @@ class Service(models.Model):
 
 class EmployeeSchedule(models.Model):
     employee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='schedule')
-    # Aquí irían los JSON o campos para los horarios por día (Lunes a Domingo)
-    # Por simplicidad inicial, dejamos el placeholder
+    
+    # Configuración de Turno
+    work_start = models.TimeField(default='09:00')
+    work_end = models.TimeField(default='18:00')
+    
+    # Configuración de Almuerzo
+    lunch_start = models.TimeField(default='13:00')
+    lunch_end = models.TimeField(default='14:00')
+    
+    # Días Activos (Guardados como string "0,1,2,3,4" donde 0=Lunes)
+    active_days = models.CharField(max_length=20, default="0,1,2,3,4,5") 
+    
     is_active_today = models.BooleanField(default=True)
     
     def __str__(self):
