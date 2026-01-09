@@ -1,56 +1,39 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
-        
+<div class="min-h-screen flex items-center justify-center py-20 px-4 relative overflow-hidden bg-black">
+    <div class="absolute inset-0 opacity-40">
+        <img src="https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover">
+    </div>
+    
+    <div class="glass-panel max-w-md w-full p-10 rounded-3xl shadow-2xl relative z-10 border border-white/10">
         <div class="text-center mb-10">
-            <h2 class="text-3xl font-serif font-bold text-gray-900">Bienvenido de nuevo</h2>
-            <p class="mt-2 text-sm text-gray-500">Ingresa a tu ecosistema PASO</p>
+            <h2 class="text-3xl font-serif font-bold text-gray-900">Bienvenido</h2>
+            <p class="mt-2 text-sm text-gray-500">Accede a tu panel de control</p>
         </div>
 
         <form class="space-y-6" method="post" action="{% url 'login' %}">
             {% csrf_token %}
-            
             {% if form.errors %}
-                <div class="bg-red-50 text-red-600 p-3 rounded text-sm text-center mb-4">
-                    Usuario o contraseña incorrectos.
-                </div>
+                <div class="bg-red-50 text-red-600 p-3 rounded text-sm text-center mb-4">Credenciales inválidas.</div>
             {% endif %}
 
             <div>
-                <label for="id_username" class="block text-sm font-medium text-gray-700">Usuario</label>
-                <div class="mt-1">
-                    <input type="text" name="username" autofocus required id="id_username" 
-                        class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm">
-                </div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Usuario</label>
+                <input type="text" name="username" required class="block w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition">
             </div>
 
             <div>
-                <label for="id_password" class="block text-sm font-medium text-gray-700">Contraseña</label>
-                <div class="mt-1">
-                    <input type="password" name="password" required id="id_password" 
-                        class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm">
-                </div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label>
+                <input type="password" name="password" required class="block w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition">
             </div>
 
-            <div>
-                <button type="submit" class="w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    ENTRAR AL SISTEMA
-                </button>
-            </div>
+            <button type="submit" class="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gold transition duration-300 shadow-lg mt-4">
+                INGRESAR
+            </button>
 
-            <div class="flex items-center justify-between mt-4">
-                <div class="text-sm">
-                    <a href="{% url 'register_owner' %}" class="font-medium text-gray-600 hover:text-black">
-                        ¿No tienes cuenta? <span class="underline">Regístrate</span>
-                    </a>
-                </div>
-                <div class="text-sm">
-                    <a href="#" class="font-medium text-gray-400 hover:text-gray-500">
-                        ¿Olvidaste tu clave?
-                    </a>
-                </div>
+            <div class="text-center mt-6 text-sm">
+                <a href="{% url 'register_owner' %}" class="text-gray-500 hover:text-black transition">¿Nuevo aquí? <span class="font-bold underline">Crear cuenta</span></a>
             </div>
         </form>
     </div>

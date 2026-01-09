@@ -2,118 +2,67 @@
 
 {% block content %}
 <div class="bg-white">
-    <div class="relative bg-black text-white overflow-hidden">
-        <div class="absolute inset-0 opacity-20">
-            <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop" class="w-full h-full object-cover" alt="Barberia">
+    <div class="relative bg-black text-white py-32 px-6 overflow-hidden">
+        <div class="absolute inset-0 opacity-40">
+            <img src="https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover">
         </div>
-        <div class="relative container mx-auto px-4 py-24 md:py-32 text-center">
-            <span class="bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4 inline-block">Para Dueños de Negocio</span>
-            <h1 class="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight">
-                ¿Tu agenda es de papel <br> pero tus clientes viven en el celular?
+        <div class="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black"></div>
+        
+        <div class="relative container mx-auto text-center max-w-4xl">
+            <span class="border border-gold text-gold px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-6 inline-block">
+                Solo para Negocios Visionarios
+            </span>
+            <h1 class="text-5xl md:text-7xl font-serif font-bold mb-8 leading-none">
+                Eleva tu Estándar. <br> Automatiza tu Éxito.
             </h1>
-            <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-                Deja de ser el recepcionista de tu propio negocio. Automatiza citas, asegura pagos y elimina las inasistencias con el Ecosistema PASO.
+            <p class="text-2xl text-gray-300 mb-12 font-light">
+                Spas, Salones, Barberías y Clínicas Estéticas. <br>
+                La plataforma que gestiona tu agenda mientras tú cuidas a tus clientes.
             </p>
-            <a href="{% url 'register_owner' %}" class="bg-white text-black font-bold py-4 px-8 rounded-full hover:bg-gray-200 transition transform hover:scale-105 shadow-xl text-lg">
-                🚀 Únete al Ecosistema
+            <a href="{% url 'register_owner' %}" class="bg-gold text-black font-bold py-5 px-12 rounded-full hover:bg-white transition-all duration-500 shadow-2xl transform hover:-translate-y-1 text-lg">
+                INICIAR REGISTRO
             </a>
-            <p class="mt-4 text-sm text-gray-400">Prueba de 24 horas sin compromiso</p>
+            <p class="mt-6 text-sm text-gray-500 font-mono uppercase">Sin contratos forzosos • Activación Inmediata</p>
         </div>
     </div>
 
-    <div class="py-20 bg-gray-50">
-        <div class="container mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-serif font-bold text-gray-900">¿Te suena familiar esta rutina?</h2>
-                <p class="text-gray-500 mt-2">Los 3 enemigos silenciosos de tu rentabilidad.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="text-4xl mb-4">📒</div>
-                    <h3 class="text-xl font-bold mb-3">"La Agenda de Papel"</h3>
-                    <p class="text-gray-600 text-sm">
-                        Borrones, tachones y citas dobles. Si no estás en el local, no sabes qué está pasando. Tu negocio depende de un cuaderno físico.
+    <div class="py-24 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="bg-white p-10 rounded-3xl shadow-xl border border-gray-100 hover:border-gold transition duration-500 group">
+                    <div class="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">🕰️</div>
+                    <h3 class="text-2xl font-serif font-bold mb-4">Agenda Caótica</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        ¿Sigues usando papel y lápiz? Los tachones y las citas dobles son cosa del pasado. Digitaliza tu recepción.
                     </p>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="text-4xl mb-4">💬</div>
-                    <h3 class="text-xl font-bold mb-3">"El Chat Infinito"</h3>
-                    <p class="text-gray-600 text-sm">
-                        Responder 50 veces al día: <em>"¿Qué precio tiene?", "¿Tienes espacio a las 3?", "¿Quién me atiende?"</em>. Pierdes horas chateando en vez de facturando.
+                <div class="bg-white p-10 rounded-3xl shadow-xl border border-gray-100 hover:border-gold transition duration-500 group">
+                    <div class="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">📱</div>
+                    <h3 class="text-2xl font-serif font-bold mb-4">WhatsApp Infinito</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Deja de responder "¿Qué precio tiene?" cien veces al día. Tu menú de servicios vende por ti 24/7.
                     </p>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="text-4xl mb-4">👻</div>
-                    <h3 class="text-xl font-bold mb-3">"El Cliente Fantasma"</h3>
-                    <p class="text-gray-600 text-sm">
-                        Te reservan, guardas el espacio, rechazas a otros... y nunca llegan. Perdiste dinero y tiempo de tu empleado.
+                <div class="bg-white p-10 rounded-3xl shadow-xl border border-gray-100 hover:border-gold transition duration-500 group">
+                    <div class="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">👻</div>
+                    <h3 class="text-2xl font-serif font-bold mb-4">No-Shows</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        El sistema PASO protege tu tiempo. Sin abono confirmado, la cita no bloquea tu agenda. Cero pérdidas.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="py-20">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row items-center gap-12">
-                <div class="w-full md:w-1/2">
-                    <h2 class="text-3xl font-serif font-bold mb-6">No es una App, es tu Nuevo Sistema Operativo.</h2>
-                    <div class="space-y-6">
-                        <div class="flex">
-                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-black text-white font-bold">1</div>
-                            <div class="ml-4">
-                                <h4 class="text-lg font-bold">Tu Recepcionista Virtual 24/7</h4>
-                                <p class="text-gray-600 text-sm">Tus clientes ven tus servicios, precios y disponibilidad en tiempo real. Reservan solos, incluso mientras duermes.</p>
-                            </div>
-                        </div>
-                        <div class="flex">
-                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-black text-white font-bold">2</div>
-                            <div class="ml-4">
-                                <h4 class="text-lg font-bold">Adiós a las Inasistencias</h4>
-                                <p class="text-gray-600 text-sm">El sistema exige un abono (que tú configuras) para confirmar. Tienen 60 minutos para pagar o el turno se libera. <span class="font-bold">Cero huecos vacíos.</span></p>
-                            </div>
-                        </div>
-                        <div class="flex">
-                            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-black text-white font-bold">3</div>
-                            <div class="ml-4">
-                                <h4 class="text-lg font-bold">Gestión de Equipo y Turnos</h4>
-                                <p class="text-gray-600 text-sm">Tus empleados gestionan su disponibilidad. Si el barbero almuerza a la 1 PM, el sistema no permite citas a esa hora. Sin errores humanos.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="w-full md:w-1/2 bg-gray-100 rounded-3xl p-8 transform rotate-2 hover:rotate-0 transition duration-500 shadow-2xl">
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <div class="flex justify-between items-center mb-4 border-b pb-4">
-                            <div class="font-bold text-lg">💈 Barber Shop El Patrón</div>
-                            <div class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">ABIERTO</div>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="h-8 bg-gray-100 rounded w-3/4"></div>
-                            <div class="h-8 bg-gray-100 rounded w-1/2"></div>
-                            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
-                                <p class="text-xs text-yellow-800 font-bold">Cita Pendiente de Pago</p>
-                                <p class="text-xs text-gray-500">Corte Clásico • Juan • 4:00 PM</p>
-                                <div class="mt-2 text-red-500 font-mono text-sm font-bold">59:30 restantes</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-black text-white py-20 text-center">
-        <div class="container mx-auto px-4">
-            <h2 class="text-3xl font-serif font-bold mb-6">¿Listo para profesionalizar tu pasión?</h2>
-            <p class="text-xl text-gray-400 mb-8">Únete a los negocios que ya no usan papel.</p>
-            <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+    <div class="bg-black text-white py-24 text-center border-t border-gray-900">
+        <div class="container mx-auto px-6">
+            <h2 class="text-4xl font-serif font-bold mb-8 text-gold">Tu negocio merece este nivel.</h2>
+            <div class="flex flex-col md:flex-row justify-center items-center gap-6">
                 <a href="{% url 'register_owner' %}" class="bg-white text-black font-bold py-4 px-10 rounded-full hover:bg-gray-200 transition shadow-lg w-full md:w-auto">
-                    Registrar Mi Negocio
+                    Crear Cuenta Empresarial
                 </a>
-                <a href="{% url 'marketplace_home' %}" class="text-white border border-white font-bold py-4 px-10 rounded-full hover:bg-white hover:text-black transition w-full md:w-auto">
-                    Ver Demo (Marketplace)
+                <a href="{% url 'marketplace_home' %}" class="text-gray-400 border-b border-transparent hover:border-gray-400 pb-1 transition">
+                    Explorar Marketplace
                 </a>
             </div>
         </div>

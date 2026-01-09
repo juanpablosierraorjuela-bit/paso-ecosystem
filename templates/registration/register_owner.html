@@ -1,112 +1,70 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-3xl w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-gray-100">
-        <div class="text-center">
-            <h2 class="mt-2 text-3xl font-serif text-gray-900">
-                Únete al Ecosistema
-            </h2>
-            <p class="mt-2 text-sm text-gray-500">
-                Configura tu perfil de dueño y tu negocio en un solo paso.
-            </p>
+<div class="min-h-screen flex items-center justify-center py-20 px-4 relative overflow-hidden bg-gray-50">
+    <div class="absolute top-0 left-0 w-full h-96 bg-black z-0"></div>
+    
+    <div class="max-w-3xl w-full bg-white p-10 md:p-14 rounded-3xl shadow-2xl relative z-10 border border-gray-100">
+        <div class="text-center mb-10">
+            <span class="text-gold font-bold tracking-widest text-xs uppercase">Registro Empresarial</span>
+            <h2 class="mt-2 text-4xl font-serif font-bold text-gray-900">Crea tu Ecosistema</h2>
         </div>
         
-        <form class="mt-8 space-y-8" method="POST">
+        <form class="space-y-10" method="POST">
             {% csrf_token %}
             
             {% if form.errors %}
-                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r">
-                    <p class="text-red-700 font-bold text-sm">Hay errores en el formulario:</p>
-                    <ul class="list-disc ml-5 text-xs text-red-600 mt-1">
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <li>{{ field.label }}: {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
+                <div class="bg-red-50 p-4 rounded-lg text-red-600 text-sm mb-6">
+                    Por favor revisa los campos marcados.
                 </div>
             {% endif %}
 
             <div>
-                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">1. El Dueño</h3>
+                <h3 class="text-xl font-bold text-black border-b border-gray-100 pb-4 mb-6 flex items-center gap-2">
+                    <span class="bg-black text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span> 
+                    Datos del Propietario
+                </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                        {{ form.first_name }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                        {{ form.last_name }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                        {{ form.phone }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Ciudad Base</label>
-                        {{ form.city }}
-                    </div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nombre</label>{{ form.first_name }}</div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Apellido</label>{{ form.last_name }}</div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">WhatsApp</label>{{ form.phone }}</div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Ciudad</label>{{ form.city }}</div>
                 </div>
             </div>
 
             <div>
-                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">2. El Negocio</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Salón / Barbería</label>
-                        {{ form.salon_name }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Dirección Física</label>
-                        {{ form.salon_address }}
-                    </div>
+                <h3 class="text-xl font-bold text-black border-b border-gray-100 pb-4 mb-6 flex items-center gap-2">
+                    <span class="bg-black text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span> 
+                    Datos del Negocio
+                </h3>
+                <div class="space-y-6">
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nombre del Establecimiento</label>{{ form.salon_name }}</div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Dirección Física</label>{{ form.salon_address }}</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Instagram (Opcional)</label>
-                            {{ form.instagram_url }}
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Google Maps (Opcional)</label>
-                            {{ form.google_maps_url }}
-                        </div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Instagram (Opcional)</label>{{ form.instagram_url }}</div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Google Maps (Opcional)</label>{{ form.google_maps_url }}</div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gray-50 p-6 rounded-xl">
-                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">3. Seguridad</h3>
+            <div class="bg-gray-50 p-8 rounded-2xl border border-gray-200">
+                <h3 class="text-xl font-bold text-black border-b border-gray-200 pb-4 mb-6 flex items-center gap-2">
+                    <span class="bg-black text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span> 
+                    Credenciales de Acceso
+                </h3>
                 <div class="grid grid-cols-1 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Usuario (Para Login)</label>
-                        {{ form.username }}
-                        <p class="text-xs text-gray-400 mt-1">{{ form.username.help_text }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                        {{ form.email }}
-                    </div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Usuario</label>{{ form.username }}</div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Email</label>{{ form.email }}</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                            {{ form.password1 }} 
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
-                            {{ form.password2 }}
-                        </div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Contraseña</label>{{ form.password1 }}</div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Confirmar</label>{{ form.password2 }}</div>
                     </div>
                 </div>
             </div>
 
-            <div>
-                <button type="submit" class="w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    🚀 REGISTRAR ECOSISTEMA
-                </button>
-            </div>
+            <button type="submit" class="w-full py-5 bg-gold text-black font-bold rounded-xl hover:bg-black hover:text-white transition duration-500 shadow-xl text-lg tracking-widest uppercase">
+                Finalizar Registro
+            </button>
         </form>
     </div>
 </div>
