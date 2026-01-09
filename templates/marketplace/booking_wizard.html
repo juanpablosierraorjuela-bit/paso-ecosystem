@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="container mx-auto px-4 max-w-3xl">
+        
+        <div class="mb-8">
+            <a href="{% url 'salon_detail' salon.pk %}" class="text-sm text-gray-500 hover:text-black mb-4 inline-block">&larr; Volver al negocio</a>
+            <h1 class="text-3xl font-serif font-bold">Configura tu Cita</h1>
+            <p class="text-gray-600">Estás reservando <span class="font-bold text-black">{{ service.name }}</span> en {{ salon.name }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="p-8 border-b border-gray-100">
+                <h2 class="text-lg font-bold mb-4">1. Elige a tu Experto</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {% for emp in employees %}
+                    <label class="cursor-pointer">
+                        <input type="radio" name="employee" value="{{ emp.id }}" class="peer sr-only">
+                        <div class="p-4 rounded-xl border-2 border-gray-100 peer-checked:border-black peer-checked:bg-gray-50 transition-all text-center hover:border-gray-300">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center font-bold text-gray-500">
+                                {{ emp.first_name|slice:":1" }}
+                            </div>
+                            <span class="text-sm font-bold block">{{ emp.first_name }}</span>
+                        </div>
+                    </label>
+                    {% empty %}
+                    <p class="text-sm text-red-500 col-span-4">No hay empleados disponibles para este servicio.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="p-8 bg-gray-50">
+                <h2 class="text-lg font-bold mb-4">2. Disponibilidad para Hoy ({{ target_date }})</h2>
+                
+                <div class="grid grid-cols-3 md:grid-cols-5 gap-3">
+                    <button class="py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm hover:border-black focus:ring-2 ring-black">09:00 AM</button>
+                    <button class="py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm hover:border-black focus:ring-2 ring-black">10:00 AM</button>
+                    <button class="py-2 px-4 bg-gray-200 border border-transparent rounded-lg text-sm text-gray-400 cursor-not-allowed">11:00 AM</button>
+                    <button class="py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm hover:border-black focus:ring-2 ring-black">12:00 PM</button>
+                </div>
+                
+                <p class="text-xs text-gray-400 mt-4">* Los horarios bloqueados ya están reservados.</p>
+            </div>
+
+            <div class="p-8 border-t border-gray-100 flex justify-between items-center bg-white">
+                <div>
+                    <p class="text-sm text-gray-500">Total a pagar en local</p>
+                    <p class="text-2xl font-bold font-mono">${{ service.price }}</p>
+                </div>
+                <button class="bg-black text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform">
+                    Continuar al Pago &rarr;
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

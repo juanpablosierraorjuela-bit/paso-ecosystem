@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white border-b border-gray-200">
+    <div class="container mx-auto px-4 py-10">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+                <h1 class="text-4xl font-serif font-bold text-gray-900">{{ salon.name }}</h1>
+                <p class="text-gray-500 mt-2">{{ salon.address }}, {{ salon.city }}</p>
+                <div class="mt-4 flex items-center space-x-2">
+                    {% if is_open %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            🟢 Abierto ahora
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            🔴 Cerrado ahora
+                        </span>
+                    {% endif %}
+                    <span class="text-xs text-gray-400">Horario: {{ salon.opening_time }} - {{ salon.closing_time }}</span>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0 flex space-x-3">
+                {% if salon.instagram_url %}
+                    <a href="{{ salon.instagram_url }}" target="_blank" class="bg-gray-100 p-3 rounded-full hover:bg-pink-50 transition">📸 Instagram</a>
+                {% endif %}
+                <a href="#" class="bg-black text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-gray-800 transition">
+                    Contactar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-12">
+    <h2 class="text-2xl font-serif font-bold mb-6">Servicios Disponibles</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for service in services %}
+        <div class="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all bg-white group cursor-pointer">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-bold group-hover:text-gold-600 transition">{{ service.name }}</h3>
+                <span class="font-mono font-bold">${{ service.price }}</span>
+            </div>
+            <p class="text-sm text-gray-500 mb-6">Duración: {{ service.duration_minutes }} min</p>
+            
+            <a href="{% url 'booking_wizard' salon.pk service.pk %}" class="block w-full text-center bg-gray-900 text-white py-2 rounded-lg text-sm font-bold hover:bg-black transition">
+                Agendar
+            </a>
+        </div>
+        {% empty %}
+        <p class="text-gray-400">Este negocio aún no ha configurado sus servicios.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
