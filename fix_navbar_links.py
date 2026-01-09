@@ -1,3 +1,12 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# CONTENIDO CORREGIDO DE BASE.HTML
+# ==========================================
+html_base = """
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -87,3 +96,17 @@
 
 </body>
 </html>
+"""
+
+def apply_nav_fix():
+    print("🔧 ACTUALIZANDO BARRA DE NAVEGACIÓN PARA TODOS LOS ROLES...")
+    # Asegurar que el directorio templates existe
+    os.makedirs(BASE_DIR / 'templates', exist_ok=True)
+    
+    file_path = BASE_DIR / 'templates' / 'base.html'
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(html_base.strip())
+    print(f"✅ Archivo actualizado: {file_path}")
+
+if __name__ == "__main__":
+    apply_nav_fix()
