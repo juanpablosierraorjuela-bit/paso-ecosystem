@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,35 +6,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PASO Ecosistema</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap');
-        .font-serif { family: 'Playfair Display', serif; }
-        .font-sans { family: 'Lato', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .font-sans { font-family: 'Lato', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-50 font-sans flex flex-col min-h-screen">
+<body class="bg-gray-50 font-sans flex flex-col min-h-screen text-gray-900">
+
+    <nav class="bg-black text-white py-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-serif font-bold text-gold-500 tracking-wider hover:text-gray-300 transition">
+                PASO
+            </a>
+
+            <div class="flex items-center space-x-6 text-sm font-bold">
+                <a href="/marketplace/" class="hover:text-yellow-400 transition">MARKETPLACE</a>
+                
+                {% if user.is_authenticated %}
+                    <span class="text-gray-500 hidden md:inline">Hola, {{ user.first_name }}</span>
+                    
+                    {% if user.role == 'OWNER' %}
+                        <a href="{% url 'dashboard' %}" class="bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200 transition">
+                            MI PANEL
+                        </a>
+                    {% endif %}
+                    
+                    <form action="{% url 'logout' %}" method="post" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-red-400 hover:text-red-300 ml-2">SALIR</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'register_owner' %}" class="hidden md:inline hover:text-white text-gray-400">Soy Dueño</a>
+                    <a href="{% url 'login' %}" class="bg-white text-black px-5 py-2 rounded-full hover:bg-gray-200 transition">
+                        ENTRAR
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
 
     <main class="flex-grow">
+        {% if messages %}
+            <div class="max-w-4xl mx-auto mt-4 px-4">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg shadow-md mb-2 text-white {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% else %}bg-blue-600{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-black text-white py-6 mt-12">
-        <div class="container mx-auto px-4 flex justify-between items-center">
-            <div class="text-sm font-bold tracking-widest text-gold-500">
-                PASO ECOSISTEMA
+    <footer class="bg-black text-white py-8 mt-12 border-t border-gray-900">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <p class="text-lg font-serif font-bold">PASO ECOSISTEMA</p>
+                <p class="text-xs text-gray-500">Transformando la belleza en Colombia.</p>
             </div>
-            
-            <div class="text-xs text-gray-400">
-                &copy; 2026 - Ecosistema PASO
+            <div class="text-xs text-gray-600">
+                &copy; 2026 - Todos los derechos reservados
             </div>
-            
-            <div class="flex space-x-4">
+            <div class="flex space-x-4 mt-4 md:mt-0">
                 {% if global_settings.instagram_url %}
-                    <a href="{{ global_settings.instagram_url }}" class="hover:text-pink-500">IG</a>
+                    <a href="{{ global_settings.instagram_url }}" target="_blank" class="text-gray-400 hover:text-pink-500 transition">IG</a>
                 {% endif %}
-                {% if global_settings.whatsapp_support %}
-                    <a href="https://wa.me/{{ global_settings.whatsapp_support }}" class="hover:text-green-500">WA</a>
-                {% endif %}
+                <a href="#" class="text-gray-400 hover:text-blue-500 transition">FB</a>
             </div>
         </div>
     </footer>

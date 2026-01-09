@@ -2,21 +2,101 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                ⚠️
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-yellow-700">
-                    <span class="font-bold">Acción Requerida:</span>
-                    Tu cuenta está en periodo de prueba. Tienes <span id="timer" class="font-mono font-bold">23:59:00</span> para activar tu ecosistema.
-                </p>
-                <a href="#" class="mt-2 inline-block text-sm font-bold text-yellow-800 underline">Pagar $50.000 COP y Activar</a>
-            </div>
+
+    <div class="flex justify-between items-end mb-8 border-b pb-4">
+        <div>
+            <h1 class="text-4xl font-serif text-gray-900">{{ salon.name }}</h1>
+            <p class="text-gray-500">Panel de Control &bull; {{ salon.city }}</p>
+        </div>
+        <div>
+            <span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-gray-500">
+                {% if is_trial %}MODO PRUEBA{% else %}PREMIUM{% endif %}
+            </span>
         </div>
     </div>
 
-    <h1 class="text-4xl font-serif mb-6">Panel de Control: El Cerebro</h1>
+    {% if is_trial %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8 rounded-r-lg shadow-sm relative overflow-hidden">
+        <div class="flex items-start z-10 relative">
+            <div class="flex-shrink-0 text-3xl">⚠️</div>
+            <div class="ml-4 flex-grow">
+                <h3 class="text-lg leading-6 font-medium text-yellow-800">
+                    Activación Requerida
+                </h3>
+                <div class="mt-2 text-sm text-yellow-700">
+                    <p>Tu ecosistema está en riesgo. Tienes <span id="timer" class="font-mono font-bold text-xl bg-yellow-200 px-2 rounded">Cargando...</span> para realizar el pago de suscripción.</p>
+                </div>
+                <div class="mt-4">
+                    <a href="{{ wa_link }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 shadow-lg transition-all transform hover:scale-105">
+                        📱 Pagar $50.000 y Activar Ahora
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer">
+            <div class="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">✂️</div>
+            <h3 class="text-xl font-bold font-serif mb-2">Mis Servicios</h3>
+            <p class="text-gray-500 text-sm mb-4">Configura cortes, precios y tiempos de duración.</p>
+            <span class="text-xs font-bold underline">Gestionar Servicios &rarr;</span>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer">
+            <div class="w-12 h-12 bg-gray-200 text-black rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">👥</div>
+            <h3 class="text-xl font-bold font-serif mb-2">Mi Equipo</h3>
+            <p class="text-gray-500 text-sm mb-4">Crea usuarios para tus empleados y define turnos.</p>
+            <span class="text-xs font-bold underline">Gestionar Empleados &rarr;</span>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer">
+            <div class="w-12 h-12 bg-gray-200 text-black rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">📅</div>
+            <h3 class="text-xl font-bold font-serif mb-2">Horarios & Cierre</h3>
+            <p class="text-gray-500 text-sm mb-4">Define a qué hora abre y cierra tu local.</p>
+            <span class="text-xs font-bold underline">Configurar Reloj &rarr;</span>
+        </div>
+
+    </div>
+
+    <div class="mt-12">
+        <h2 class="text-2xl font-serif font-bold mb-4">Agenda de Hoy</h2>
+        <div class="bg-white rounded-xl shadow p-8 text-center border border-gray-100">
+            <p class="text-gray-400">Aún no tienes citas agendadas para hoy.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Recibimos los segundos restantes desde Django
+    let timeLeft = {{ seconds_left }};
+    
+    function updateTimer() {
+        if (timeLeft <= 0) {
+            document.getElementById("timer").innerHTML = "00:00:00";
+            document.getElementById("timer").classList.add("text-red-600");
+            return;
+        }
+
+        let hours = Math.floor(timeLeft / 3600);
+        let minutes = Math.floor((timeLeft % 3600) / 60);
+        let seconds = timeLeft % 60;
+
+        // Formato con ceros a la izquierda (09:05:01)
+        let formattedTime = 
+            (hours < 10 ? "0" + hours : hours) + ":" + 
+            (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+            (seconds < 10 ? "0" + seconds : seconds);
+
+        document.getElementById("timer").innerHTML = formattedTime;
+        timeLeft--;
+    }
+
+    // Actualizar cada segundo
+    setInterval(updateTimer, 1000);
+    updateTimer(); // Ejecutar inmediatamente al cargar
+</script>
 {% endblock %}
