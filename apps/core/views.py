@@ -14,6 +14,10 @@ import re
 def home(request):
     return render(request, 'home.html')
 
+# --- NUEVA VISTA LANDING ---
+def landing_owners(request):
+    return render(request, 'landing_owners.html')
+
 def register_owner(request):
     if request.method == 'POST':
         form = OwnerRegistrationForm(request.POST)
@@ -42,12 +46,10 @@ def dispatch_user(request):
     else:
         return redirect('home')
 
-# --- PANEL CLIENTE COMPLETO ---
 @login_required
 def client_dashboard(request):
     user = request.user
     
-    # 1. Procesar Formularios si es POST
     if request.method == 'POST':
         if 'update_profile' in request.POST:
             profile_form = ClientProfileForm(request.POST, instance=user)
@@ -55,18 +57,16 @@ def client_dashboard(request):
                 profile_form.save()
                 messages.success(request, "Tus datos han sido actualizados.")
                 return redirect('client_dashboard')
-                
         elif 'change_password' in request.POST:
             password_form = ClientPasswordForm(request.POST)
             if password_form.is_valid():
                 new_pass = password_form.cleaned_data['new_password']
                 user.set_password(new_pass)
                 user.save()
-                update_session_auth_hash(request, user) # Mantener sesión activa
+                update_session_auth_hash(request, user)
                 messages.success(request, "Contraseña actualizada correctamente.")
                 return redirect('client_dashboard')
     
-    # 2. Cargar datos para la vista
     profile_form = ClientProfileForm(instance=user)
     password_form = ClientPasswordForm()
     
