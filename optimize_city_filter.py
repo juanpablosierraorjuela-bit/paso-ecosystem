@@ -1,3 +1,12 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# ACTUALIZAR MARKETPLACE VIEWS (FILTRO DINÁMICO)
+# ==========================================
+views_content = """
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -157,3 +166,15 @@ def booking_commit(request):
         return redirect('client_dashboard')
         
     return redirect('marketplace_home')
+"""
+
+def apply_city_optimization():
+    print("🏙️ OPTIMIZANDO FILTRO DE CIUDADES...")
+    
+    # 1. Views Marketplace
+    with open(BASE_DIR / 'apps' / 'marketplace' / 'views.py', 'w', encoding='utf-8') as f:
+        f.write(views_content.strip())
+    print("✅ apps/marketplace/views.py: Ahora solo muestra ciudades activas.")
+
+if __name__ == "__main__":
+    apply_city_optimization()
