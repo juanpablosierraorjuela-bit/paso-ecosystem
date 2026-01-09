@@ -43,7 +43,7 @@ def dispatch_user(request):
     # 3. Si es Empleado -> Su Agenda (Ruta actual de lista de empleados)
     # Nota: Cuando creemos el dashboard de empleado en Fase 3, cambiaremos esto a 'employee_dashboard'
     elif user.role == 'EMPLOYEE':
-        return redirect('employees_list')
+        return redirect('employee_dashboard')  # CORREGIDO: Panel del Empleado
         
     # 4. Si eres TÚ (Superuser) -> Admin de Django
     elif user.is_superuser:

@@ -17,13 +17,12 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div class="lg:col-span-1">
+        <div class="lg:col-span-1 space-y-8">
+            
             <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
                 <h2 class="text-xl font-bold mb-4 flex items-center">
                     ⏰ Mi Disponibilidad
                 </h2>
-                <p class="text-sm text-gray-500 mb-6">Define cuándo puedes recibir clientes. El sistema bloqueará automáticamente tu hora de almuerzo.</p>
-                
                 <form method="post">
                     {% csrf_token %}
                     
@@ -32,11 +31,11 @@
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <div>
                                 <span class="text-xs text-gray-600">Entrada</span>
-                                {{ form.work_start }}
+                                {{ schedule_form.work_start }}
                             </div>
                             <div>
                                 <span class="text-xs text-gray-600">Salida</span>
-                                {{ form.work_end }}
+                                {{ schedule_form.work_end }}
                             </div>
                         </div>
                     </div>
@@ -46,11 +45,11 @@
                         <div class="grid grid-cols-2 gap-2 mt-2">
                             <div>
                                 <span class="text-xs text-gray-600">Inicio</span>
-                                {{ form.lunch_start }}
+                                {{ schedule_form.lunch_start }}
                             </div>
                             <div>
                                 <span class="text-xs text-gray-600">Fin</span>
-                                {{ form.lunch_end }}
+                                {{ schedule_form.lunch_end }}
                             </div>
                         </div>
                     </div>
@@ -58,7 +57,7 @@
                     <div class="mb-6">
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Días Activos</label>
                         <div class="grid grid-cols-2 gap-2 text-sm">
-                            {% for checkbox in form.active_days %}
+                            {% for checkbox in schedule_form.active_days %}
                             <label class="flex items-center space-x-2 cursor-pointer">
                                 {{ checkbox.tag }}
                                 <span>{{ checkbox.choice_label }}</span>
@@ -67,11 +66,42 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
-                        Actualizar Mi Horario
+                    <button type="submit" name="update_schedule" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                        Actualizar Horario
                     </button>
                 </form>
             </div>
+
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    👤 Mis Datos
+                </h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="space-y-3 mb-4">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Nombre</label>
+                            {{ profile_form.first_name }}
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Apellido</label>
+                            {{ profile_form.last_name }}
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">WhatsApp (Para notificaciones)</label>
+                            {{ profile_form.phone }}
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Email</label>
+                            {{ profile_form.email }}
+                        </div>
+                    </div>
+                    <button type="submit" name="update_profile" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
+                        Guardar Perfil
+                    </button>
+                </form>
+            </div>
+
         </div>
 
         <div class="lg:col-span-2">
@@ -90,13 +120,6 @@
 </div>
 
 <style>
-    /* Estilo simple para los inputs de hora */
-    input[type="time"] {
-        width: 100%;
-        padding: 4px;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        font-family: monospace;
-    }
+    input[type="time"] { width: 100%; padding: 4px; border: 1px solid #e5e7eb; border-radius: 4px; }
 </style>
 {% endblock %}
