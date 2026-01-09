@@ -1,3 +1,12 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# 1. MARKETPLACE INDEX.HTML (AJUSTE DE MARGEN)
+# ==========================================
+html_marketplace = """
 {% extends 'base.html' %}
 
 {% block content %}
@@ -103,3 +112,13 @@
     </div>
 </div>
 {% endblock %}
+"""
+
+def fix_title_margin():
+    print("🔧 AJUSTANDO MARGEN DEL TÍTULO EN MARKETPLACE...")
+    with open(BASE_DIR / 'templates' / 'marketplace' / 'index.html', 'w', encoding='utf-8') as f:
+        f.write(html_marketplace.strip())
+    print("✅ templates/marketplace/index.html: Margen corregido.")
+
+if __name__ == "__main__":
+    fix_title_margin()
