@@ -5,18 +5,44 @@ from django.contrib.auth import login
 from django.views.decorators.http import require_GET
 from django.utils import timezone
 from django.contrib import messages
+from django.db.models import Q
 from datetime import datetime, timedelta
 from apps.businesses.models import Salon, Service
 from apps.core.models import User
 from apps.businesses.logic import AvailabilityManager
 from apps.marketplace.models import Appointment
+from apps.businesses.forms import COLOMBIA_CITIES # Importamos la lista oficial
 import uuid
 
 def home(request):
+    # Obtener parámetros de búsqueda
+    query = request.GET.get('q', '')
+    city_filter = request.GET.get('city', '')
+
+    # QuerySet base optimizado
     salons = Salon.objects.select_related('owner').all()
+
+    # Aplicar filtros
+    if query:
+        salons = salons.filter(name__icontains=query)
+    
+    if city_filter:
+        salons = salons.filter(city=city_filter)
+
+    # Calcular estado abierto/cerrado solo para los resultados
     for salon in salons:
         salon.is_open_now = AvailabilityManager.is_salon_open(salon)
-    return render(request, 'marketplace/index.html', {'salons': salons})
+        
+    # Extraer solo los nombres de las ciudades para el template
+    city_list = [c[0] for c in COLOMBIA_CITIES]
+
+    context = {
+        'salons': salons,
+        'cities': city_list,
+        'current_city': city_filter,
+        'current_query': query
+    }
+    return render(request, 'marketplace/index.html', context)
 
 def salon_detail(request, pk):
     salon = get_object_or_404(Salon, pk=pk)
@@ -31,14 +57,13 @@ def booking_wizard(request, salon_id, service_id):
     service = get_object_or_404(Service, pk=service_id, salon=salon)
     employees = salon.employees.all()
     
-    # CALCULAMOS EL ABONO Y LO CONVERTIMOS A ENTERO AQUÍ
     deposit_amount = int((service.price * salon.deposit_percentage) / 100)
     
     context = {
         'salon': salon,
         'service': service,
         'employees': employees,
-        'deposit_amount': deposit_amount, # Ya va como entero limpio
+        'deposit_amount': deposit_amount,
         'today': timezone.localtime(timezone.now()).strftime('%Y-%m-%d'),
         'is_guest': not request.user.is_authenticated
     }
