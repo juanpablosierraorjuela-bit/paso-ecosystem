@@ -26,26 +26,24 @@ def salon_detail(request, pk):
         'salon': salon, 'is_open': is_open, 'services': services
     })
 
-# --- WIZARD VISUAL (ABIERTO A TODOS) ---
 def booking_wizard(request, salon_id, service_id):
-    # NOTA: Ya no requiere login previo
     salon = get_object_or_404(Salon, pk=salon_id)
     service = get_object_or_404(Service, pk=service_id, salon=salon)
     employees = salon.employees.all()
     
-    deposit_amount = (service.price * salon.deposit_percentage) / 100
+    # CALCULAMOS EL ABONO Y LO CONVERTIMOS A ENTERO AQUÍ
+    deposit_amount = int((service.price * salon.deposit_percentage) / 100)
     
     context = {
         'salon': salon,
         'service': service,
         'employees': employees,
-        'deposit_amount': deposit_amount,
+        'deposit_amount': deposit_amount, # Ya va como entero limpio
         'today': timezone.localtime(timezone.now()).strftime('%Y-%m-%d'),
-        'is_guest': not request.user.is_authenticated # Flag para mostrar form de datos
+        'is_guest': not request.user.is_authenticated
     }
     return render(request, 'marketplace/booking_wizard.html', context)
 
-# --- API: OBTENER HORAS (ABIERTO) ---
 @require_GET
 def get_available_slots_api(request):
     try:
@@ -75,7 +73,6 @@ def get_available_slots_api(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-# --- CONFIRMAR RESERVA (AUTO-REGISTRO) ---
 def booking_commit(request):
     if request.method == 'POST':
         salon_id = request.POST.get('salon_id')
@@ -84,7 +81,6 @@ def booking_commit(request):
         date_str = request.POST.get('date')
         time_str = request.POST.get('time')
         
-        # Datos del Cliente (Si es guest)
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
         email = request.POST.get('email')
@@ -98,35 +94,29 @@ def booking_commit(request):
         booking_datetime = timezone.make_aware(booking_datetime)
         deposit_val = (service.price * salon.deposit_percentage) / 100
 
-        # --- LÓGICA DE USUARIO ---
         client_user = request.user
 
         if not client_user.is_authenticated:
-            # 1. Verificar si ya existe
             if User.objects.filter(email=email).exists():
                 messages.error(request, "Este correo ya está registrado. Por favor inicia sesión primero.")
-                return redirect('login') # O idealmente volver al wizard con error
+                return redirect('login')
             
-            # 2. Crear Usuario Automáticamente
-            # Generamos contraseña temporal aleatoria
             temp_password = str(uuid.uuid4())[:8]
             
             client_user = User.objects.create_user(
-                username=email, # Usamos email como username
+                username=email,
                 email=email,
                 password=temp_password,
                 first_name=first_name,
                 last_name=last_name,
                 phone=phone,
                 role='CLIENT',
-                is_verified_payment=True # Clientes no pagan suscripción mensual
+                is_verified_payment=True
             )
             
-            # 3. Auto-Login
             login(request, client_user)
-            messages.success(request, f"¡Cuenta creada! Tu contraseña temporal es: {temp_password} (Cámbiala en perfil)")
+            messages.success(request, f"¡Cuenta creada! Tu contraseña temporal es: {temp_password}")
 
-        # --- CREAR CITA ---
         Appointment.objects.create(
             client=client_user,
             salon=salon,
