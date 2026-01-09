@@ -1,3 +1,92 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# 1. ACTUALIZAR CORE VIEWS (PAGO DE ABONO DEL CLIENTE)
+# ==========================================
+core_views_content = """
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import timedelta
+from apps.businesses.forms import OwnerRegistrationForm
+from apps.businesses.models import Salon
+from apps.core.models import User, GlobalSettings
+from apps.marketplace.models import Appointment
+import re
+
+def home(request):
+    return render(request, 'home.html')
+
+def register_owner(request):
+    if request.method == 'POST':
+        form = OwnerRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('dashboard')
+    else:
+        form = OwnerRegistrationForm()
+    return render(request, 'registration/register_owner.html', {'form': form})
+
+def login_view(request):
+    pass
+
+@login_required
+def dispatch_user(request):
+    user = request.user
+    if user.role == 'OWNER':
+        return redirect('dashboard')
+    elif user.role == 'CLIENT':
+        return redirect('marketplace_home')
+    elif user.role == 'EMPLOYEE':
+        return redirect('employee_dashboard')
+    elif user.is_superuser:
+        return redirect('/admin/')
+    else:
+        return redirect('home')
+
+@login_required
+def client_dashboard(request):
+    appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
+    
+    for app in appointments:
+        if app.status == 'PENDING':
+            elapsed = timezone.now() - app.created_at
+            remaining = timedelta(minutes=60) - elapsed
+            app.seconds_left = max(0, int(remaining.total_seconds()))
+            
+            # --- CORRECCIÓN WHATSAPP COLOMBIA ---
+            try:
+                owner_phone = app.salon.owner.phone
+                if owner_phone:
+                    # Limpiar todo lo que no sea número
+                    clean_phone = re.sub(r'\D', '', str(owner_phone))
+                    # Si no empieza por 57, se lo pegamos
+                    if not clean_phone.startswith('57'):
+                        clean_phone = '57' + clean_phone
+                else:
+                    clean_phone = '573000000000'
+            except:
+                clean_phone = '573000000000'
+            
+            msg = (
+                f"Hola {app.salon.name}, soy {request.user.first_name}. "
+                f"Confirmo mi cita para {app.service.name} el {app.date_time.strftime('%d/%m %I:%M %p')}. "
+                f"Adjunto abono de ${int(app.deposit_amount)}."
+            )
+            app.wa_link = f"https://wa.me/{clean_phone}?text={msg}"
+            
+    return render(request, 'core/client_dashboard.html', {'appointments': appointments})
+"""
+
+# ==========================================
+# 2. ACTUALIZAR BUSINESSES VIEWS (ACTIVACIÓN DE CUENTA DUEÑO)
+# ==========================================
+businesses_views_content = """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -180,3 +269,20 @@ def employee_dashboard(request):
         'schedule': schedule,
         'salon': request.user.workplace
     })
+"""
+
+def apply_fix_57():
+    print("🇨🇴 APLICANDO PARCHE COLOMBIA (+57) A WHATSAPP...")
+    
+    # 1. Core Views (Cliente -> Dueño)
+    with open(BASE_DIR / 'apps' / 'core' / 'views.py', 'w', encoding='utf-8') as f:
+        f.write(core_views_content.strip())
+    print("✅ apps/core/views.py: Botón de abono actualizado con 57.")
+
+    # 2. Businesses Views (Dueño -> Admin)
+    with open(BASE_DIR / 'apps' / 'businesses' / 'views.py', 'w', encoding='utf-8') as f:
+        f.write(businesses_views_content.strip())
+    print("✅ apps/businesses/views.py: Botón de activación actualizado con 57.")
+
+if __name__ == "__main__":
+    apply_fix_57()

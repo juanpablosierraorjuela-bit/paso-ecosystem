@@ -24,56 +24,43 @@ def register_owner(request):
     return render(request, 'registration/register_owner.html', {'form': form})
 
 def login_view(request):
-    # La vista de login la maneja Django auth, pero si necesitamos custom logic va aqui
-    # Por ahora usamos la generica en urls.py, este es un placeholder si se necesita
     pass
 
-# --- SEMÁFORO DE BIENVENIDA ---
 @login_required
 def dispatch_user(request):
     user = request.user
-    
-    # 1. Si es Dueño -> Panel de Negocio
     if user.role == 'OWNER':
         return redirect('dashboard')
-    
-    # 2. Si es Cliente -> Marketplace
     elif user.role == 'CLIENT':
         return redirect('marketplace_home')
-        
-    # 3. Si es Empleado -> Su Agenda
     elif user.role == 'EMPLOYEE':
         return redirect('employee_dashboard')
-        
-    # 4. Si eres TÚ (Superuser) -> Admin de Django
     elif user.is_superuser:
         return redirect('/admin/')
-        
     else:
         return redirect('home')
 
-# --- PANEL CLIENTE ---
 @login_required
 def client_dashboard(request):
-    # Permitir a dueños y empleados ver su perfil de cliente tambien si quieren, 
-    # o restringir solo a CLIENT. Por ahora restringimos a CLIENT para seguir la Biblia.
-    # Pero si un dueño reserva, quizás quiera ver sus citas. 
-    # Para no romper, dejamos que cualquiera logueado vea SUS citas.
-    
     appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
     
-    # Procesar lógica de WhatsApp para cada cita
     for app in appointments:
         if app.status == 'PENDING':
-            # Calcular tiempo restante (60 min)
             elapsed = timezone.now() - app.created_at
             remaining = timedelta(minutes=60) - elapsed
             app.seconds_left = max(0, int(remaining.total_seconds()))
             
-            # Link WhatsApp
+            # --- CORRECCIÓN WHATSAPP COLOMBIA ---
             try:
                 owner_phone = app.salon.owner.phone
-                clean_phone = re.sub(r'\D', '', str(owner_phone)) if owner_phone else '573000000000'
+                if owner_phone:
+                    # Limpiar todo lo que no sea número
+                    clean_phone = re.sub(r'\D', '', str(owner_phone))
+                    # Si no empieza por 57, se lo pegamos
+                    if not clean_phone.startswith('57'):
+                        clean_phone = '57' + clean_phone
+                else:
+                    clean_phone = '573000000000'
             except:
                 clean_phone = '573000000000'
             
