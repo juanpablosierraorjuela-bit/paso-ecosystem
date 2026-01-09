@@ -116,3 +116,14 @@ DATABASES = {
 
 # 6. ARCHIVOS ESTÁTICOS (WhiteNoise - Ya lo tienes, pero aseguramos)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+# --- CONFIGURACIÓN DE CORREO (SMTP cPanel) ---
+# Leemos las credenciales desde las Variables de Entorno de Render
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'mail.pasotunja.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 465))
+EMAIL_USE_SSL = True  # Usualmente cPanel usa SSL en el puerto 465
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = f"Soporte PASO <{os.environ.get('EMAIL_HOST_USER')}>"

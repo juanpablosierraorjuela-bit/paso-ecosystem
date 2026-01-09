@@ -1,3 +1,9 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+reaper_content = """
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from apps.core.models import User
@@ -22,3 +28,14 @@ class Command(BaseCommand):
         expired_apps.delete()
         
         self.stdout.write(self.style.SUCCESS(f'Reaper Reporte: {owners_count} dueños eliminados, {apps_count} citas liberadas (Criterio: 2 Horas).'))
+"""
+
+def apply_reaper_update():
+    print("⏳ EXTENDIENDO TIEMPO DEL REAPER A 2 HORAS...")
+    path = BASE_DIR / 'apps' / 'core' / 'management' / 'commands' / 'run_reaper.py'
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(reaper_content.strip())
+    print("✅ Reaper actualizado: Ahora espera 120 minutos antes de borrar.")
+
+if __name__ == "__main__":
+    apply_reaper_update()
