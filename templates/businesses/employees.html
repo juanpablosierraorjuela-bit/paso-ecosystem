@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-serif font-bold">Mi Equipo</h1>
+        <a href="{% url 'dashboard' %}" class="text-gray-500 hover:text-black">Volver al Panel</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-1 bg-white p-6 rounded-xl shadow border border-gray-100 h-fit">
+            <h2 class="text-xl font-bold mb-4">Contratar Talento</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="w-full mt-4 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                    Crear Empleado
+                </button>
+            </form>
+        </div>
+
+        <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for employee in employees %}
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-black transition">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600">
+                        {{ employee.first_name|slice:":1" }}
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold">{{ employee.first_name }} {{ employee.last_name }}</h3>
+                        <p class="text-xs text-gray-500">Usuario: {{ employee.username }}</p>
+                    </div>
+                </div>
+                <div class="mt-auto">
+                    <a href="{% url 'employee_delete' employee.pk %}" class="block text-center text-red-400 hover:text-red-600 text-sm font-bold border border-red-200 px-3 py-1 rounded hover:bg-red-50 w-full">
+                        Desvincular
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-2 text-center py-10 bg-gray-50 rounded-xl">
+                <p class="text-gray-400">Aún no tienes empleados en tu equipo.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

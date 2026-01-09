@@ -36,28 +36,39 @@
     </div>
     {% endif %}
 
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-gray-900 text-white p-4 rounded-lg">
+            <p class="text-xs text-gray-400">SERVICIOS ACTIVOS</p>
+            <p class="text-2xl font-bold">{{ service_count }}</p>
+        </div>
+        <div class="bg-gray-900 text-white p-4 rounded-lg">
+            <p class="text-xs text-gray-400">EMPLEADOS</p>
+            <p class="text-2xl font-bold">{{ employee_count }}</p>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer">
+        <a href="{% url 'services_list' %}" class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer block">
             <div class="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">✂️</div>
             <h3 class="text-xl font-bold font-serif mb-2">Mis Servicios</h3>
             <p class="text-gray-500 text-sm mb-4">Configura cortes, precios y tiempos de duración.</p>
             <span class="text-xs font-bold underline">Gestionar Servicios &rarr;</span>
-        </div>
+        </a>
 
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer">
+        <a href="{% url 'employees_list' %}" class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer block">
             <div class="w-12 h-12 bg-gray-200 text-black rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">👥</div>
             <h3 class="text-xl font-bold font-serif mb-2">Mi Equipo</h3>
             <p class="text-gray-500 text-sm mb-4">Crea usuarios para tus empleados y define turnos.</p>
             <span class="text-xs font-bold underline">Gestionar Empleados &rarr;</span>
-        </div>
+        </a>
 
-        <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer">
+        <a href="{% url 'settings_view' %}" class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition-all border border-gray-100 group cursor-pointer block">
             <div class="w-12 h-12 bg-gray-200 text-black rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">📅</div>
             <h3 class="text-xl font-bold font-serif mb-2">Horarios & Cierre</h3>
             <p class="text-gray-500 text-sm mb-4">Define a qué hora abre y cierra tu local.</p>
             <span class="text-xs font-bold underline">Configurar Reloj &rarr;</span>
-        </div>
+        </a>
 
     </div>
 
@@ -71,7 +82,6 @@
 </div>
 
 <script>
-    // Recibimos los segundos restantes desde Django
     let timeLeft = {{ seconds_left }};
     
     function updateTimer() {
@@ -85,7 +95,6 @@
         let minutes = Math.floor((timeLeft % 3600) / 60);
         let seconds = timeLeft % 60;
 
-        // Formato con ceros a la izquierda (09:05:01)
         let formattedTime = 
             (hours < 10 ? "0" + hours : hours) + ":" + 
             (minutes < 10 ? "0" + minutes : minutes) + ":" + 
@@ -94,9 +103,7 @@
         document.getElementById("timer").innerHTML = formattedTime;
         timeLeft--;
     }
-
-    // Actualizar cada segundo
     setInterval(updateTimer, 1000);
-    updateTimer(); // Ejecutar inmediatamente al cargar
+    updateTimer();
 </script>
 {% endblock %}
