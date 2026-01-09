@@ -5,55 +5,139 @@
     <div class="container mx-auto px-4 max-w-3xl">
         
         <div class="mb-8">
-            <a href="{% url 'salon_detail' salon.pk %}" class="text-sm text-gray-500 hover:text-black mb-4 inline-block">&larr; Volver al negocio</a>
-            <h1 class="text-3xl font-serif font-bold">Configura tu Cita</h1>
-            <p class="text-gray-600">Estás reservando <span class="font-bold text-black">{{ service.name }}</span> en {{ salon.name }}</p>
+            <a href="{% url 'salon_detail' salon.pk %}" class="text-sm text-gray-500 hover:text-black mb-4 inline-block">&larr; Volver</a>
+            <h1 class="text-3xl font-serif font-bold">Reserva tu experiencia</h1>
+            <p class="text-gray-600">Servicio: <strong>{{ service.name }}</strong> (${{ service.price }})</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div class="p-8 border-b border-gray-100">
-                <h2 class="text-lg font-bold mb-4">1. Elige a tu Experto</h2>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {% for emp in employees %}
-                    <label class="cursor-pointer">
-                        <input type="radio" name="employee" value="{{ emp.id }}" class="peer sr-only">
-                        <div class="p-4 rounded-xl border-2 border-gray-100 peer-checked:border-black peer-checked:bg-gray-50 transition-all text-center hover:border-gray-300">
-                            <div class="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center font-bold text-gray-500">
-                                {{ emp.first_name|slice:":1" }}
+        <form action="{% url 'booking_commit' %}" method="POST" id="bookingForm">
+            {% csrf_token %}
+            <input type="hidden" name="salon_id" value="{{ salon.id }}">
+            <input type="hidden" name="service_id" value="{{ service.id }}">
+            <input type="hidden" name="employee_id" id="selectedEmployee">
+            <input type="hidden" name="time" id="selectedTime">
+
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                
+                <div class="p-8 border-b border-gray-100">
+                    <h2 class="text-lg font-bold mb-4">1. Elige Especialista</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {% for emp in employees %}
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="employee_radio" value="{{ emp.id }}" class="peer sr-only" onchange="selectEmployee(this)">
+                            <div class="p-4 rounded-xl border-2 border-gray-100 peer-checked:border-black peer-checked:bg-gray-50 transition-all text-center hover:border-gray-300">
+                                <div class="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center font-bold text-gray-500">
+                                    {{ emp.first_name|slice:":1" }}
+                                </div>
+                                <span class="text-sm font-bold block">{{ emp.first_name }}</span>
                             </div>
-                            <span class="text-sm font-bold block">{{ emp.first_name }}</span>
-                        </div>
-                    </label>
-                    {% empty %}
-                    <p class="text-sm text-red-500 col-span-4">No hay empleados disponibles para este servicio.</p>
-                    {% endfor %}
+                        </label>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
 
-            <div class="p-8 bg-gray-50">
-                <h2 class="text-lg font-bold mb-4">2. Disponibilidad para Hoy ({{ target_date }})</h2>
-                
-                <div class="grid grid-cols-3 md:grid-cols-5 gap-3">
-                    <button class="py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm hover:border-black focus:ring-2 ring-black">09:00 AM</button>
-                    <button class="py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm hover:border-black focus:ring-2 ring-black">10:00 AM</button>
-                    <button class="py-2 px-4 bg-gray-200 border border-transparent rounded-lg text-sm text-gray-400 cursor-not-allowed">11:00 AM</button>
-                    <button class="py-2 px-4 bg-white border border-gray-200 rounded-lg text-sm hover:border-black focus:ring-2 ring-black">12:00 PM</button>
-                </div>
-                
-                <p class="text-xs text-gray-400 mt-4">* Los horarios bloqueados ya están reservados.</p>
-            </div>
+                <div class="p-8 bg-gray-50 transition-opacity duration-300 opacity-50 pointer-events-none" id="step2">
+                    <h2 class="text-lg font-bold mb-4">2. Selecciona Fecha y Hora</h2>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
+                        <input type="date" name="date" id="datePicker" min="{{ today }}" value="{{ today }}" 
+                               class="block w-full px-4 py-3 rounded-lg border-gray-300 shadow-sm focus:ring-black focus:border-black"
+                               onchange="fetchSlots()">
+                    </div>
 
-            <div class="p-8 border-t border-gray-100 flex justify-between items-center bg-white">
-                <div>
-                    <p class="text-sm text-gray-500">Total a pagar en local</p>
-                    <p class="text-2xl font-bold font-mono">${{ service.price }}</p>
+                    <div id="slotsContainer" class="grid grid-cols-3 md:grid-cols-5 gap-3">
+                        <p class="text-sm text-gray-400 col-span-5">Selecciona un empleado para ver horarios.</p>
+                    </div>
                 </div>
-                <button class="bg-black text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform">
-                    Continuar al Pago &rarr;
-                </button>
+
+                <div class="p-8 border-t border-gray-100 flex justify-between items-center bg-white">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Abono requerido</p>
+                        <p class="text-2xl font-bold font-mono text-green-600">${{ deposit_amount|floatform:0 }}</p>
+                    </div>
+                    <button type="submit" id="submitBtn" disabled class="bg-gray-300 text-white px-8 py-4 rounded-xl font-bold shadow-none cursor-not-allowed transition-all">
+                        Confirmar Reserva
+                    </button>
+                </div>
             </div>
-        </div>
+        </form>
 
     </div>
 </div>
+
+<script>
+    let currentEmployee = null;
+
+    function selectEmployee(radio) {
+        currentEmployee = radio.value;
+        document.getElementById('selectedEmployee').value = currentEmployee;
+        
+        // Activar Paso 2
+        const step2 = document.getElementById('step2');
+        step2.classList.remove('opacity-50', 'pointer-events-none');
+        
+        // Cargar horarios
+        fetchSlots();
+    }
+
+    function fetchSlots() {
+        if (!currentEmployee) return;
+        
+        const date = document.getElementById('datePicker').value;
+        const container = document.getElementById('slotsContainer');
+        container.innerHTML = '<p class="text-sm text-gray-500 col-span-5 animate-pulse">Buscando disponibilidad...</p>';
+
+        fetch(`{% url 'api_get_slots' %}?salon_id={{ salon.id }}&service_id={{ service.id }}&employee_id=${currentEmployee}&date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                container.innerHTML = '';
+                if (data.slots.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-red-500 col-span-5">No hay disponibilidad para esta fecha.</p>';
+                    return;
+                }
+
+                data.slots.forEach(slot => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `py-2 px-4 rounded-lg text-sm border-2 transition-all ${
+                        slot.available 
+                        ? 'bg-white border-gray-200 hover:border-black focus:bg-black focus:text-white' 
+                        : 'bg-gray-100 border-transparent text-gray-400 cursor-not-allowed'
+                    }`;
+                    btn.innerText = slot.label;
+                    btn.disabled = !slot.available;
+                    
+                    if (slot.available) {
+                        btn.onclick = () => selectTime(slot.time, btn);
+                    }
+                    
+                    container.appendChild(btn);
+                });
+            });
+    }
+
+    function selectTime(time, btnElement) {
+        // Reset estilos botones
+        const buttons = document.getElementById('slotsContainer').getElementsByTagName('button');
+        for(let b of buttons) {
+            if(!b.disabled) {
+                b.classList.remove('bg-black', 'text-white', 'border-black');
+                b.classList.add('bg-white', 'text-black', 'border-gray-200');
+            }
+        }
+        
+        // Activar seleccionado
+        btnElement.classList.remove('bg-white', 'text-black', 'border-gray-200');
+        btnElement.classList.add('bg-black', 'text-white', 'border-black');
+
+        document.getElementById('selectedTime').value = time;
+        
+        // Habilitar botón final
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('bg-gray-300', 'shadow-none', 'cursor-not-allowed');
+        submitBtn.classList.add('bg-black', 'shadow-lg', 'hover:scale-105');
+    }
+</script>
 {% endblock %}

@@ -1,3 +1,5 @@
+from apps.marketplace.models import Appointment
+import re
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib import messages
@@ -51,3 +53,32 @@ def dispatch_user(request):
         
     else:
         return redirect('home')
+
+# --- PANEL CLIENTE ---
+@login_required
+def client_dashboard(request):
+    if request.user.role != 'CLIENT':
+        return redirect('dispatch')
+        
+    appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
+    
+    # Procesar lógica de WhatsApp para cada cita
+    for app in appointments:
+        if app.status == 'PENDING':
+            # Calcular tiempo restante (60 min)
+            elapsed = timezone.now() - app.created_at
+            remaining = timedelta(minutes=60) - elapsed
+            app.seconds_left = max(0, int(remaining.total_seconds()))
+            
+            # Link WhatsApp
+            owner_phone = app.salon.owner.phone
+            clean_phone = re.sub(r'\D', '', str(owner_phone)) if owner_phone else '573000000000'
+            
+            msg = (
+                f"Hola {app.salon.name}, soy {request.user.first_name}. "
+                f"Confirmo mi cita para {app.service.name} el {app.date_time.strftime('%d/%m %I:%M %p')}. "
+                f"Adjunto abono de ${int(app.deposit_amount)}."
+            )
+            app.wa_link = f"https://wa.me/{clean_phone}?text={msg}"
+            
+    return render(request, 'core/client_dashboard.html', {'appointments': appointments})
