@@ -1,61 +1,22 @@
 {% extends 'base.html' %}
-{% block content %}
-<div class="container py-5">
-    <div class="row mb-4 align-items-center">
-        <div class="col">
-            <h1 class="text-white fw-bold">Panel de Control</h1>
-            <p class="text-secondary">{{ salon.name }}</p>
-        </div>
-        <div class="col-auto">
-            {% if is_verified %}
-                <span class="badge bg-success p-2">✅ Cuenta Verificada</span>
-            {% else %}
-                <span class="badge bg-warning text-dark p-2">⚠️ Pago Pendiente: {{ hours_remaining }}h restantes</span>
-            {% endif %}
-        </div>
-    </div>
 
-    <div class="row g-3 mb-5">
-        <div class="col-md-3">
-            <a href="{% url 'businesses:services' %}" class="card bg-dark border-secondary text-decoration-none h-100 hover-effect">
-                <div class="card-body text-center text-white">
-                    <div class="display-6 mb-2">✂️</div>
-                    <h5>Servicios</h5>
-                    <p class="text-muted small">{{ services_count }} Activos</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'businesses:employees' %}" class="card bg-dark border-secondary text-decoration-none h-100 hover-effect">
-                <div class="card-body text-center text-white">
-                    <div class="display-6 mb-2">👥</div>
-                    <h5>Equipo</h5>
-                    <p class="text-muted small">{{ employees_count }} Empleados</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'businesses:settings' %}" class="card bg-dark border-secondary text-decoration-none h-100 hover-effect">
-                <div class="card-body text-center text-white">
-                    <div class="display-6 mb-2">⚙️</div>
-                    <h5>Configuración</h5>
-                    <p class="text-muted small">Horarios y Datos</p>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-dark border-warning h-100">
-                <div class="card-body text-center text-white">
-                    <div class="display-6 mb-2 text-warning">📅</div>
-                    <h5 class="text-warning">Citas</h5>
-                    <p class="text-muted small">Ver Agenda (Pronto)</p>
-                </div>
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                ⚠️
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-yellow-700">
+                    <span class="font-bold">Acción Requerida:</span>
+                    Tu cuenta está en periodo de prueba. Tienes <span id="timer" class="font-mono font-bold">23:59:00</span> para activar tu ecosistema.
+                </p>
+                <a href="#" class="mt-2 inline-block text-sm font-bold text-yellow-800 underline">Pagar $50.000 COP y Activar</a>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-.hover-effect:hover { border-color: #d4af37 !important; transform: translateY(-5px); transition: 0.3s; }
-</style>
+    <h1 class="text-4xl font-serif mb-6">Panel de Control: El Cerebro</h1>
+    </div>
 {% endblock %}

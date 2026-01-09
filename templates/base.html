@@ -3,43 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PASO Ecosistema{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>PASO Ecosistema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --paso-gold: #d4af37; --paso-black: #111; }
-        body { background-color: var(--paso-black); color: white; font-family: 'Helvetica Neue', sans-serif; }
-        .btn-paso { background: var(--paso-gold); color: black; border: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; transition: 0.3s; }
-        .btn-paso:hover { transform: scale(1.05); background: white; }
-        .footer { border-top: 1px solid #333; padding: 20px; margin-top: 50px; font-size: 0.8rem; color: #666; }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap');
+        .font-serif { family: 'Playfair Display', serif; }
+        .font-sans { family: 'Lato', sans-serif; }
     </style>
 </head>
-<body>
-    <nav class="navbar navbar-dark bg-black border-bottom border-secondary">
-        <div class="container">
-            <a class="navbar-brand text-white fw-bold" href="/">PASO</a>
-            <div class="d-flex gap-3">
-                <a href="/marketplace/" class="text-white text-decoration-none">Marketplace</a>
-                {% if user.is_authenticated %}
-                    {% if user.role == 'OWNER' %}<a href="/dashboard/" class="btn btn-sm btn-outline-light">Mi Panel</a>{% endif %}
-                    {% if user.role == 'EMPLOYEE' %}<a href="/empleado/" class="btn btn-sm btn-outline-light">Mi Agenda</a>{% endif %}
-                {% else %}
-                    <a href="/login/" class="text-white">Entrar</a>
+<body class="bg-gray-50 font-sans flex flex-col min-h-screen">
+
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-black text-white py-6 mt-12">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="text-sm font-bold tracking-widest text-gold-500">
+                PASO ECOSISTEMA
+            </div>
+            
+            <div class="text-xs text-gray-400">
+                &copy; 2026 - Ecosistema PASO
+            </div>
+            
+            <div class="flex space-x-4">
+                {% if global_settings.instagram_url %}
+                    <a href="{{ global_settings.instagram_url }}" class="hover:text-pink-500">IG</a>
+                {% endif %}
+                {% if global_settings.whatsapp_support %}
+                    <a href="https://wa.me/{{ global_settings.whatsapp_support }}" class="hover:text-green-500">WA</a>
                 {% endif %}
             </div>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        {% block content %}{% endblock %}
-    </div>
-
-    <footer class="footer container d-flex justify-content-between align-items-center">
-        <div>{{ global_settings.site_name|default:"PASO Ecosistema" }}</div>
-        <div>&copy; 2026 Ecosistema PASO</div>
-        <div>
-            {% if global_settings.instagram_link %}<a href="{{ global_settings.instagram_link }}" class="text-secondary me-2">IG</a>{% endif %}
-            {% if global_settings.facebook_link %}<a href="{{ global_settings.facebook_link }}" class="text-secondary">FB</a>{% endif %}
-        </div>
     </footer>
+
 </body>
 </html>
