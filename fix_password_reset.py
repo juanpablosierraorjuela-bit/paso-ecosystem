@@ -1,3 +1,41 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# 1. ACTUALIZAR URLS.PY (AGREGAR RUTAS DE AUTH)
+# ==========================================
+urls_path = BASE_DIR / 'config' / 'urls.py'
+
+# Contenido corregido para urls.py
+# Se asegura de incluir django.contrib.auth.urls bajo el prefijo 'cuentas/'
+urls_content = """
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+
+urlpatterns = [
+    # CAMBIO DE SEGURIDAD: Admin oculto
+    path('control-maestro-seguro/', admin.site.urls),
+    
+    # Rutas de autenticación (Recuperar contraseña, etc.)
+    path('cuentas/', include('django.contrib.auth.urls')),
+    
+    path('', include('apps.core.urls')),
+    path('negocio/', include('apps.businesses.urls')),
+    path('marketplace/', include('apps.marketplace.urls')),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+"""
+
+# ==========================================
+# 2. ACTUALIZAR LOGIN.HTML (AGREGAR ENLACE)
+# ==========================================
+login_path = BASE_DIR / 'templates' / 'registration' / 'login.html'
+
+html_login = """
 {% extends 'base.html' %}
 
 {% block content %}
@@ -63,3 +101,20 @@
     }
 </script>
 {% endblock %}
+"""
+
+def execute_fix():
+    print("🔑 IMPLEMENTANDO SISTEMA DE RECUPERACIÓN DE CONTRASEÑA...")
+
+    # 1. Update URLs
+    with open(urls_path, 'w', encoding='utf-8') as f:
+        f.write(urls_content.strip())
+    print("✅ config/urls.py: Rutas de autenticación agregadas ('/cuentas/').")
+
+    # 2. Update Login Template
+    with open(login_path, 'w', encoding='utf-8') as f:
+        f.write(html_login.strip())
+    print("✅ templates/registration/login.html: Enlace '¿Olvidaste tu contraseña?' insertado.")
+
+if __name__ == "__main__":
+    execute_fix()
