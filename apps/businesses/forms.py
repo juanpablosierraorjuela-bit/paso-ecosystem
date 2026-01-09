@@ -3,7 +3,6 @@ from .models import Service, Salon, EmployeeSchedule
 from apps.core.models import User
 from datetime import time
 
-# Generador de opciones de tiempo (cada 30 min)
 def get_time_choices():
     choices = []
     for h in range(0, 24):
@@ -33,8 +32,9 @@ class OwnerRegistrationForm(forms.ModelForm):
     salon_address = forms.CharField(label="Dirección del Local", required=True)
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad", required=True)
     phone = forms.CharField(label="WhatsApp (Soporte)", required=True)
-    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********'}), required=True)
-    password2 = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********'}), required=True)
+    # AGREGADO pr-12 para el botón de ver contraseña
+    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********', 'class': 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm pr-12'}), required=True)
+    password2 = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********', 'class': 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm pr-12'}), required=True)
     instagram_url = forms.URLField(label="Link Instagram", required=False)
     google_maps_url = forms.URLField(label="Link Google Maps", required=False)
 
@@ -72,8 +72,9 @@ class OwnerRegistrationForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm'
+        for name, field in self.fields.items():
+            if name not in ['password1', 'password2']: # Evitamos sobrescribir la clase especial con padding
+                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm'
 
 class OwnerUpdateForm(forms.ModelForm):
     class Meta:
@@ -116,12 +117,10 @@ class EmployeeCreationForm(forms.ModelForm):
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- NUEVO: HORARIO DE APERTURA DEL SALÓN CON DÍAS Y DROPDOWNS ---
 class SalonScheduleForm(forms.ModelForm):
     opening_time = forms.ChoiceField(choices=TIME_CHOICES, label="Apertura")
     closing_time = forms.ChoiceField(choices=TIME_CHOICES, label="Cierre")
     
-    # Días que abre el negocio
     DAYS_CHOICES = [
         ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
         ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
@@ -149,7 +148,6 @@ class SalonScheduleForm(forms.ModelForm):
         days = self.cleaned_data['active_days']
         return ','.join(days)
 
-# --- NUEVO: HORARIO EMPLEADO CON DROPDOWNS ---
 class EmployeeScheduleUpdateForm(forms.ModelForm):
     work_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio de Turno")
     work_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin de Turno")

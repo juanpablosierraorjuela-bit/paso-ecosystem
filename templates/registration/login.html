@@ -25,7 +25,12 @@
 
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label>
-                <input type="password" name="password" required class="block w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition">
+                <div class="relative">
+                    <input type="password" name="password" id="loginPass" required class="block w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:outline-none transition pr-12">
+                    <button type="button" onclick="togglePassword('loginPass', this)" class="absolute inset-y-0 right-0 px-4 text-gray-400 hover:text-black focus:outline-none flex items-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gold transition duration-300 shadow-lg mt-4">
@@ -38,4 +43,20 @@
         </form>
     </div>
 </div>
+
+<script>
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('svg');
+        if (input.type === "password") {
+            input.type = "text";
+            btn.classList.add('text-black');
+            btn.classList.remove('text-gray-400');
+        } else {
+            input.type = "password";
+            btn.classList.remove('text-black');
+            btn.classList.add('text-gray-400');
+        }
+    }
+</script>
 {% endblock %}

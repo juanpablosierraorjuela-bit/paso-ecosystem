@@ -75,7 +75,16 @@
                 </div>
                 {% endif %}
 
-                <div class="p-8 border-t border-gray-100 flex justify-between items-center bg-gray-50">
+                <div class="px-8 pb-4 pt-4 bg-gray-50 border-t border-gray-100">
+                    <label class="flex items-start gap-3 cursor-pointer group p-4 bg-white rounded-lg border border-gray-200 hover:border-black transition">
+                        <input type="checkbox" required class="mt-1 w-5 h-5 text-black border-gray-300 rounded focus:ring-black cursor-pointer">
+                        <span class="text-sm text-gray-600 leading-tight">
+                            He leído y acepto la <span class="font-bold text-black">Política de Cancelación</span>: Si no cumplo la cita, pierdo el abono. Si deseo reagendar, debo avisar con mínimo <span class="font-bold text-black">4 horas</span> de antelación.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="px-8 pb-8 pt-4 flex justify-between items-center bg-gray-50 rounded-b-2xl">
                     <div>
                         <p class="text-xs text-gray-500 uppercase font-bold">Abono requerido</p>
                         <p class="text-2xl font-bold font-mono text-green-600">${{ deposit_amount }}</p>
@@ -97,7 +106,6 @@
         currentEmployee = radio.value;
         document.getElementById('selectedEmployee').value = currentEmployee;
         
-        // Activar Paso 2
         const step2 = document.getElementById('step2');
         step2.classList.remove('opacity-50', 'pointer-events-none');
         step2.classList.add('bg-white');
@@ -142,7 +150,6 @@
     }
 
     function selectTime(time, btnElement) {
-        // Reset estilos
         const buttons = document.getElementById('slotsContainer').getElementsByTagName('button');
         for(let b of buttons) {
             if(!b.disabled) {
@@ -151,13 +158,11 @@
             }
         }
         
-        // Activar
         btnElement.classList.remove('bg-white', 'text-black', 'border-gray-200');
         btnElement.classList.add('bg-black', 'text-white', 'border-black');
 
         document.getElementById('selectedTime').value = time;
         
-        // Activar Paso 3 (si existe) o Botón Submit
         const step3 = document.getElementById('step3');
         const submitBtn = document.getElementById('submitBtn');
         
@@ -166,7 +171,6 @@
             step3.scrollIntoView({behavior: "smooth"});
         }
         
-        // Habilitar botón
         submitBtn.disabled = false;
         submitBtn.classList.remove('bg-gray-300', 'shadow-none', 'cursor-not-allowed');
         submitBtn.classList.add('bg-black', 'shadow-lg', 'hover:scale-105');
