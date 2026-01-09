@@ -5,8 +5,8 @@ from django.utils import timezone
 from datetime import timedelta
 from apps.core.models import GlobalSettings, User
 from .models import Service, Salon
-from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm
-import re # Importante para limpiar el teléfono
+from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm, OwnerUpdateForm, SalonUpdateForm
+import re
 
 # --- DASHBOARD PRINCIPAL ---
 @login_required
@@ -19,29 +19,21 @@ def owner_dashboard(request):
     except:
         return redirect('register_owner')
 
-    # Lógica Timer
     elapsed_time = timezone.now() - request.user.registration_timestamp
     time_limit = timedelta(hours=24)
     remaining_time = time_limit - elapsed_time
     total_seconds_left = max(0, int(remaining_time.total_seconds()))
 
-    # --- LÓGICA WHATSAPP CORREGIDA ---
     admin_settings = GlobalSettings.objects.first()
-    
-    # 1. Obtener el número (o usar default)
     if admin_settings and admin_settings.whatsapp_support:
         raw_phone = admin_settings.whatsapp_support
     else:
-        raw_phone = '573000000000' # Default si no has configurado nada
+        raw_phone = '573000000000'
         
-    # 2. PURIFICAR EL NÚMERO (Quitar espacios, +, -)
     clean_phone = re.sub(r'\D', '', str(raw_phone))
-    
-    # 3. Generar Link
     wa_message = f"Hola PASO, soy el negocio {salon.name} (ID {request.user.id}). Adjunto mi comprobante de pago."
     wa_link = f"https://wa.me/{clean_phone}?text={wa_message}"
 
-    # Métricas Rápidas
     service_count = salon.services.count()
     employee_count = salon.employees.count()
 
@@ -114,17 +106,39 @@ def employee_delete(request, pk):
     messages.success(request, "Empleado eliminado.")
     return redirect('employees_list')
 
-# --- CONFIGURACIÓN DEL NEGOCIO ---
+# --- CONFIGURACIÓN TOTAL (NUEVA LÓGICA) ---
 @login_required
 def settings_view(request):
     salon = request.user.owned_salon
+    user = request.user
+
+    # Formularios iniciales
+    owner_form = OwnerUpdateForm(instance=user)
+    salon_form = SalonUpdateForm(instance=salon)
+    schedule_form = SalonScheduleForm(instance=salon)
+
     if request.method == 'POST':
-        form = SalonScheduleForm(request.POST, instance=salon)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Horarios actualizados.")
-            return redirect('settings_view')
-    else:
-        form = SalonScheduleForm(instance=salon)
-    
-    return render(request, 'businesses/settings.html', {'form': form, 'salon': salon})
+        # Distinguir qué formulario se envió usando el 'name' del botón submit
+        
+        if 'update_profile' in request.POST:
+            owner_form = OwnerUpdateForm(request.POST, instance=user)
+            salon_form = SalonUpdateForm(request.POST, instance=salon)
+            if owner_form.is_valid() and salon_form.is_valid():
+                owner_form.save()
+                salon_form.save()
+                messages.success(request, "Datos de perfil y negocio actualizados.")
+                return redirect('settings_view')
+                
+        elif 'update_schedule' in request.POST:
+            schedule_form = SalonScheduleForm(request.POST, instance=salon)
+            if schedule_form.is_valid():
+                schedule_form.save()
+                messages.success(request, "Horarios y reglas de pago actualizados.")
+                return redirect('settings_view')
+
+    return render(request, 'businesses/settings.html', {
+        'owner_form': owner_form, 
+        'salon_form': salon_form,
+        'schedule_form': schedule_form,
+        'salon': salon
+    })
