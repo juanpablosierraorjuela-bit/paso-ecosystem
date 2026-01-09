@@ -1,3 +1,12 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# ==========================================
+# CONTENIDO CORREGIDO DE FORMS.PY
+# ==========================================
+forms_content = """
 from django import forms
 from .models import Service, Salon, EmployeeSchedule
 from apps.core.models import User
@@ -189,3 +198,13 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
     def clean_active_days(self):
         days = self.cleaned_data['active_days']
         return ','.join(days)
+"""
+
+def apply_fix():
+    print("🔧 SINCRONIZANDO FORMULARIO DE REGISTRO CON HTML...")
+    with open(BASE_DIR / 'apps' / 'businesses' / 'forms.py', 'w', encoding='utf-8') as f:
+        f.write(forms_content.strip())
+    print("✅ apps/businesses/forms.py: Agregados password1 y password2.")
+
+if __name__ == "__main__":
+    apply_fix()
