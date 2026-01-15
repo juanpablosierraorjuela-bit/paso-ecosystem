@@ -9,7 +9,7 @@ class AvailabilityManager:
         if not check_time:
             check_time = now_local.time()
         
-        # Validar Día de la Semana del Salón
+        # Validar Día de la Semana del Salón (Filtro Maestro)
         today_idx = str(now_local.weekday())
         if hasattr(salon, 'active_days') and salon.active_days:
             if today_idx not in salon.active_days.split(','):
@@ -27,8 +27,7 @@ class AvailabilityManager:
 
     @staticmethod
     def get_available_slots(salon, service, employee, target_date):
-        """Genera slots de tiempo inteligentes validando todas las reglas de negocio."""
-        # Importación local para evitar importación circular
+        """Genera slots validando la jerarquía Salón > Empleado."""
         from apps.marketplace.models import Appointment
         
         slots = []
@@ -46,56 +45,52 @@ class AvailabilityManager:
             if day_of_week not in schedule.active_days.split(','):
                 return []
         except:
-            return [] # El empleado no tiene horario configurado
+            return []
 
-        # 3. Obtener citas ya reservadas para este empleado en esta fecha
-        # Excluimos las canceladas para liberar el tiempo
+        # 3. Citas ya reservadas (excluyendo canceladas)
         existing_appointments = Appointment.objects.filter(
             employee=employee,
             date_time__date=target_date
         ).exclude(status='CANCELLED').select_related('service')
 
-        # 4. Definir ventana de tiempo (Intersección Salón y Empleado)
+        # 4. INTERSECCIÓN DE HORARIOS: El salón manda sobre el empleado
+        # El servicio solo puede empezar después de que abra el salón Y empiece el empleado
         start_hour = max(salon.opening_time, schedule.work_start)
+        # El servicio debe terminar antes de que cierre el salón Y termine el empleado
         end_hour = min(salon.closing_time, schedule.work_end)
         
         if start_hour >= end_hour:
             return []
 
-        # Convertimos a datetimes "aware" (con zona horaria) para comparaciones precisas
         current_dt = timezone.make_aware(datetime.combine(target_date, start_hour))
         end_dt = timezone.make_aware(datetime.combine(target_date, end_hour))
         lunch_start_dt = timezone.make_aware(datetime.combine(target_date, schedule.lunch_start))
         lunch_end_dt = timezone.make_aware(datetime.combine(target_date, schedule.lunch_end))
         
-        # Duración total: Tiempo del servicio + tiempo de limpieza (buffer)
         service_duration = timedelta(minutes=service.duration_minutes + service.buffer_time)
 
         # 5. Generar y Validar cada Slot
-        # El bucle asegura que el servicio quepa antes de que cierre el negocio
         while current_dt + service_duration <= end_dt:
             slot_start = current_dt
             slot_end = current_dt + service_duration
             is_valid = True
             
-            # REGLA A: No mostrar horas que ya pasaron (si es hoy)
+            # Regla A: No mostrar horas pasadas
             if target_date == now_local.date() and slot_start <= now_local:
                 is_valid = False
             
-            # REGLA B: No debe cruzarse con el almuerzo del empleado
+            # Regla B: Almuerzo
             if is_valid:
                 if (slot_end > lunch_start_dt) and (slot_start < lunch_end_dt):
                     is_valid = False
             
-            # REGLA C: No debe cruzarse con citas ya existentes
+            # Regla C: Colisión con otras citas
             if is_valid:
                 for app in existing_appointments:
                     app_start = app.date_time
-                    # Calculamos duración de la cita existente
                     app_total_min = app.service.duration_minutes + app.service.buffer_time
                     app_end = app_start + timedelta(minutes=app_total_min)
                     
-                    # Lógica de colisión (traslape de intervalos)
                     if (slot_start < app_end) and (slot_end > app_start):
                         is_valid = False
                         break
@@ -107,7 +102,6 @@ class AvailabilityManager:
                     'is_available': True 
                 })
             
-            # Avanzar el puntero 30 minutos para ofrecer el siguiente slot disponible
             current_dt += timedelta(minutes=30)
             
         return slots

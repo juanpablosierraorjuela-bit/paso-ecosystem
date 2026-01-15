@@ -157,6 +157,26 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # --- SOLUCIÓN: FILTRAR DÍAS SEGÚN EL SALÓN DEL DUEÑO ---
+        try:
+            # Buscamos el salón asociado al dueño que creó a este empleado
+            # El dueño tiene un OTO con Salon llamado 'owned_salon'
+            # Asumiendo que buscamos el salón del OWNER relacionado.
+            salon = Salon.objects.filter(owner__managed_employees=self.instance.employee).first()
+            if not salon:
+                 # Intento alternativo según tu lógica de registro: Salon.owner == boss
+                 salon = Salon.objects.filter(owner=self.instance.employee.boss).first()
+
+            if salon and salon.active_days:
+                allowed_days = salon.active_days.split(',')
+                # Filtramos las opciones del checkbox para que solo aparezcan los días permitidos por el salón
+                self.fields['active_days'].choices = [
+                    (c[0], c[1]) for c in self.DAYS_CHOICES if c[0] in allowed_days
+                ]
+        except:
+            pass
+
         if self.instance and self.instance.pk:
             if self.instance.active_days:
                 self.initial['active_days'] = self.instance.active_days.split(',')
