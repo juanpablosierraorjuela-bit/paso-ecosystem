@@ -27,14 +27,15 @@ COLOMBIA_CITIES = [
     ('Itagüí', 'Itagüí'), ('Bello', 'Bello'), ('Otro', 'Otro (Escribir en dirección)'),
 ]
 
+# --- Formularios de Registro y Perfil ---
+
 class OwnerRegistrationForm(forms.ModelForm):
     salon_name = forms.CharField(label="Nombre del Negocio", required=True)
     salon_address = forms.CharField(label="Dirección del Local", required=True)
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad", required=True)
     phone = forms.CharField(label="WhatsApp (Soporte)", required=True)
-    # AGREGADO pr-12 para el botón de ver contraseña
-    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********', 'class': 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm pr-12'}), required=True)
-    password2 = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********', 'class': 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm pr-12'}), required=True)
+    password1 = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********', 'class': 'pr-12'}), required=True)
+    password2 = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'placeholder': '********', 'class': 'pr-12'}), required=True)
     instagram_url = forms.URLField(label="Link Instagram", required=False)
     google_maps_url = forms.URLField(label="Link Google Maps", required=False)
 
@@ -72,9 +73,12 @@ class OwnerRegistrationForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        base_class = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm'
         for name, field in self.fields.items():
-            if name not in ['password1', 'password2']: # Evitamos sobrescribir la clase especial con padding
-                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm'
+            if name in ['password1', 'password2']:
+                field.widget.attrs['class'] = base_class + ' pr-12'
+            else:
+                field.widget.attrs['class'] = base_class
 
 class OwnerUpdateForm(forms.ModelForm):
     class Meta:
@@ -94,6 +98,94 @@ class SalonUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+
+# --- Formularios de Horarios (Dueño y Empleado) ---
+
+class SalonScheduleForm(forms.ModelForm):
+    opening_time = forms.ChoiceField(choices=TIME_CHOICES, label="Apertura")
+    closing_time = forms.ChoiceField(choices=TIME_CHOICES, label="Cierre")
+    
+    DAYS_CHOICES = [
+        ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
+        ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
+    ]
+    active_days = forms.MultipleChoiceField(
+        choices=DAYS_CHOICES, 
+        widget=forms.CheckboxSelectMultiple,
+        label="Días de Apertura",
+        required=False
+    )
+
+    class Meta:
+        model = Salon
+        fields = ['opening_time', 'closing_time', 'active_days', 'deposit_percentage']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # Seleccionar días guardados
+            if self.instance.active_days:
+                self.initial['active_days'] = self.instance.active_days.split(',')
+            # Seleccionar horas guardadas
+            if self.instance.opening_time:
+                self.initial['opening_time'] = self.instance.opening_time.strftime('%H:%M')
+            if self.instance.closing_time:
+                self.initial['closing_time'] = self.instance.closing_time.strftime('%H:%M')
+        
+        for field in self.fields.values():
+            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+
+    def clean_active_days(self):
+        days = self.cleaned_data.get('active_days', [])
+        return ','.join(days)
+
+class EmployeeScheduleUpdateForm(forms.ModelForm):
+    work_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio de Turno")
+    work_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin de Turno")
+    lunch_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio Almuerzo")
+    lunch_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin Almuerzo")
+    
+    DAYS_CHOICES = [
+        ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
+        ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
+    ]
+    active_days = forms.MultipleChoiceField(
+        choices=DAYS_CHOICES, 
+        widget=forms.CheckboxSelectMultiple,
+        label="Días Laborales",
+        required=False
+    )
+
+    class Meta:
+        model = EmployeeSchedule
+        fields = ['work_start', 'work_end', 'lunch_start', 'lunch_end', 'active_days']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # Seleccionar días guardados
+            if self.instance.active_days:
+                self.initial['active_days'] = self.instance.active_days.split(',')
+            # Cargar horas guardadas convirtiéndolas a string HH:MM
+            if self.instance.work_start:
+                self.initial['work_start'] = self.instance.work_start.strftime('%H:%M')
+            if self.instance.work_end:
+                self.initial['work_end'] = self.instance.work_end.strftime('%H:%M')
+            if self.instance.lunch_start:
+                self.initial['lunch_start'] = self.instance.lunch_start.strftime('%H:%M')
+            if self.instance.lunch_end:
+                self.initial['lunch_end'] = self.instance.lunch_end.strftime('%H:%M')
+            
+        for field in self.fields.values():
+            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+
+    def clean_active_days(self):
+        days = self.cleaned_data.get('active_days', [])
+        return ','.join(days)
+
+# --- Otros Formularios ---
 
 class ServiceForm(forms.ModelForm):
     class Meta:
@@ -116,67 +208,3 @@ class EmployeeCreationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
-
-class SalonScheduleForm(forms.ModelForm):
-    opening_time = forms.ChoiceField(choices=TIME_CHOICES, label="Apertura")
-    closing_time = forms.ChoiceField(choices=TIME_CHOICES, label="Cierre")
-    
-    DAYS_CHOICES = [
-        ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
-        ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
-    ]
-    active_days = forms.MultipleChoiceField(
-        choices=DAYS_CHOICES, 
-        widget=forms.CheckboxSelectMultiple,
-        label="Días de Apertura"
-    )
-
-    class Meta:
-        model = Salon
-        fields = ['opening_time', 'closing_time', 'active_days', 'deposit_percentage']
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.pk and self.instance.active_days:
-            self.initial['active_days'] = self.instance.active_days.split(',')
-        
-        for field in self.fields.values():
-            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
-                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
-
-    def clean_active_days(self):
-        days = self.cleaned_data['active_days']
-        return ','.join(days)
-
-class EmployeeScheduleUpdateForm(forms.ModelForm):
-    work_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio de Turno")
-    work_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin de Turno")
-    lunch_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio Almuerzo")
-    lunch_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin Almuerzo")
-    
-    DAYS_CHOICES = [
-        ('0', 'Lunes'), ('1', 'Martes'), ('2', 'Miércoles'), 
-        ('3', 'Jueves'), ('4', 'Viernes'), ('5', 'Sábado'), ('6', 'Domingo')
-    ]
-    active_days = forms.MultipleChoiceField(
-        choices=DAYS_CHOICES, 
-        widget=forms.CheckboxSelectMultiple,
-        label="Días Laborales"
-    )
-
-    class Meta:
-        model = EmployeeSchedule
-        fields = ['work_start', 'work_end', 'lunch_start', 'lunch_end', 'active_days']
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.pk and self.instance.active_days:
-            self.initial['active_days'] = self.instance.active_days.split(',')
-            
-        for field in self.fields.values():
-            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
-                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
-
-    def clean_active_days(self):
-        days = self.cleaned_data['active_days']
-        return ','.join(days)

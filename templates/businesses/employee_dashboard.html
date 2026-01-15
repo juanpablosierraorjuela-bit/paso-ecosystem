@@ -23,6 +23,13 @@
                 <h2 class="text-xl font-bold mb-4 flex items-center">
                     ⏰ Mi Disponibilidad
                 </h2>
+
+                {% if schedule_form.errors %}
+                <div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
+                    Hay errores en el horario. Revisa los campos en rojo.
+                </div>
+                {% endif %}
+
                 <form method="post">
                     {% csrf_token %}
                     
@@ -32,10 +39,12 @@
                             <div>
                                 <span class="text-xs text-gray-600">Entrada</span>
                                 {{ schedule_form.work_start }}
+                                <p class="text-[10px] text-red-500">{{ schedule_form.work_start.errors.0 }}</p>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-600">Salida</span>
                                 {{ schedule_form.work_end }}
+                                <p class="text-[10px] text-red-500">{{ schedule_form.work_end.errors.0 }}</p>
                             </div>
                         </div>
                     </div>
@@ -58,15 +67,16 @@
                         <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Días Activos</label>
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             {% for checkbox in schedule_form.active_days %}
-                            <label class="flex items-center space-x-2 cursor-pointer">
+                            <label class="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition border border-transparent hover:border-gray-200">
                                 {{ checkbox.tag }}
-                                <span>{{ checkbox.choice_label }}</span>
+                                <span class="text-gray-700">{{ checkbox.choice_label }}</span>
                             </label>
                             {% endfor %}
                         </div>
+                        <p class="text-[10px] text-red-500">{{ schedule_form.active_days.errors.0 }}</p>
                     </div>
 
-                    <button type="submit" name="update_schedule" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                    <button type="submit" name="update_schedule" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition shadow-lg active:scale-95">
                         Actualizar Horario
                     </button>
                 </form>
@@ -88,7 +98,7 @@
                             {{ profile_form.last_name }}
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-500">WhatsApp (Para notificaciones)</label>
+                            <label class="text-xs font-bold text-gray-500">WhatsApp</label>
                             {{ profile_form.phone }}
                         </div>
                         <div>
@@ -118,8 +128,4 @@
 
     </div>
 </div>
-
-<style>
-    input[type="time"] { width: 100%; padding: 4px; border: 1px solid #e5e7eb; border-radius: 4px; }
-</style>
 {% endblock %}
