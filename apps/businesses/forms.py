@@ -27,8 +27,6 @@ COLOMBIA_CITIES = [
     ('Itagüí', 'Itagüí'), ('Bello', 'Bello'), ('Otro', 'Otro (Escribir en dirección)'),
 ]
 
-# --- Formularios de Registro y Perfil ---
-
 class OwnerRegistrationForm(forms.ModelForm):
     salon_name = forms.CharField(label="Nombre del Negocio", required=True)
     salon_address = forms.CharField(label="Dirección del Local", required=True)
@@ -93,13 +91,11 @@ class SalonUpdateForm(forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
     class Meta:
         model = Salon
-        fields = ['name', 'address', 'city', 'instagram_url', 'google_maps_url']
+        fields = ['name', 'address', 'city', 'instagram_url', 'google_maps_url', 'bank_name', 'account_number']
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
-
-# --- Formularios de Horarios (Dueño y Empleado) ---
 
 class SalonScheduleForm(forms.ModelForm):
     opening_time = forms.ChoiceField(choices=TIME_CHOICES, label="Apertura")
@@ -123,10 +119,8 @@ class SalonScheduleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            # Seleccionar días guardados
             if self.instance.active_days:
                 self.initial['active_days'] = self.instance.active_days.split(',')
-            # Seleccionar horas guardadas
             if self.instance.opening_time:
                 self.initial['opening_time'] = self.instance.opening_time.strftime('%H:%M')
             if self.instance.closing_time:
@@ -164,10 +158,8 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            # Seleccionar días guardados
             if self.instance.active_days:
                 self.initial['active_days'] = self.instance.active_days.split(',')
-            # Cargar horas guardadas convirtiéndolas a string HH:MM
             if self.instance.work_start:
                 self.initial['work_start'] = self.instance.work_start.strftime('%H:%M')
             if self.instance.work_end:
@@ -184,8 +176,6 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
     def clean_active_days(self):
         days = self.cleaned_data.get('active_days', [])
         return ','.join(days)
-
-# --- Otros Formularios ---
 
 class ServiceForm(forms.ModelForm):
     class Meta:

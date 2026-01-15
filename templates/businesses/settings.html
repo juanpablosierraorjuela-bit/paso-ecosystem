@@ -31,6 +31,12 @@
                     <div class="mb-4"><label class="block text-xs font-medium text-gray-700 mb-1">Nombre</label>{{ salon_form.name }}</div>
                     <div class="mb-4"><label class="block text-xs font-medium text-gray-700 mb-1">Ciudad</label>{{ salon_form.city }}</div>
                     <div class="mb-4"><label class="block text-xs font-medium text-gray-700 mb-1">Dirección</label>{{ salon_form.address }}</div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div><label class="block text-xs font-medium text-gray-700 mb-1">Banco (Nequi/Banco)</label>{{ salon_form.bank_name }}</div>
+                        <div><label class="block text-xs font-medium text-gray-700 mb-1">Número de Cuenta</label>{{ salon_form.account_number }}</div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <div><label class="block text-xs font-medium text-gray-700 mb-1">Instagram</label>{{ salon_form.instagram_url }}</div>
                         <div><label class="block text-xs font-medium text-gray-700 mb-1">Maps</label>{{ salon_form.google_maps_url }}</div>

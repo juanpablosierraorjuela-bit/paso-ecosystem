@@ -18,6 +18,10 @@ class Salon(models.Model):
     instagram_url = models.URLField(blank=True)
     google_maps_url = models.URLField(blank=True)
 
+    # NUEVOS CAMPOS PARA PAGOS
+    bank_name = models.CharField(max_length=100, blank=True, verbose_name="Nombre del Banco")
+    account_number = models.CharField(max_length=50, blank=True, verbose_name="Número de Cuenta")
+
     def __str__(self):
         return self.name
 
