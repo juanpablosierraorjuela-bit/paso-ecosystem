@@ -11,7 +11,6 @@
         
         <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-2xl">
             <form method="GET" action="{% url 'marketplace_home' %}" class="flex flex-col md:flex-row gap-2">
-                
                 <div class="flex-grow relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -52,43 +51,52 @@
         {% for salon in salons %}
         <div class="bg-white rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500 border border-gray-100 group flex flex-col h-full">
             
-            <div class="h-56 bg-gray-100 relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-                
-                {% if salon.is_open_now %}
-                    <span class="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur text-green-700 text-[10px] font-bold px-3 py-1 rounded-full shadow-sm uppercase tracking-wider">
-                        Disponible
-                    </span>
-                {% else %}
-                    <span class="absolute top-4 right-4 z-20 bg-black/50 backdrop-blur text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm uppercase tracking-wider">
-                        Cerrado
-                    </span>
-                {% endif %}
-                
-                <div class="w-full h-full flex items-center justify-center bg-gray-200 group-hover:scale-105 transition duration-700">
-                    <span class="text-6xl font-serif text-gray-400 font-bold opacity-30">{{ salon.name|slice:":1" }}</span>
-                </div>
-            </div>
-            
             <div class="p-8 flex-grow flex flex-col">
                 <h3 class="text-2xl font-serif font-bold mb-2 group-hover:text-gold transition">{{ salon.name }}</h3>
-                <p class="text-sm text-gray-500 mb-6 flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    {{ salon.city }}
-                </p>
+                
+                <div class="space-y-1 mb-6">
+                    <p class="text-sm text-gray-500 flex items-center gap-1">
+                        <svg class="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        {{ salon.city }}
+                    </p>
+                    {% if salon.address %}
+                    <p class="text-xs text-gray-400 flex items-center gap-1 ml-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        {{ salon.address }}
+                    </p>
+                    {% endif %}
+                </div>
                 
                 <div class="mt-auto pt-6 border-t border-gray-100 flex justify-between items-center">
                     <a href="{% url 'salon_detail' salon.pk %}" class="text-black font-bold text-sm border-b-2 border-black hover:border-gold hover:text-gold transition pb-1">
                         Reservar Cita
                     </a>
                     
-                    <div class="flex space-x-3 opacity-60 group-hover:opacity-100 transition">
-                        {% if salon.owner.phone %}
-                        <a href="https://wa.me/57{{ salon.owner.phone }}" target="_blank" class="hover:text-green-600 transition" title="WhatsApp">💬</a>
+                    <div class="flex items-center space-x-4">
+                        {% if salon.is_open_now %}
+                            <span class="flex items-center text-[10px] font-bold text-green-600 uppercase tracking-tighter">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span> Abierto
+                            </span>
+                        {% else %}
+                            <span class="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                <span class="w-2 h-2 bg-gray-400 rounded-full mr-1"></span> Cerrado
+                            </span>
                         {% endif %}
-                        {% if salon.instagram_url %}
-                        <a href="{{ salon.instagram_url }}" target="_blank" class="hover:text-pink-600 transition" title="Instagram">📸</a>
-                        {% endif %}
+
+                        <div class="flex items-center space-x-3 opacity-70 group-hover:opacity-100 transition border-l pl-3 border-gray-100">
+                            {% if salon.address %}
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ salon.name|urlencode }}+{{ salon.address|urlencode }}+{{ salon.city|urlencode }}" 
+                               target="_blank" class="hover:text-blue-600 transition text-lg" title="Ver en Mapa">📍</a>
+                            {% endif %}
+                            
+                            {% if salon.owner.phone %}
+                            <a href="https://wa.me/57{{ salon.owner.phone }}" target="_blank" class="hover:text-green-600 transition text-lg" title="WhatsApp">💬</a>
+                            {% endif %}
+                            
+                            {% if salon.instagram_url %}
+                            <a href="{{ salon.instagram_url }}" target="_blank" class="hover:text-pink-600 transition text-lg" title="Instagram">📸</a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
