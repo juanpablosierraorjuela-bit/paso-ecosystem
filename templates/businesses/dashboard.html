@@ -113,9 +113,9 @@
                                         <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">
                                             ⏳ Pendiente
                                         </span>
-                                    {% elif app.status == 'CONFIRMED' %}
+                                    {% elif app.status == 'VERIFIED' %}
                                         <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700 uppercase">
-                                            ✅ Confirmada
+                                            ✅ Verificada
                                         </span>
                                     {% endif %}
                                 </td>
@@ -161,7 +161,7 @@
 
 <script>
     (function() {
-        // Corregido para que VS Code no marque error: se puso entre comillas y parseInt
+        // Corregido para evitar errores en IDE
         let seconds = parseInt("{{ seconds_left|default:0 }}") || 0;
         const timerEl = document.getElementById('countdown');
         if (timerEl && seconds > 0) {

@@ -70,7 +70,8 @@ def client_dashboard(request):
     profile_form = ClientProfileForm(instance=user)
     password_form = ClientPasswordForm()
     
-    appointments = Appointment.objects.filter(client=user).order_by('-created_at')
+    # CORRECCIÓN: Excluimos las canceladas para que desaparezcan del panel del cliente
+    appointments = Appointment.objects.filter(client=user).exclude(status='CANCELLED').order_by('-created_at')
     
     for app in appointments:
         if app.status == 'PENDING':
