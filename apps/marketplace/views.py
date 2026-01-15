@@ -157,3 +157,13 @@ def booking_commit(request):
         return redirect('client_dashboard')
         
     return redirect('marketplace_home')
+
+# NUEVA FUNCIÓN AÑADIDA PARA CANCELAR
+@login_required
+def cancel_appointment(request, pk):
+    appointment = get_object_or_404(Appointment, pk=pk)
+    # Cambiamos el estado a CANCELLED para liberar el slot y ocultarla
+    appointment.status = 'CANCELLED'
+    appointment.save()
+    messages.success(request, "La cita ha sido cancelada y el horario se ha liberado.")
+    return redirect('owner_dashboard')

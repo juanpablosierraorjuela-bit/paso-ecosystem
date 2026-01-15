@@ -9,4 +9,7 @@ urlpatterns = [
     # Rutas Nuevas
     path('api/slots/', views.get_available_slots_api, name='api_get_slots'),
     path('reservar/confirmar/', views.booking_commit, name='booking_commit'),
+    
+    # RUTA PARA CANCELAR CITA
+    path('cita/cancelar/<int:pk>/', views.cancel_appointment, name='cancel_appointment'),
 ]

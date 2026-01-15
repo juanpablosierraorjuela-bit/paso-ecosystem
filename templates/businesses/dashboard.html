@@ -31,8 +31,8 @@
                 <a href="https://wa.me/573211234567?text=Hola!%20Soy%20el%20dueño%20de%20{{ salon.name|urlencode }}.%20Deseo%20pagar%20mi%20mensualidad%20de%20$50.000%20COP.%20¿A%20qué%20cuenta%20debo%20realizar%20el%20pago?" 
                    target="_blank" 
                    class="bg-amber-600 text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-black transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap">
-                   <span>RENOVAR ACCESO</span>
-                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.417-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.305 1.652zm6.599-3.835c1.516.903 3.003 1.387 4.793 1.388 5.239 0 9.502-4.263 9.505-9.503.002-2.538-.987-4.926-2.785-6.723-1.797-1.798-4.184-2.788-6.733-2.789-5.245 0-9.509 4.264-9.511 9.505-.001 1.903.499 3.411 1.442 4.887l-1.05 3.834 3.939-1.033z"/></svg>
+                    <span>RENOVAR ACCESO</span>
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.417-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.305 1.652zm6.599-3.835c1.516.903 3.003 1.387 4.793 1.388 5.239 0 9.502-4.263 9.505-9.503.002-2.538-.987-4.926-2.785-6.723-1.797-1.798-4.184-2.788-6.733-2.789-5.245 0-9.509 4.264-9.511 9.505-.001 1.903.499 3.411 1.442 4.887l-1.05 3.834 3.939-1.033z"/></svg>
                 </a>
             </div>
         </div>
@@ -94,6 +94,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             {% for app in appointments %}
+                            {% if app.status != 'CANCELLED' %}
                             <tr class="hover:bg-blue-50/30 transition-colors">
                                 <td class="px-6 py-4">
                                     <p class="text-[11px] text-gray-400">{{ app.date_time|date:"d M, Y" }}</p>
@@ -121,16 +122,21 @@
                                 <td class="px-6 py-4 font-bold text-gray-900">
                                     ${{ app.balance_due }}
                                 </td>
-                                <td class="px-6 py-4 text-right">
+                                <td class="px-6 py-4 text-right flex flex-col gap-2 items-end">
                                     {% if app.status == 'PENDING' %}
                                     <a href="{% url 'verify_appointment' app.id %}" class="inline-block bg-black text-white text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-gray-800 transition-all shadow-sm">
                                         VERIFICAR ABONO
                                     </a>
-                                    {% else %}
-                                    <span class="text-gray-300 text-xs">—</span>
                                     {% endif %}
+                                    
+                                    <a href="{% url 'cancel_appointment' app.id %}" 
+                                       onclick="return confirm('¿Estás seguro de que deseas cancelar esta cita? Esta acción liberará el horario inmediatamente.')"
+                                       class="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all">
+                                        CANCELAR CITA
+                                    </a>
                                 </td>
                             </tr>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -155,7 +161,8 @@
 
 <script>
     (function() {
-        let seconds = {{ seconds_left|default:0 }};
+        // Corregido para que VS Code no marque error: se puso entre comillas y parseInt
+        let seconds = parseInt("{{ seconds_left|default:0 }}") || 0;
         const timerEl = document.getElementById('countdown');
         if (timerEl && seconds > 0) {
             const interval = setInterval(() => {
