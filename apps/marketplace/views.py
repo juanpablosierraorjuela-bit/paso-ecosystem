@@ -14,27 +14,19 @@ from apps.marketplace.models import Appointment
 import uuid
 
 def home(request):
-    # Obtener parámetros de búsqueda
     query = request.GET.get('q', '')
     city_filter = request.GET.get('city', '')
-
-    # QuerySet base optimizado
     salons = Salon.objects.select_related('owner').all()
 
-    # Aplicar filtros
     if query:
         salons = salons.filter(name__icontains=query)
     
     if city_filter:
         salons = salons.filter(city=city_filter)
 
-    # Calcular estado abierto/cerrado solo para los resultados
     for salon in salons:
         salon.is_open_now = AvailabilityManager.is_salon_open(salon)
         
-    # --- CORRECCIÓN: SOLO CIUDADES CON NEGOCIOS ---
-    # Consultamos la BD para obtener solo las ciudades únicas que tienen salones registrados
-    # distinct() evita duplicados y order_by() las organiza alfabéticamente.
     city_list = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
 
     context = {
@@ -81,7 +73,6 @@ def get_available_slots_api(request):
         salon = get_object_or_404(Salon, pk=salon_id)
         service = get_object_or_404(Service, pk=service_id)
         employee = get_object_or_404(User, pk=employee_id)
-        
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
         slots = AvailabilityManager.get_available_slots(salon, service, employee, target_date)
@@ -107,6 +98,7 @@ def booking_commit(request):
         date_str = request.POST.get('date')
         time_str = request.POST.get('time')
         
+        # Datos para registro automático
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
         email = request.POST.get('email')
@@ -122,6 +114,7 @@ def booking_commit(request):
 
         client_user = request.user
 
+        # Lógica de registro automático si es invitado
         if not client_user.is_authenticated:
             if User.objects.filter(email=email).exists():
                 messages.error(request, "Este correo ya está registrado. Por favor inicia sesión primero.")
@@ -141,7 +134,7 @@ def booking_commit(request):
             )
             
             login(request, client_user)
-            messages.success(request, f"¡Cuenta creada! Tu contraseña temporal es: {temp_password}")
+            messages.success(request, f"¡Cuenta creada! Tu contraseña temporal para volver a entrar es: {temp_password}")
 
         Appointment.objects.create(
             client=client_user,
@@ -161,9 +154,7 @@ def booking_commit(request):
 @login_required
 def cancel_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
-    # Cambiamos el estado a CANCELLED para liberar el slot y ocultarla
     appointment.status = 'CANCELLED'
     appointment.save()
     messages.success(request, "La cita ha sido cancelada y el horario se ha liberado.")
-    # SEGÚN TU BIBLIA: El nombre de la ruta es 'dashboard'
     return redirect('dashboard')
