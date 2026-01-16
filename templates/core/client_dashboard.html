@@ -52,7 +52,7 @@
                             Tiempo para pagar: <span id="timer-{{ app.id }}">--:--</span>
                         </p>
                         <a href="{{ app.wa_link }}" target="_blank" class="block w-full md:inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center">
-                            <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|intcomma|floatformat:0 }})
+                            <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
                         </a>
                         
                         <script>

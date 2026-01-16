@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'whitenoise.runserver_nostatic', 
     'django.contrib.staticfiles',
-    'django.contrib.humanize',
+    'django.contrib.humanize', # Vital para formatear números
     
     # MIS APPS
     'apps.core',
@@ -78,12 +78,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- IDIOMA Y HORA (FORMATO COLOMBIA) ---
+# --- IDIOMA Y HORA (FORMATO COLOMBIA FORZADO) ---
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
-USE_L10N = True
+USE_L10N = False  # Desactivado para usar los separadores manuales de abajo
+
 USE_THOUSAND_SEPARATOR = True
 THOUSAND_SEPARATOR = '.'
 DECIMAL_SEPARATOR = ','
