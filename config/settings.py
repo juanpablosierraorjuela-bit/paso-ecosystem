@@ -6,7 +6,6 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- SEGURIDAD: LEER DE RENDER ---
-# Usa la variable de entorno o una clave tonta si estamos en local
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-key-12345')
 
 # DEBUG: Se apaga automáticamente en Render
@@ -21,8 +20,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic', # Estáticos
+    'whitenoise.runserver_nostatic', 
     'django.contrib.staticfiles',
+    'django.contrib.humanize', # AÑADIDO PARA FORMATO DE PRECIOS
     
     # MIS APPS
     'apps.core',
@@ -32,7 +32,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Vital para el diseño
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -62,7 +62,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- BASE DE DATOS (POSTGRES EN NUBE / SQLITE EN LOCAL) ---
+# --- BASE DE DATOS ---
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///db.sqlite3',
@@ -78,20 +78,20 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- IDIOMA Y HORA ---
+# --- IDIOMA Y HORA (AJUSTADO PARA COLOMBIA) ---
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
+USE_L10N = True
+USE_THOUSAND_SEPARATOR = True # ACTIVAR SEPARADOR DE MILES
 
-# --- ARCHIVOS ESTÁTICOS (DISEÑO) ---
+# --- ARCHIVOS ESTÁTICOS ---
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- ARCHIVOS MEDIA (FOTOS) - CONFIGURACIÓN EFÍMERA ---
-# Como no usaremos Cloudinary, esto se guarda en el disco del servidor.
-# ADVERTENCIA: En Render, estas fotos se borran cada vez que haces deploy.
+# --- ARCHIVOS MEDIA ---
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -101,7 +101,7 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dispatch'
 LOGOUT_REDIRECT_URL = 'home'
 
-# --- EMAIL (Tu cPanel) ---
+# --- EMAIL ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'mail.pasotunja.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 465))

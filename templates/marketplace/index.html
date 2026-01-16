@@ -76,26 +76,29 @@
         {% for salon in salons %}
         <div class="group bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 flex flex-col h-full relative">
             
-            <div class="absolute top-6 right-6 z-10 flex flex-col items-end gap-2">
-                {% if salon.is_open_now %}
-                    <span class="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 tracking-tighter">
-                        <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> LOCAL ABIERTO
-                    </span>
-                {% else %}
-                    <span class="bg-gray-800/90 text-white text-[8px] font-black px-3 py-1.5 rounded-full shadow-lg tracking-tighter">
-                        LOCAL CERRADO
-                    </span>
-                {% endif %}
-                <span class="bg-gold text-black text-[8px] font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 tracking-tighter border border-black/5">
-                    ✨ AGENDA 24/7
-                </span>
-            </div>
-
             <div class="p-10 flex-grow flex flex-col">
-                <span class="text-[10px] font-bold text-gold uppercase tracking-[0.3em] mb-3 block">{{ salon.city }}</span>
-                <h3 class="text-2xl font-serif font-bold mb-4 text-gray-900 group-hover:text-gold transition-colors duration-300">
-                    {{ salon.name }}
-                </h3>
+                <div class="flex justify-between items-start mb-3 gap-4">
+                    <div class="flex-1">
+                        <span class="text-[10px] font-bold text-gold uppercase tracking-[0.3em] mb-1 block">{{ salon.city }}</span>
+                        <h3 class="text-2xl font-serif font-bold text-gray-900 group-hover:text-gold transition-colors duration-300">
+                            {{ salon.name }}
+                        </h3>
+                    </div>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                        {% if salon.is_open_now %}
+                            <span class="bg-green-500 text-white text-[7px] font-black px-2 py-1 rounded-full flex items-center gap-1 tracking-tight">
+                                <span class="w-1 h-1 bg-white rounded-full animate-pulse"></span> ABIERTO
+                            </span>
+                        {% else %}
+                            <span class="bg-gray-800 text-white text-[7px] font-black px-2 py-1 rounded-full tracking-tight">
+                                CERRADO
+                            </span>
+                        {% endif %}
+                        <span class="bg-gold text-black text-[7px] font-black px-2 py-1 rounded-full tracking-tight border border-black/5">
+                            ✨ 24/7
+                        </span>
+                    </div>
+                </div>
                 
                 <div class="flex items-start gap-2 mb-8">
                     <svg class="w-4 h-4 text-gray-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
