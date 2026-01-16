@@ -5,8 +5,7 @@ from django.contrib.auth import login
 from django.views.decorators.http import require_GET
 from django.utils import timezone
 from django.contrib import messages
-from django.db.models import Q
-from datetime import datetime, timedelta
+from datetime import datetime
 from apps.businesses.models import Salon, Service
 from apps.core.models import User
 from apps.businesses.logic import AvailabilityManager
@@ -45,17 +44,28 @@ def salon_detail(request, pk):
         'salon': salon, 'is_open': is_open, 'services': services
     })
 
-def booking_wizard(request, salon_id, service_id):
+def booking_wizard(request, salon_id):
+    # Obtenemos los servicios seleccionados desde la URL (ej: ?services=1,2,3)
+    service_ids_str = request.GET.get('services', '')
+    if not service_ids_str:
+        messages.error(request, "Debes seleccionar al menos un servicio.")
+        return redirect('salon_detail', pk=salon_id)
+    
+    service_ids = service_ids_str.split(',')
     salon = get_object_or_404(Salon, pk=salon_id)
-    service = get_object_or_404(Service, pk=service_id, salon=salon)
+    services = Service.objects.filter(id__in=service_ids, salon=salon)
+    
     employees = salon.employees.all()
     
-    deposit_amount = int((service.price * salon.deposit_percentage) / 100)
+    total_price = sum(s.price for s in services)
+    deposit_amount = int((total_price * salon.deposit_percentage) / 100)
     
     context = {
         'salon': salon,
-        'service': service,
+        'services': services,
+        'service_ids_str': service_ids_str,
         'employees': employees,
+        'total_price': total_price,
         'deposit_amount': deposit_amount,
         'today': timezone.localtime(timezone.now()).strftime('%Y-%m-%d'),
         'is_guest': not request.user.is_authenticated
@@ -66,16 +76,17 @@ def booking_wizard(request, salon_id, service_id):
 def get_available_slots_api(request):
     try:
         salon_id = request.GET.get('salon_id')
-        service_id = request.GET.get('service_id')
+        service_ids = request.GET.get('service_ids', '').split(',')
         employee_id = request.GET.get('employee_id')
         date_str = request.GET.get('date')
 
         salon = get_object_or_404(Salon, pk=salon_id)
-        service = get_object_or_404(Service, pk=service_id)
+        services = Service.objects.filter(id__in=service_ids)
         employee = get_object_or_404(User, pk=employee_id)
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        slots = AvailabilityManager.get_available_slots(salon, service, employee, target_date)
+        # Enviamos la lista completa de servicios para calcular el bloque
+        slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
         
         json_slots = []
         for slot in slots:
@@ -86,66 +97,59 @@ def get_available_slots_api(request):
             })
             
         return JsonResponse({'slots': json_slots})
-        
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
 def booking_commit(request):
     if request.method == 'POST':
         salon_id = request.POST.get('salon_id')
-        service_id = request.POST.get('service_id')
+        service_ids = request.POST.get('service_ids', '').split(',')
         employee_id = request.POST.get('employee_id')
         date_str = request.POST.get('date')
         time_str = request.POST.get('time')
         
-        # Datos para registro automático
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
         email = request.POST.get('email')
         phone = request.POST.get('phone')
 
         salon = get_object_or_404(Salon, pk=salon_id)
-        service = get_object_or_404(Service, pk=service_id)
+        services = Service.objects.filter(id__in=service_ids)
         employee = get_object_or_404(User, pk=employee_id)
         
         booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
         booking_datetime = timezone.make_aware(booking_datetime)
-        deposit_val = (service.price * salon.deposit_percentage) / 100
+        
+        total_price = sum(s.price for s in services)
+        deposit_val = (total_price * salon.deposit_percentage) / 100
 
         client_user = request.user
 
-        # Lógica de registro automático si es invitado
         if not client_user.is_authenticated:
             if User.objects.filter(email=email).exists():
-                messages.error(request, "Este correo ya está registrado. Por favor inicia sesión primero.")
+                messages.error(request, "Este correo ya está registrado. Por favor inicia sesión.")
                 return redirect('login')
             
             temp_password = str(uuid.uuid4())[:8]
-            
             client_user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=temp_password,
-                first_name=first_name,
-                last_name=last_name,
-                phone=phone,
-                role='CLIENT',
-                is_verified_payment=True
+                username=email, email=email, password=temp_password,
+                first_name=first_name, last_name=last_name, phone=phone,
+                role='CLIENT', is_verified_payment=True
             )
-            
             login(request, client_user)
-            messages.success(request, f"¡Cuenta creada! Tu contraseña temporal para volver a entrar es: {temp_password}")
+            messages.success(request, f"¡Cuenta creada! Tu clave es: {temp_password}")
 
-        Appointment.objects.create(
+        # Creamos la cita y luego asignamos los servicios
+        appointment = Appointment.objects.create(
             client=client_user,
             salon=salon,
-            service=service,
             employee=employee,
             date_time=booking_datetime,
-            total_price=service.price,
+            total_price=total_price,
             deposit_amount=deposit_val,
             status='PENDING'
         )
+        appointment.services.set(services)
         
         return redirect('client_dashboard')
         
@@ -156,5 +160,5 @@ def cancel_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
     appointment.status = 'CANCELLED'
     appointment.save()
-    messages.success(request, "La cita ha sido cancelada y el horario se ha liberado.")
+    messages.success(request, "La cita ha sido cancelada.")
     return redirect('dashboard')

@@ -26,8 +26,8 @@ class AvailabilityManager:
             return check_time >= open_t or check_time <= close_t
 
     @staticmethod
-    def get_available_slots(salon, service, employee, target_date):
-        """Genera slots validando la jerarquía Salón > Empleado."""
+    def get_available_slots(salon, services_list, employee, target_date):
+        """Genera slots validando un bloque de tiempo continuo para múltiples servicios."""
         from apps.marketplace.models import Appointment
         
         slots = []
@@ -47,16 +47,14 @@ class AvailabilityManager:
         except:
             return []
 
-        # 3. Citas ya reservadas (excluyendo canceladas)
+        # 3. Citas ya reservadas (Pre-cargamos servicios para rapidez)
         existing_appointments = Appointment.objects.filter(
             employee=employee,
             date_time__date=target_date
-        ).exclude(status='CANCELLED').select_related('service')
+        ).exclude(status='CANCELLED').prefetch_related('services')
 
-        # 4. INTERSECCIÓN DE HORARIOS: El salón manda sobre el empleado
-        # El servicio solo puede empezar después de que abra el salón Y empiece el empleado
+        # 4. INTERSECCIÓN DE HORARIOS
         start_hour = max(salon.opening_time, schedule.work_start)
-        # El servicio debe terminar antes de que cierre el salón Y termine el empleado
         end_hour = min(salon.closing_time, schedule.work_end)
         
         if start_hour >= end_hour:
@@ -67,7 +65,9 @@ class AvailabilityManager:
         lunch_start_dt = timezone.make_aware(datetime.combine(target_date, schedule.lunch_start))
         lunch_end_dt = timezone.make_aware(datetime.combine(target_date, schedule.lunch_end))
         
-        service_duration = timedelta(minutes=service.duration_minutes + service.buffer_time)
+        # CÁLCULO DE DURACIÓN TOTAL DEL COMBO
+        total_duration_mins = sum(s.duration_minutes + s.buffer_time for s in services_list)
+        service_duration = timedelta(minutes=total_duration_mins)
 
         # 5. Generar y Validar cada Slot
         while current_dt + service_duration <= end_dt:
@@ -79,7 +79,7 @@ class AvailabilityManager:
             if target_date == now_local.date() and slot_start <= now_local:
                 is_valid = False
             
-            # Regla B: Almuerzo
+            # Regla B: Almuerzo (El bloque completo no debe tocar el almuerzo)
             if is_valid:
                 if (slot_end > lunch_start_dt) and (slot_start < lunch_end_dt):
                     is_valid = False
@@ -88,7 +88,8 @@ class AvailabilityManager:
             if is_valid:
                 for app in existing_appointments:
                     app_start = app.date_time
-                    app_total_min = app.service.duration_minutes + app.service.buffer_time
+                    # Sumamos duración de la cita existente
+                    app_total_min = sum(s.duration_minutes + s.buffer_time for s in app.services.all())
                     app_end = app_start + timedelta(minutes=app_total_min)
                     
                     if (slot_start < app_end) and (slot_end > app_start):

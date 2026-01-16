@@ -11,7 +11,8 @@ class Appointment(models.Model):
     
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='appointments')
     salon = models.ForeignKey('businesses.Salon', on_delete=models.CASCADE)
-    service = models.ForeignKey('businesses.Service', on_delete=models.CASCADE)
+    # Cambio: Ahora una cita puede tener múltiples servicios (Combo)
+    services = models.ManyToManyField('businesses.Service', related_name='appointments')
     employee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='work_appointments')
     
     date_time = models.DateTimeField()

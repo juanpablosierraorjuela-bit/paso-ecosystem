@@ -4,12 +4,9 @@ from . import views
 urlpatterns = [
     path('', views.home, name='marketplace_home'),
     path('salon/<int:pk>/', views.salon_detail, name='salon_detail'),
-    path('reservar/<int:salon_id>/<int:service_id>/', views.booking_wizard, name='booking_wizard'),
-    
-    # Rutas Nuevas
+    # Cambio: El wizard ya no pide service_id en el path, los recibe por parámetro GET
+    path('book/<int:salon_id>/', views.booking_wizard, name='booking_wizard'),
     path('api/slots/', views.get_available_slots_api, name='api_get_slots'),
-    path('reservar/confirmar/', views.booking_commit, name='booking_commit'),
-    
-    # RUTA PARA CANCELAR CITA
-    path('cita/cancelar/<int:pk>/', views.cancel_appointment, name='cancel_appointment'),
+    path('book/commit/', views.booking_commit, name='booking_commit'),
+    path('appointment/<int:pk>/cancel/', views.cancel_appointment, name='cancel_appointment'),
 ]
