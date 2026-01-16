@@ -21,13 +21,11 @@ def owner_dashboard(request):
     except:
         return redirect('register_owner')
 
-    # --- LÓGICA TIMER ---
     elapsed_time = timezone.now() - request.user.registration_timestamp
     time_limit = timedelta(hours=24)
     remaining_time = time_limit - elapsed_time
     total_seconds_left = max(0, int(remaining_time.total_seconds()))
 
-    # --- LÓGICA WHATSAPP ACTIVACIÓN ---
     admin_settings = GlobalSettings.objects.first()
     raw_phone = admin_settings.whatsapp_support if (admin_settings and admin_settings.whatsapp_support) else '573000000000'
     clean_phone = re.sub(r'\D', '', str(raw_phone))
@@ -36,17 +34,14 @@ def owner_dashboard(request):
     wa_message = f"Hola PASO, soy el negocio {salon.name} (ID {request.user.id}). Adjunto mi comprobante de pago."
     wa_link = f"https://wa.me/{clean_phone}?text={wa_message}"
 
-    # --- LÓGICA DE CITAS (NUEVO) ---
-    # Traemos todas las citas ordenadas por fecha (las más recientes primero)
     appointments = Appointment.objects.filter(salon=salon).order_by('-date_time')
     
-    # Calculamos saldo pendiente para cada una
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
     context = {
         'salon': salon,
-        'appointments': appointments, # <--- AQUI ESTAN LAS CITAS
+        'appointments': appointments,
         'seconds_left': total_seconds_left,
         'wa_link': wa_link,
         'is_trial': not request.user.is_verified_payment,
@@ -55,21 +50,16 @@ def owner_dashboard(request):
     }
     return render(request, 'businesses/dashboard.html', context)
 
-# --- ACCIÓN VERIFICAR CITA (NUEVO) ---
 @login_required
 def verify_appointment(request, appointment_id):
     salon = request.user.owned_salon
-    # Aseguramos que la cita pertenezca a ESTE salón para seguridad
     appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
-    
     if appointment.status == 'PENDING':
         appointment.status = 'CONFIRMED'
         appointment.save()
         messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
-    
     return redirect('dashboard')
 
-# --- OTRAS VISTAS (Mantenemos igual) ---
 @login_required
 def services_list(request):
     if request.user.role != 'OWNER': return redirect('home')
@@ -86,6 +76,20 @@ def services_list(request):
     else:
         form = ServiceForm()
     return render(request, 'businesses/services.html', {'services': services, 'form': form})
+
+@login_required
+def service_edit(request, pk):
+    if request.user.role != 'OWNER': return redirect('home')
+    service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, instance=service)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Servicio actualizado correctamente.")
+            return redirect('services_list')
+    else:
+        form = ServiceForm(instance=service)
+    return render(request, 'businesses/service_edit.html', {'form': form, 'service': service})
 
 @login_required
 def service_delete(request, pk):
