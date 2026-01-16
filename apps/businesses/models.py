@@ -38,10 +38,10 @@ class Service(models.Model):
 
 class EmployeeSchedule(models.Model):
     employee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='schedule')
-    work_start = models.TimeField(null=True, blank=True, (default=time(9, 0))
-    work_end = models.TimeField(null=True, blank=True, (default=time(18, 0))
-    lunch_start = models.TimeField(null=True, blank=True, (default=time(13, 0))
-    lunch_end = models.TimeField(null=True, blank=True, (default=time(14, 0))
+    work_start = models.TimeField(null=True, blank=True, default=time(9, 0))
+    work_end = models.TimeField(null=True, blank=True, default=time(18, 0))
+    lunch_start = models.TimeField(null=True, blank=True, default=time(13, 0))
+    lunch_end = models.TimeField(null=True, blank=True, default=time(14, 0))
     active_days = models.CharField(max_length=20, default="0,1,2,3,4,5") 
     is_active_today = models.BooleanField(default=True)
     

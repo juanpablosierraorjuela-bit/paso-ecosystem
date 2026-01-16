@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, time # Importación corregida aquí
 from apps.core.models import GlobalSettings, User
 from apps.marketplace.models import Appointment
 from .models import Service, Salon, EmployeeSchedule
@@ -166,7 +166,12 @@ def settings_view(request):
 @login_required
 def employee_dashboard(request):
     if request.user.role != 'EMPLOYEE': return redirect('dashboard')
-    schedule, created = EmployeeSchedule.objects.get_or_create(employee=request.user, defaults={'work_start': time(9,0), 'work_end': time(18,0)})
+    
+    schedule, created = EmployeeSchedule.objects.get_or_create(
+        employee=request.user, 
+        defaults={'work_start': time(9,0), 'work_end': time(18,0)}
+    )
+    
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
     profile_form = OwnerUpdateForm(instance=request.user)
 
