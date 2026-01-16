@@ -166,7 +166,7 @@ def settings_view(request):
 @login_required
 def employee_dashboard(request):
     if request.user.role != 'EMPLOYEE': return redirect('dashboard')
-    schedule, created = EmployeeSchedule.objects.get_or_create(employee=request.user)
+    schedule, created = EmployeeSchedule.objects.get_or_create(employee=request.user, defaults={'work_start': time(9,0), 'work_end': time(18,0)})
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
     profile_form = OwnerUpdateForm(instance=request.user)
 
