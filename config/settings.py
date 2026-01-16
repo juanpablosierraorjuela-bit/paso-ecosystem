@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'whitenoise.runserver_nostatic', 
     'django.contrib.staticfiles',
-    'django.contrib.humanize', # AÑADIDO PARA FORMATO DE PRECIOS
+    'django.contrib.humanize',
     
     # MIS APPS
     'apps.core',
@@ -78,13 +78,16 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- IDIOMA Y HORA (AJUSTADO PARA COLOMBIA) ---
+# --- IDIOMA Y HORA (FORMATO COLOMBIA) ---
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 USE_L10N = True
-USE_THOUSAND_SEPARATOR = True # ACTIVAR SEPARADOR DE MILES
+USE_THOUSAND_SEPARATOR = True
+THOUSAND_SEPARATOR = '.'
+DECIMAL_SEPARATOR = ','
+NUMBER_GROUPING = 3
 
 # --- ARCHIVOS ESTÁTICOS ---
 STATIC_URL = '/static/'
