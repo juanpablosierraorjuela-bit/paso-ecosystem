@@ -118,3 +118,4 @@ if 'RENDER' in os.environ:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+    DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
