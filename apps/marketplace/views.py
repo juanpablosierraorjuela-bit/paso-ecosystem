@@ -6,7 +6,7 @@ from django.views.decorators.http import require_GET
 from django.utils import timezone
 from django.contrib import messages
 from datetime import datetime
-from decimal import Decimal  # Corrección: Necesario para manejar precios sin errores
+from decimal import Decimal
 from apps.businesses.models import Salon, Service
 from apps.core.models import User
 from apps.businesses.logic import AvailabilityManager
@@ -46,7 +46,6 @@ def salon_detail(request, pk):
     })
 
 def booking_wizard(request, salon_id):
-    # Obtenemos los servicios seleccionados desde la URL (ej: ?services=1,2,3)
     service_ids_str = request.GET.get('services', '')
     if not service_ids_str:
         messages.error(request, "Debes seleccionar al menos un servicio.")
@@ -86,7 +85,6 @@ def get_available_slots_api(request):
         employee = get_object_or_404(User, pk=employee_id)
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Enviamos la lista completa de servicios para calcular el bloque
         slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
         
         json_slots = []
@@ -122,29 +120,27 @@ def booking_commit(request):
             booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
             booking_datetime = timezone.make_aware(booking_datetime)
             
-            # Corrección: Calculamos usando Decimal para evitar errores con el formato de moneda
             total_price = sum(s.price for s in services)
-            # Convertimos a Decimal antes de la operación matemática
             perc = Decimal(str(salon.deposit_percentage))
             deposit_val = (Decimal(str(total_price)) * perc) / Decimal('100')
 
             client_user = request.user
 
             if not client_user.is_authenticated:
-                if User.objects.filter(email=email).exists():
-                    messages.error(request, "Este correo ya está registrado. Por favor inicia sesión.")
-                    return redirect('login')
-                
-                temp_password = str(uuid.uuid4())[:8]
-                client_user = User.objects.create_user(
-                    username=email, email=email, password=temp_password,
-                    first_name=first_name, last_name=last_name, phone=phone,
-                    role='CLIENT', is_verified_payment=True
-                )
-                login(request, client_user)
-                messages.success(request, f"¡Cuenta creada! Tu clave es: {temp_password}")
+                user_exists = User.objects.filter(email=email).first()
+                if user_exists:
+                    client_user = user_exists
+                    login(request, client_user)
+                else:
+                    temp_password = str(uuid.uuid4())[:8]
+                    client_user = User.objects.create_user(
+                        username=email, email=email, password=temp_password,
+                        first_name=first_name, last_name=last_name, phone=phone,
+                        role='CLIENT'
+                    )
+                    login(request, client_user)
+                    messages.success(request, f"¡Cuenta creada! Tu clave temporal es: {temp_password}")
 
-            # Creamos la cita y luego asignamos los servicios
             appointment = Appointment.objects.create(
                 client=client_user,
                 salon=salon,
@@ -156,24 +152,22 @@ def booking_commit(request):
             )
             appointment.services.set(services)
             
-            messages.success(request, "Cita agendada correctamente.")
+            messages.success(request, "Cita agendada correctamente. Realiza el abono para confirmar.")
             return redirect('client_dashboard')
             
         except Exception as e:
-            # Si algo falla, mostramos el error sin tumbar el sitio
             messages.error(request, f"Hubo un error al procesar tu reserva: {str(e)}")
-            return redirect('marketplace_home')
+            return redirect('home')
             
-    return redirect('marketplace_home')
+    return redirect('home')
 
 @login_required
 def cancel_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
-    # Seguridad adicional: verificar que sea el cliente o el dueño
     if request.user == appointment.client or request.user.role == 'OWNER':
         appointment.status = 'CANCELLED'
         appointment.save()
         messages.success(request, "La cita ha sido cancelada.")
     else:
         messages.error(request, "No tienes permiso para cancelar esta cita.")
-    return redirect('dashboard')
+    return redirect('client_dashboard')

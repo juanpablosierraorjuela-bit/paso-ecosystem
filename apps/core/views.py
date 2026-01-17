@@ -14,7 +14,6 @@ import re
 def home(request):
     return render(request, 'home.html')
 
-# --- NUEVA VISTA LANDING ---
 def landing_owners(request):
     return render(request, 'landing_owners.html')
 
@@ -70,8 +69,8 @@ def client_dashboard(request):
     profile_form = ClientProfileForm(instance=user)
     password_form = ClientPasswordForm()
     
-    # CORRECCIÓN: Excluimos las canceladas para que desaparezcan del panel del cliente
-    appointments = Appointment.objects.filter(client=user).exclude(status='CANCELLED').order_by('-created_at')
+    # CORRECCIÓN: Prefetch_related para cargar los servicios eficientemente
+    appointments = Appointment.objects.filter(client=user).exclude(status='CANCELLED').order_by('-created_at').prefetch_related('services')
     
     for app in appointments:
         if app.status == 'PENDING':
@@ -80,22 +79,21 @@ def client_dashboard(request):
             app.seconds_left = max(0, int(remaining.total_seconds()))
             
             try:
-                owner_phone = app.salon.owner.phone
-                if owner_phone:
-                    clean_phone = re.sub(r'\D', '', str(owner_phone))
-                    if not clean_phone.startswith('57'):
-                        clean_phone = '57' + clean_phone
-                else:
-                    clean_phone = '573000000000'
+                owner_phone = app.salon.owner.phone or '573000000000'
+                clean_phone = re.sub(r'\D', '', str(owner_phone))
+                if not clean_phone.startswith('57'): clean_phone = '57' + clean_phone
             except:
                 clean_phone = '573000000000'
             
+            # CORRECCIÓN: Listar todos los servicios en el mensaje de WhatsApp
+            servicios_nombres = ", ".join([s.name for s in app.services.all()])
+            
             msg = (
                 f"Hola {app.salon.name}, soy {user.first_name}. "
-                f"Confirmo mi cita para {app.service.name} el {app.date_time.strftime('%d/%m %I:%M %p')}. "
+                f"Confirmo mi cita para {servicios_nombres} el {app.date_time.strftime('%d/%m %I:%M %p')}. "
                 f"Adjunto abono de ${int(app.deposit_amount)}."
             )
-            app.wa_link = f"https://wa.me/{clean_phone}?text={msg}"
+            app.wa_link = f"https://wa.me/{clean_phone}?text={msg.replace(' ', '%20')}"
             
     context = {
         'appointments': appointments,

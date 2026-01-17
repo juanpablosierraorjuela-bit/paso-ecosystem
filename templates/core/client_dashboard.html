@@ -27,7 +27,9 @@
                 
                 <div class="mb-4 md:mb-0">
                     <div class="flex items-center space-x-2 mb-1">
-                        <h3 class="text-xl font-bold">{{ app.service.name }}</h3>
+                        <h3 class="text-xl font-bold">
+                            {% for s in app.services.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </h3>
                         {% if app.status == 'PENDING' %}
                             <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded">PENDIENTE PAGO</span>
                         {% else %}
@@ -57,7 +59,7 @@
                         
                         <script>
                             (function() {
-                                let seconds = {{ app.seconds_left }};
+                                let seconds = {{ app.seconds_left|default:0 }};
                                 const timerEl = document.getElementById('timer-{{ app.id }}');
                                 const interval = setInterval(() => {
                                     if (seconds <= 0) {
