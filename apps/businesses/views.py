@@ -52,19 +52,27 @@ def owner_dashboard(request):
 
 @login_required
 def verify_appointment(request, appointment_id):
-    salon = request.user.owned_salon
-    appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
-    if appointment.status == 'PENDING':
-        appointment.status = 'CONFIRMED'
-        appointment.save()
-        messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
+    try:
+        salon = request.user.owned_salon
+        appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
+        if appointment.status == 'PENDING':
+            appointment.status = 'CONFIRMED'
+            appointment.save()
+            messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
+    except:
+        messages.error(request, "No se pudo verificar la cita.")
     return redirect('dashboard')
 
 @login_required
 def services_list(request):
     if request.user.role != 'OWNER': return redirect('home')
-    salon = request.user.owned_salon
-    services = salon.services.all()
+    try:
+        salon = request.user.owned_salon
+        services = salon.services.all()
+    except:
+        messages.error(request, "No se encontró un salón vinculado.")
+        return redirect('dashboard')
+
     if request.method == 'POST':
         form = ServiceForm(request.POST)
         if form.is_valid():
@@ -80,7 +88,12 @@ def services_list(request):
 @login_required
 def service_edit(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
-    service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
+    try:
+        salon = request.user.owned_salon
+        service = get_object_or_404(Service, pk=pk, salon=salon)
+    except:
+        return redirect('services_list')
+
     if request.method == 'POST':
         form = ServiceForm(request.POST, instance=service)
         if form.is_valid():
@@ -94,16 +107,26 @@ def service_edit(request, pk):
 @login_required
 def service_delete(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
-    service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
-    service.delete()
-    messages.success(request, "Servicio eliminado.")
+    try:
+        # Acceso seguro al salón y al servicio
+        salon = request.user.owned_salon
+        service = get_object_or_404(Service, pk=pk, salon=salon)
+        service.delete()
+        messages.success(request, "Servicio eliminado.")
+    except Exception as e:
+        # En lugar de error 500, atrapamos la falla y avisamos al dueño
+        messages.error(request, f"No se pudo eliminar el servicio: {str(e)}")
     return redirect('services_list')
 
 @login_required
 def employees_list(request):
     if request.user.role != 'OWNER': return redirect('home')
-    salon = request.user.owned_salon
-    employees = salon.employees.all()
+    try:
+        salon = request.user.owned_salon
+        employees = salon.employees.all()
+    except:
+        return redirect('dashboard')
+
     if request.method == 'POST':
         form = EmployeeCreationForm(request.POST)
         if form.is_valid():
@@ -126,16 +149,24 @@ def employees_list(request):
 @login_required
 def employee_delete(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
-    employee = get_object_or_404(User, pk=pk, workplace=request.user.owned_salon)
-    employee.delete()
-    messages.success(request, "Empleado eliminado.")
+    try:
+        salon = request.user.owned_salon
+        employee = get_object_or_404(User, pk=pk, workplace=salon)
+        employee.delete()
+        messages.success(request, "Empleado eliminado.")
+    except Exception as e:
+        messages.error(request, f"No se pudo eliminar el empleado: {str(e)}")
     return redirect('employees_list')
 
 @login_required
 def settings_view(request):
     if request.user.role != 'OWNER': return redirect('home')
-    salon = request.user.owned_salon
-    user = request.user
+    try:
+        salon = request.user.owned_salon
+        user = request.user
+    except:
+        return redirect('dashboard')
+
     owner_form = OwnerUpdateForm(instance=user)
     salon_form = SalonUpdateForm(instance=salon)
     schedule_form = SalonScheduleForm(instance=salon)
