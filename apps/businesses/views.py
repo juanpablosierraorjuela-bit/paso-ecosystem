@@ -55,9 +55,9 @@ def verify_appointment(request, appointment_id):
     try:
         salon = request.user.owned_salon
         appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
-        # El dueño confirma la cita pasando el estado a CONFIRMED
+        # CORRECCION: Usamos 'VERIFIED' para estandarizar con tu modelo
         if appointment.status == 'PENDING':
-            appointment.status = 'CONFIRMED'
+            appointment.status = 'VERIFIED'
             appointment.save()
             messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
     except:
@@ -197,20 +197,17 @@ def settings_view(request):
 def employee_dashboard(request):
     if request.user.role != 'EMPLOYEE': return redirect('dashboard')
     
-    # 1. Obtener o crear horario
     schedule, created = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # 2. CONSULTA CORREGIDA: Traer solo las citas CONFIRMADAS para este empleado
-    # Se usa 'CONFIRMED' porque es el estado que pone el dueño en verify_appointment
+    # CORRECCION: Filtramos por 'VERIFIED' para que coincida con el cambio del dueño
     appointments = Appointment.objects.filter(
         employee=request.user,
-        status='CONFIRMED'
+        status='VERIFIED'
     ).order_by('date_time')
     
-    # 3. Calcular saldo pendiente (opcional, para visualización)
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
@@ -231,11 +228,10 @@ def employee_dashboard(request):
                 messages.success(request, "Perfil actualizado.")
                 return redirect('employee_dashboard')
     
-    # 4. Pasar 'appointments' al contexto para que el HTML pueda mostrarlas
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
         'profile_form': profile_form,
         'schedule': schedule,
         'salon': request.user.workplace,
-        'appointments': appointments # <--- ESTA LINEA FALTABA
+        'appointments': appointments
     })
