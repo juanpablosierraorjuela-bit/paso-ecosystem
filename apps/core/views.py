@@ -72,22 +72,21 @@ def client_dashboard(request):
     # Cargamos citas y servicios eficientemente
     appointments = Appointment.objects.filter(client=user).exclude(status='CANCELLED').order_by('-created_at').prefetch_related('services')
     
-    ahora = timezone.now() # Hora actual con soporte de zona horaria
+    ahora = timezone.now()
     
     for app in appointments:
         if app.status == 'PENDING':
-            # --- CORRECCIÓN DEL CRONÓMETRO ---
-            # Calculamos la diferencia real en segundos
+            # --- CORRECCIÓN DEL CRONÓMETRO (60 MINUTOS) ---
             transcurrido = (ahora - app.created_at).total_seconds()
-            limite = 3600  # 60 minutos exactos
+            limite = 3600  # 60 minutos exactos en segundos
             
-            # Si el tiempo transcurrido es negativo (por desfase de server) lo ponemos en 0
+            # Ajuste por si el reloj del servidor tiene micro-desfases
             if transcurrido < 0: transcurrido = 0
             
             restante = limite - transcurrido
-            app.seconds_left = int(max(0, restante)) # Guardamos los segundos para el JS
+            app.seconds_left = int(max(0, restante)) 
             
-            # --- LINK DE WHATSAPP (MULTI-SERVICIOS) ---
+            # --- LINK DE WHATSAPP ---
             try:
                 owner_phone = app.salon.owner.phone or '573000000000'
                 clean_phone = re.sub(r'\D', '', str(owner_phone))
@@ -95,7 +94,7 @@ def client_dashboard(request):
             except:
                 clean_phone = '573000000000'
             
-            # Listamos todos los servicios seleccionados
+            # CORRECCIÓN: Listar todos los servicios en el mensaje
             servicios_nombres = ", ".join([s.name for s in app.services.all()])
             
             msg = (
