@@ -66,12 +66,13 @@
 
                         <script>
                             (function() {
-                                let seconds = {{ app.seconds_left|default:0 }};
+                                // Cargamos los segundos que calculó el servidor
+                                let seconds = parseInt("{{ app.seconds_left|default:0 }}");
                                 const timerEl = document.getElementById('timer-{{ app.id }}');
                                 const paymentArea = document.getElementById('payment-area-{{ app.id }}');
                                 const expiredMsg = document.getElementById('expired-msg-{{ app.id }}');
                                 
-                                function update() {
+                                function updateDisplay() {
                                     if (seconds <= 0) {
                                         if (paymentArea) paymentArea.classList.add('hidden');
                                         if (expiredMsg) expiredMsg.classList.remove('hidden');
@@ -83,10 +84,13 @@
                                     return true;
                                 }
 
-                                if (update()) {
+                                // Ejecutar inmediatamente al cargar
+                                if (updateDisplay()) {
                                     const interval = setInterval(() => {
                                         seconds--;
-                                        if (!update()) clearInterval(interval);
+                                        if (!updateDisplay()) {
+                                            clearInterval(interval);
+                                        }
                                     }, 1000);
                                 }
                             })();

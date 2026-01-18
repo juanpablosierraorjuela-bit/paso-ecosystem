@@ -176,27 +176,28 @@ def cancel_appointment(request, pk):
 @login_required
 def client_dashboard(request):
     # Traemos las citas del cliente
-    appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
+    appointments = Appointment.objects.filter(client=request.user).prefetch_related('services', 'salon').order_by('-created_at')
     
-    # Obtener hora actual consciente de la zona horaria (UTC Estándar)
+    # Sincronización de tiempo: Usamos la hora actual de Django (consciente de zona horaria)
     now = timezone.now()
 
     for app in appointments:
         if app.status == 'PENDING':
-            # 1. CÁLCULO DEL CRONÓMETRO
-            # Forzamos que created_at sea consciente para evitar el error de los 3 segundos
-            created_at = app.created_at
-            expiration_time = created_at + timedelta(minutes=60)
+            # 1. CÁLCULO DEL CRONÓMETRO (REVISADO)
+            # Calculamos cuántos segundos han pasado realmente desde que se grabó en la DB
+            seconds_passed = (now - app.created_at).total_seconds()
             
-            diff = (expiration_time - now).total_seconds()
-            app.seconds_left = int(diff) if diff > 0 else 0
+            # El tiempo total permitido son 3600 segundos (60 minutos)
+            total_time = 3600
+            remaining = total_time - seconds_passed
+            
+            # Si el resultado es menor a 0 o muy pequeño por lag del servidor, lo manejamos
+            app.seconds_left = int(remaining) if remaining > 0 else 0
             
             # 2. GENERACIÓN DEL LINK DE WHATSAPP
-            # Usamos el teléfono del dueño del salón
             owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""
-            msg = f"Hola, soy {request.user.first_name}. Acabo de agendar una cita para {app.date_time.strftime('%d/%m %H:%M')} y quiero enviar el comprobante de mi abono de ${app.deposit_amount}."
-            encoded_msg = urllib.parse.quote(msg)
-            app.wa_link = f"https://wa.me/{owner_phone}?text={encoded_msg}"
+            msg = f"Hola, soy {request.user.first_name}. Envío el comprobante de mi abono para la cita de {app.date_time.strftime('%d/%m %H:%M')}."
+            app.wa_link = f"https://wa.me/{owner_phone}?text={urllib.parse.quote(msg)}"
         else:
             app.seconds_left = 0
             app.wa_link = "#"
