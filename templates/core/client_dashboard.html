@@ -51,43 +51,46 @@
                 <div class="w-full md:w-auto text-right">
                     {% if app.status == 'PENDING' %}
                         <div id="payment-area-{{ app.id }}">
-                            <p class="text-xs text-gray-500 font-bold mb-2 uppercase tracking-tight">
-                                Tiempo para pagar: <span id="timer-{{ app.id }}" class="font-mono text-sm text-red-600">--:--</span>
+                            <p class="text-xs text-red-500 font-bold mb-2 uppercase tracking-tight">
+                                Tiempo para pagar: <span id="timer-{{ app.id }}" class="font-mono text-sm">--:--</span>
                             </p>
                             <a href="{{ app.wa_link }}" target="_blank" class="block w-full md:inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center">
                                 <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
                             </a>
                         </div>
-
+                        
                         <div id="expired-msg-{{ app.id }}" class="hidden">
                             <span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">TIEMPO AGOTADO</span>
                             <p class="text-[10px] text-gray-400 mt-1 uppercase">Cita sujeta a eliminación</p>
                         </div>
-
+                        
                         <script>
                             (function() {
-                                // Cargamos los segundos que calculó el servidor
-                                let seconds = parseInt("{{ app.seconds_left|default:0 }}");
+                                // Obtenemos el tiempo de expiración real del servidor
+                                const expireTime = parseInt("{{ app.expire_timestamp|default:0 }}");
                                 const timerEl = document.getElementById('timer-{{ app.id }}');
                                 const paymentArea = document.getElementById('payment-area-{{ app.id }}');
                                 const expiredMsg = document.getElementById('expired-msg-{{ app.id }}');
                                 
                                 function updateDisplay() {
-                                    if (seconds <= 0) {
+                                    const now = new Date().getTime();
+                                    const distance = expireTime - now;
+
+                                    if (distance <= 0) {
                                         if (paymentArea) paymentArea.classList.add('hidden');
                                         if (expiredMsg) expiredMsg.classList.remove('hidden');
                                         return false;
                                     }
-                                    let m = Math.floor(seconds / 60);
-                                    let s = seconds % 60;
-                                    timerEl.innerText = `${m}:${s < 10 ? '0' + s : s}`;
+
+                                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                                    timerEl.innerText = `${minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
                                     return true;
                                 }
 
-                                // Ejecutar inmediatamente al cargar
                                 if (updateDisplay()) {
                                     const interval = setInterval(() => {
-                                        seconds--;
                                         if (!updateDisplay()) {
                                             clearInterval(interval);
                                         }
@@ -122,20 +125,20 @@
                     <div class="space-y-3">
                         {{ profile_form.as_p }}
                     </div>
-                    <button type="submit" name="update_profile" class="mt-4 w-full bg-black text-white py-2 rounded-lg font-bold hover:bg-gray-800 transition text-sm">
+                    <button type="submit" name=\"update_profile\" class="mt-4 w-full bg-black text-white py-2 rounded-lg font-bold hover:bg-gray-800 transition text-sm">
                         Guardar Cambios
                     </button>
                 </form>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h3 class="text-lg font-bold mb-4">🔒 Seguridad</h3>
-                <form method="post">
+            <div class=\"bg-white p-6 rounded-xl shadow border border-gray-100\">
+                <h3 class=\"text-lg font-bold mb-4\">🔒 Seguridad</h3>
+                <form method=\"post\">
                     {% csrf_token %}
-                    <div class="space-y-3">
+                    <div class=\"space-y-3\">
                         {{ password_form.as_p }}
                     </div>
-                    <button type="submit" name="change_password" class="mt-4 w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
+                    <button type=\"submit\" name=\"change_password\" class=\"mt-4 w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm\">
                         Actualizar Contraseña
                     </button>
                 </form>

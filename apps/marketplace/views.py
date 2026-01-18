@@ -175,31 +175,21 @@ def cancel_appointment(request, pk):
 
 @login_required
 def client_dashboard(request):
-    # Traemos las citas del cliente
     appointments = Appointment.objects.filter(client=request.user).prefetch_related('services', 'salon').order_by('-created_at')
     
-    # Sincronización de tiempo: Usamos la hora actual de Django (consciente de zona horaria)
-    now = timezone.now()
-
     for app in appointments:
         if app.status == 'PENDING':
-            # 1. CÁLCULO DEL CRONÓMETRO (REVISADO)
-            # Calculamos cuántos segundos han pasado realmente desde que se grabó en la DB
-            seconds_passed = (now - app.created_at).total_seconds()
+            # EN LUGAR DE CALCULAR SEGUNDOS, ENVIAMOS EL MOMENTO EXACTO DE EXPIRACIÓN
+            # app.created_at está en UTC, sumamos 60 minutos
+            expire_at = app.created_at + timedelta(minutes=60)
+            # Lo convertimos a milisegundos de Unix para JavaScript
+            app.expire_timestamp = int(expire_at.timestamp() * 1000)
             
-            # El tiempo total permitido son 3600 segundos (60 minutos)
-            total_time = 3600
-            remaining = total_time - seconds_passed
-            
-            # Si el resultado es menor a 0 o muy pequeño por lag del servidor, lo manejamos
-            app.seconds_left = int(remaining) if remaining > 0 else 0
-            
-            # 2. GENERACIÓN DEL LINK DE WHATSAPP
             owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""
             msg = f"Hola, soy {request.user.first_name}. Envío el comprobante de mi abono para la cita de {app.date_time.strftime('%d/%m %H:%M')}."
             app.wa_link = f"https://wa.me/{owner_phone}?text={urllib.parse.quote(msg)}"
         else:
-            app.seconds_left = 0
+            app.expire_timestamp = 0
             app.wa_link = "#"
 
     return render(request, 'client_dashboard.html', {
