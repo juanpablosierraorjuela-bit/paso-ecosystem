@@ -55,12 +55,18 @@ def verify_appointment(request, appointment_id):
     try:
         salon = request.user.owned_salon
         appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
-        # CORRECCION: Usamos 'VERIFIED' para estandarizar con tu modelo
-        if appointment.status == 'PENDING':
-            appointment.status = 'VERIFIED'
-            appointment.save()
-            messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
-    except:
+        
+        # --- CAMBIO DE EMERGENCIA: Forzamos la verificación ---
+        # Quitamos el 'if appointment.status == PENDING' para que siempre funcione
+        # aunque ya le hayas dado click antes.
+        print(f"DEBUG: Verificando cita {appointment.id} para empleado {appointment.employee.username}")
+        
+        appointment.status = 'VERIFIED'
+        appointment.save()
+        
+        messages.success(request, f"Cita de {appointment.client.first_name} verificada (Estado: VERIFIED).")
+    except Exception as e:
+        print(f"ERROR verificando cita: {e}")
         messages.error(request, "No se pudo verificar la cita.")
     return redirect('dashboard')
 
@@ -202,12 +208,20 @@ def employee_dashboard(request):
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # CORRECCION: Filtramos por 'VERIFIED' para que coincida con el cambio del dueño
-    appointments = Appointment.objects.filter(
-        employee=request.user,
-        status='VERIFIED'
-    ).order_by('date_time')
+    # --- CAMBIO DE EMERGENCIA: Mostrar TODO ---
+    # Quitamos el filtro de status para ver si las citas existen.
+    # Usamos filter(employee=request.user) solamente.
     
+    print(f"DEBUG: Empleado logueado: {request.user.username} (ID: {request.user.id})")
+    
+    appointments = Appointment.objects.filter(
+        employee=request.user
+    ).order_by('-date_time')
+    
+    print(f"DEBUG: Citas encontradas: {appointments.count()}")
+    for a in appointments:
+        print(f" - Cita {a.id}: Estado={a.status}")
+
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
