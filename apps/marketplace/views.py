@@ -179,10 +179,7 @@ def client_dashboard(request):
     
     for app in appointments:
         if app.status == 'PENDING':
-            # EN LUGAR DE CALCULAR SEGUNDOS, ENVIAMOS EL MOMENTO EXACTO DE EXPIRACIÓN
-            # app.created_at está en UTC, sumamos 60 minutos
             expire_at = app.created_at + timedelta(minutes=60)
-            # Lo convertimos a milisegundos de Unix para JavaScript
             app.expire_timestamp = int(expire_at.timestamp() * 1000)
             
             owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""

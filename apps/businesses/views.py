@@ -56,17 +56,11 @@ def verify_appointment(request, appointment_id):
         salon = request.user.owned_salon
         appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
         
-        # --- CAMBIO DE EMERGENCIA: Forzamos la verificación ---
-        # Quitamos el 'if appointment.status == PENDING' para que siempre funcione
-        # aunque ya le hayas dado click antes.
-        print(f"DEBUG: Verificando cita {appointment.id} para empleado {appointment.employee.username}")
-        
+        # Se cambia el estado a VERIFIED para que coincida con el modelo
         appointment.status = 'VERIFIED'
         appointment.save()
-        
-        messages.success(request, f"Cita de {appointment.client.first_name} verificada (Estado: VERIFIED).")
+        messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
     except Exception as e:
-        print(f"ERROR verificando cita: {e}")
         messages.error(request, "No se pudo verificar la cita.")
     return redirect('dashboard')
 
@@ -208,20 +202,12 @@ def employee_dashboard(request):
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # --- CAMBIO DE EMERGENCIA: Mostrar TODO ---
-    # Quitamos el filtro de status para ver si las citas existen.
-    # Usamos filter(employee=request.user) solamente.
-    
-    print(f"DEBUG: Empleado logueado: {request.user.username} (ID: {request.user.id})")
-    
+    # Se filtran las citas donde el empleado es el usuario actual y el estado es VERIFIED
     appointments = Appointment.objects.filter(
-        employee=request.user
-    ).order_by('-date_time')
+        employee=request.user,
+        status='VERIFIED'
+    ).order_by('date_time')
     
-    print(f"DEBUG: Citas encontradas: {appointments.count()}")
-    for a in appointments:
-        print(f" - Cita {a.id}: Estado={a.status}")
-
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
