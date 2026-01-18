@@ -5,7 +5,7 @@ from django.contrib.auth import login
 from django.views.decorators.http import require_GET
 from django.utils import timezone
 from django.contrib import messages
-from datetime import datetime
+from datetime import datetime, timedelta  # Añadido timedelta
 from decimal import Decimal
 from apps.businesses.models import Salon, Service
 from apps.core.models import User
@@ -171,3 +171,21 @@ def cancel_appointment(request, pk):
     else:
         messages.error(request, "No tienes permiso para cancelar esta cita.")
     return redirect('client_dashboard')
+
+@login_required
+def client_dashboard(request):
+    appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
+    now = timezone.now()
+
+    for app in appointments:
+        if app.status == 'PENDING':
+            # 60 minutos desde la creación
+            expiration_time = app.created_at + timedelta(minutes=60)
+            diff = expiration_time - now
+            app.seconds_left = int(diff.total_seconds()) if diff.total_seconds() > 0 else 0
+        else:
+            app.seconds_left = 0
+
+    return render(request, 'client_dashboard.html', {
+        'appointments': appointments,
+    })

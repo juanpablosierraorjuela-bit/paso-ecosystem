@@ -50,21 +50,26 @@
 
                 <div class="w-full md:w-auto text-right">
                     {% if app.status == 'PENDING' %}
-                        <p class="text-xs text-red-500 font-bold mb-2 uppercase tracking-tight">
-                            Tiempo para pagar: <span id="timer-{{ app.id }}" class="font-mono text-sm">--:--</span>
-                        </p>
-                        <a href="{{ app.wa_link }}" target="_blank" class="block w-full md:inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center">
-                            <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
-                        </a>
+                        <div id="payment-container-{{ app.id }}">
+                            <p class="text-xs text-gray-500 font-bold mb-2 uppercase tracking-tight">
+                                Tiempo para pagar: <span id="timer-{{ app.id }}" class="font-mono text-sm text-red-600">--:--</span>
+                            </p>
+                            <a href="{{ app.wa_link }}" target="_blank" class="block w-full md:inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center">
+                                <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
+                            </a>
+                        </div>
                         
                         <script>
                             (function() {
                                 let seconds = {{ app.seconds_left|default:0 }};
                                 const timerEl = document.getElementById('timer-{{ app.id }}');
+                                const container = document.getElementById('payment-container-{{ app.id }}');
                                 
                                 function updateDisplay() {
                                     if (seconds <= 0) {
                                         timerEl.innerText = "EXPIRADO";
+                                        timerEl.classList.add('text-red-700');
+                                        // Opcional: podrías ocultar el botón de WhatsApp si expira
                                         return false;
                                     }
                                     let m = Math.floor(seconds / 60);
@@ -73,7 +78,6 @@
                                     return true;
                                 }
 
-                                // Ejecutar una vez al inicio
                                 if (updateDisplay()) {
                                     const interval = setInterval(() => {
                                         seconds--;
