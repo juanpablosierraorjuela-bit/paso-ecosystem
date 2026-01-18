@@ -50,7 +50,7 @@
 
                 <div class="w-full md:w-auto text-right">
                     {% if app.status == 'PENDING' %}
-                        <div id="payment-container-{{ app.id }}">
+                        <div id="payment-area-{{ app.id }}">
                             <p class="text-xs text-gray-500 font-bold mb-2 uppercase tracking-tight">
                                 Tiempo para pagar: <span id="timer-{{ app.id }}" class="font-mono text-sm text-red-600">--:--</span>
                             </p>
@@ -58,32 +58,35 @@
                                 <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
                             </a>
                         </div>
-                        
+
+                        <div id="expired-msg-{{ app.id }}" class="hidden">
+                            <span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">TIEMPO AGOTADO</span>
+                            <p class="text-[10px] text-gray-400 mt-1 uppercase">Cita sujeta a eliminación</p>
+                        </div>
+
                         <script>
                             (function() {
                                 let seconds = {{ app.seconds_left|default:0 }};
                                 const timerEl = document.getElementById('timer-{{ app.id }}');
-                                const container = document.getElementById('payment-container-{{ app.id }}');
+                                const paymentArea = document.getElementById('payment-area-{{ app.id }}');
+                                const expiredMsg = document.getElementById('expired-msg-{{ app.id }}');
                                 
-                                function updateDisplay() {
+                                function update() {
                                     if (seconds <= 0) {
-                                        timerEl.innerText = "EXPIRADO";
-                                        timerEl.classList.add('text-red-700');
-                                        // Opcional: podrías ocultar el botón de WhatsApp si expira
+                                        if (paymentArea) paymentArea.classList.add('hidden');
+                                        if (expiredMsg) expiredMsg.classList.remove('hidden');
                                         return false;
                                     }
                                     let m = Math.floor(seconds / 60);
                                     let s = seconds % 60;
-                                    timerEl.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                                    timerEl.innerText = `${m}:${s < 10 ? '0' + s : s}`;
                                     return true;
                                 }
 
-                                if (updateDisplay()) {
+                                if (update()) {
                                     const interval = setInterval(() => {
                                         seconds--;
-                                        if (!updateDisplay()) {
-                                            clearInterval(interval);
-                                        }
+                                        if (!update()) clearInterval(interval);
                                     }, 1000);
                                 }
                             })();

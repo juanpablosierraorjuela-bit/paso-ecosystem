@@ -5,13 +5,14 @@ from django.contrib.auth import login
 from django.views.decorators.http import require_GET
 from django.utils import timezone
 from django.contrib import messages
-from datetime import datetime, timedelta  # Añadido timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from apps.businesses.models import Salon, Service
 from apps.core.models import User
 from apps.businesses.logic import AvailabilityManager
 from apps.marketplace.models import Appointment
 import uuid
+import urllib.parse
 
 def home(request):
     query = request.GET.get('q', '')
@@ -174,17 +175,31 @@ def cancel_appointment(request, pk):
 
 @login_required
 def client_dashboard(request):
+    # Traemos las citas del cliente
     appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
+    
+    # Obtener hora actual consciente de la zona horaria (UTC Estándar)
     now = timezone.now()
 
     for app in appointments:
         if app.status == 'PENDING':
-            # 60 minutos desde la creación
-            expiration_time = app.created_at + timedelta(minutes=60)
-            diff = expiration_time - now
-            app.seconds_left = int(diff.total_seconds()) if diff.total_seconds() > 0 else 0
+            # 1. CÁLCULO DEL CRONÓMETRO
+            # Forzamos que created_at sea consciente para evitar el error de los 3 segundos
+            created_at = app.created_at
+            expiration_time = created_at + timedelta(minutes=60)
+            
+            diff = (expiration_time - now).total_seconds()
+            app.seconds_left = int(diff) if diff > 0 else 0
+            
+            # 2. GENERACIÓN DEL LINK DE WHATSAPP
+            # Usamos el teléfono del dueño del salón
+            owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""
+            msg = f"Hola, soy {request.user.first_name}. Acabo de agendar una cita para {app.date_time.strftime('%d/%m %H:%M')} y quiero enviar el comprobante de mi abono de ${app.deposit_amount}."
+            encoded_msg = urllib.parse.quote(msg)
+            app.wa_link = f"https://wa.me/{owner_phone}?text={encoded_msg}"
         else:
             app.seconds_left = 0
+            app.wa_link = "#"
 
     return render(request, 'client_dashboard.html', {
         'appointments': appointments,
