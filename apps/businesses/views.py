@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta, time # Importación corregida aquí
+from datetime import timedelta, time
 from apps.core.models import GlobalSettings, User
 from apps.marketplace.models import Appointment
 from .models import Service, Salon, EmployeeSchedule
@@ -55,6 +55,7 @@ def verify_appointment(request, appointment_id):
     try:
         salon = request.user.owned_salon
         appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
+        # El dueño confirma la cita pasando el estado a CONFIRMED
         if appointment.status == 'PENDING':
             appointment.status = 'CONFIRMED'
             appointment.save()
@@ -108,13 +109,11 @@ def service_edit(request, pk):
 def service_delete(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
     try:
-        # Acceso seguro al salón y al servicio
         salon = request.user.owned_salon
         service = get_object_or_404(Service, pk=pk, salon=salon)
         service.delete()
         messages.success(request, "Servicio eliminado.")
     except Exception as e:
-        # En lugar de error 500, atrapamos la falla y avisamos al dueño
         messages.error(request, f"No se pudo eliminar el servicio: {str(e)}")
     return redirect('services_list')
 
@@ -198,11 +197,23 @@ def settings_view(request):
 def employee_dashboard(request):
     if request.user.role != 'EMPLOYEE': return redirect('dashboard')
     
+    # 1. Obtener o crear horario
     schedule, created = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
+    # 2. CONSULTA CORREGIDA: Traer solo las citas CONFIRMADAS para este empleado
+    # Se usa 'CONFIRMED' porque es el estado que pone el dueño en verify_appointment
+    appointments = Appointment.objects.filter(
+        employee=request.user,
+        status='CONFIRMED'
+    ).order_by('date_time')
+    
+    # 3. Calcular saldo pendiente (opcional, para visualización)
+    for app in appointments:
+        app.balance_due = app.total_price - app.deposit_amount
+
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
     profile_form = OwnerUpdateForm(instance=request.user)
 
@@ -220,9 +231,11 @@ def employee_dashboard(request):
                 messages.success(request, "Perfil actualizado.")
                 return redirect('employee_dashboard')
     
+    # 4. Pasar 'appointments' al contexto para que el HTML pueda mostrarlas
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
         'profile_form': profile_form,
         'schedule': schedule,
-        'salon': request.user.workplace
+        'salon': request.user.workplace,
+        'appointments': appointments # <--- ESTA LINEA FALTABA
     })
