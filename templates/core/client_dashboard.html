@@ -50,58 +50,19 @@
 
                 <div class="w-full md:w-auto text-right">
                     {% if app.status == 'PENDING' %}
-                        <div id="payment-area-{{ app.id }}">
-                            <p class="text-xs text-red-500 font-bold mb-2 uppercase tracking-tight">
-                                Tiempo para pagar: <span id="timer-{{ app.id }}" class="font-mono text-sm">--:--</span>
+                        <div class="mb-3 text-left md:text-right">
+                            <p class="text-[11px] text-gray-500 leading-tight italic">
+                                <span class="font-bold text-black">{{ app.salon.name }}</span> otorga 1 hora para recibir el abono.<br>
+                                Si no se confirma el pago, la cita será cancelada.
                             </p>
-                            <a href="{{ app.wa_link }}" target="_blank" class="block w-full md:inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center">
-                                <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
-                            </a>
                         </div>
-                        
-                        <div id="expired-msg-{{ app.id }}" class="hidden">
-                            <span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">TIEMPO AGOTADO</span>
-                            <p class="text-[10px] text-gray-400 mt-1 uppercase">Cita sujeta a eliminación</p>
-                        </div>
-                        
-                        <script>
-                            (function() {
-                                // Obtenemos el tiempo de expiración real del servidor
-                                const expireTime = parseInt("{{ app.expire_timestamp|default:0 }}");
-                                const timerEl = document.getElementById('timer-{{ app.id }}');
-                                const paymentArea = document.getElementById('payment-area-{{ app.id }}');
-                                const expiredMsg = document.getElementById('expired-msg-{{ app.id }}');
-                                
-                                function updateDisplay() {
-                                    const now = new Date().getTime();
-                                    const distance = expireTime - now;
-
-                                    if (distance <= 0) {
-                                        if (paymentArea) paymentArea.classList.add('hidden');
-                                        if (expiredMsg) expiredMsg.classList.remove('hidden');
-                                        return false;
-                                    }
-
-                                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                                    timerEl.innerText = `${minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
-                                    return true;
-                                }
-
-                                if (updateDisplay()) {
-                                    const interval = setInterval(() => {
-                                        if (!updateDisplay()) {
-                                            clearInterval(interval);
-                                        }
-                                    }, 1000);
-                                }
-                            })();
-                        </script>
+                        <a href="{{ app.wa_link }}" target="_blank" class="block w-full md:inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-lg flex items-center justify-center">
+                            <span class="mr-2">📱</span> Enviar Abono (${{ app.deposit_amount|floatformat:0|intcomma }})
+                        </a>
                     {% else %}
                         <div class="flex flex-col items-end">
                             <span class="bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-lg font-bold text-sm">
-                                ✅ PAGO VERIFICADO
+                                ✅ CITA VERIFICADA
                             </span>
                             <p class="text-[10px] text-gray-400 mt-1 uppercase">Cita Activa en Agenda</p>
                         </div>
@@ -125,20 +86,20 @@
                     <div class="space-y-3">
                         {{ profile_form.as_p }}
                     </div>
-                    <button type="submit" name=\"update_profile\" class="mt-4 w-full bg-black text-white py-2 rounded-lg font-bold hover:bg-gray-800 transition text-sm">
+                    <button type="submit" name="update_profile" class="mt-4 w-full bg-black text-white py-2 rounded-lg font-bold hover:bg-gray-800 transition text-sm">
                         Guardar Cambios
                     </button>
                 </form>
             </div>
 
-            <div class=\"bg-white p-6 rounded-xl shadow border border-gray-100\">
-                <h3 class=\"text-lg font-bold mb-4\">🔒 Seguridad</h3>
-                <form method=\"post\">
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h3 class="text-lg font-bold mb-4">🔒 Seguridad</h3>
+                <form method="post">
                     {% csrf_token %}
-                    <div class=\"space-y-3\">
+                    <div class="space-y-3">
                         {{ password_form.as_p }}
                     </div>
-                    <button type=\"submit\" name=\"change_password\" class=\"mt-4 w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm\">
+                    <button type="submit" name="change_password" class="mt-4 w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
                         Actualizar Contraseña
                     </button>
                 </form>
