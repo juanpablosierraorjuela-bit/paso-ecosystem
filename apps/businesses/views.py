@@ -21,22 +21,22 @@ def owner_dashboard(request):
     except:
         return redirect('register_owner')
 
+    # Lógica de expiración de prueba (24h)
     elapsed_time = timezone.now() - request.user.registration_timestamp
     time_limit = timedelta(hours=24)
     remaining_time = time_limit - elapsed_time
     total_seconds_left = max(0, int(remaining_time.total_seconds()))
 
+    # Configuración de soporte de WhatsApp
     admin_settings = GlobalSettings.objects.first()
     raw_phone = admin_settings.whatsapp_support if (admin_settings and admin_settings.whatsapp_support) else '573000000000'
     clean_phone = re.sub(r'\D', '', str(raw_phone))
     if not clean_phone.startswith('57'): clean_phone = '57' + clean_phone
         
-    wa_message = f"Hola PASO, soy el negocio {salon.name} (ID {request.user.id}). Adjunto mi comprobante de pago."
+    wa_message = f"Hola, soy el dueño de {salon.name} (ID {request.user.id}). Adjunto mi comprobante de pago para renovar mi membresía."
     wa_link = f"https://wa.me/{clean_phone}?text={wa_message}"
 
-    pending_appointments = Appointment.objects.filter(salon=salon, status='PENDING').order_by('date_time')
-    verified_appointments = Appointment.objects.filter(salon=salon, status='VERIFIED').order_by('date_time')
-    
+    # Obtener todas las citas y calcular saldo a cobrar
     appointments = Appointment.objects.filter(salon=salon).order_by('-date_time')
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
@@ -44,8 +44,6 @@ def owner_dashboard(request):
     context = {
         'salon': salon,
         'appointments': appointments,
-        'pending_appointments': pending_appointments,
-        'verified_appointments': verified_appointments,
         'seconds_left': total_seconds_left,
         'wa_link': wa_link,
         'is_trial': not request.user.is_verified_payment,
@@ -61,7 +59,7 @@ def verify_appointment(request, appointment_id):
         appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
         appointment.status = 'VERIFIED'
         appointment.save()
-        messages.success(request, f"Cita de {appointment.client.first_name} verificada. El empleado {appointment.employee.first_name} ha sido notificado en su panel.")
+        messages.success(request, f"Cita de {appointment.client.first_name} verificada. El empleado ha sido notificado.")
     except Exception as e:
         messages.error(request, "No se pudo verificar la cita.")
     return redirect('dashboard')
@@ -73,7 +71,6 @@ def services_list(request):
         salon = request.user.owned_salon
         services = salon.services.all()
     except:
-        messages.error(request, "No se encontró un salón vinculado.")
         return redirect('dashboard')
 
     if request.method == 'POST':
@@ -91,17 +88,12 @@ def services_list(request):
 @login_required
 def service_edit(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
-    try:
-        salon = request.user.owned_salon
-        service = get_object_or_404(Service, pk=pk, salon=salon)
-    except:
-        return redirect('services_list')
-
+    service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
     if request.method == 'POST':
         form = ServiceForm(request.POST, instance=service)
         if form.is_valid():
             form.save()
-            messages.success(request, "Servicio actualizado correctamente.")
+            messages.success(request, "Servicio actualizado.")
             return redirect('services_list')
     else:
         form = ServiceForm(instance=service)
@@ -110,24 +102,16 @@ def service_edit(request, pk):
 @login_required
 def service_delete(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
-    try:
-        salon = request.user.owned_salon
-        service = get_object_or_404(Service, pk=pk, salon=salon)
-        service.delete()
-        messages.success(request, "Servicio eliminado.")
-    except Exception as e:
-        messages.error(request, f"No se pudo eliminar el servicio: {str(e)}")
+    service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
+    service.delete()
+    messages.success(request, "Servicio eliminado.")
     return redirect('services_list')
 
 @login_required
 def employees_list(request):
     if request.user.role != 'OWNER': return redirect('home')
-    try:
-        salon = request.user.owned_salon
-        employees = salon.employees.all()
-    except:
-        return redirect('dashboard')
-
+    salon = request.user.owned_salon
+    employees = salon.employees.all()
     if request.method == 'POST':
         form = EmployeeCreationForm(request.POST)
         if form.is_valid():
@@ -150,23 +134,16 @@ def employees_list(request):
 @login_required
 def employee_delete(request, pk):
     if request.user.role != 'OWNER': return redirect('home')
-    try:
-        salon = request.user.owned_salon
-        employee = get_object_or_404(User, pk=pk, workplace=salon)
-        employee.delete()
-        messages.success(request, "Empleado eliminado.")
-    except Exception as e:
-        messages.error(request, f"No se pudo eliminar el empleado: {str(e)}")
+    employee = get_object_or_404(User, pk=pk, workplace=request.user.owned_salon)
+    employee.delete()
+    messages.success(request, "Empleado eliminado.")
     return redirect('employees_list')
 
 @login_required
 def settings_view(request):
     if request.user.role != 'OWNER': return redirect('home')
-    try:
-        salon = request.user.owned_salon
-        user = request.user
-    except:
-        return redirect('dashboard')
+    salon = request.user.owned_salon
+    user = request.user
 
     owner_form = OwnerUpdateForm(instance=user)
     salon_form = SalonUpdateForm(instance=salon)
@@ -197,19 +174,13 @@ def settings_view(request):
 
 @login_required
 def employee_dashboard(request):
-    # Lógica híbrida: Permitir si es empleado O si es dueño con Workplace asignado
-    is_employee = request.user.role == 'EMPLOYEE'
-    is_owner_as_employee = request.user.role == 'OWNER' and request.user.workplace
-    
-    if not is_employee and not is_owner_as_employee:
-        return redirect('dashboard')
+    if request.user.role != 'EMPLOYEE': return redirect('dashboard')
     
     schedule, created = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # Filtramos por el usuario logueado (sea dueño o empleado) y citas VERIFICADAS
     appointments = Appointment.objects.filter(
         employee=request.user,
         status='VERIFIED'

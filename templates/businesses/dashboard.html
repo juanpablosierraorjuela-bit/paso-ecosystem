@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
@@ -28,7 +29,7 @@
                     <p class="text-[11px] text-amber-700 mt-0.5">Valor mensual: <span class="font-bold text-gray-900">$50.000 COP</span></p>
                 </div>
 
-                <a href="https://wa.me/573211234567?text=Hola!%20Soy%20el%20dueño%20de%20{{ salon.name|urlencode }}.%20Deseo%20pagar%20mi%20mensualidad%20de%20$50.000%20COP.%20¿A%20qué%20cuenta%20debo%20realizar%20el%20pago?" 
+                <a href="{{ wa_link }}" 
                    target="_blank" 
                    class="bg-amber-600 text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-black transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap">
                     <span>RENOVAR ACCESO</span>
@@ -66,15 +67,6 @@
                     <a href="{% url 'settings_view' %}" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-all">
                         ⚙️ Configuración
                     </a>
-
-                    {% if user.workplace %}
-                    <div class="pt-4 mt-4 border-t border-gray-100">
-                        <a href="{% url 'employee_dashboard' %}" class="flex items-center gap-3 px-4 py-3 bg-black text-white rounded-xl font-bold transition-all hover:bg-gray-800 shadow-md active:scale-95">
-                            👤 Mi Perfil Empleado
-                        </a>
-                        <p class="text-[9px] text-gray-400 mt-2 px-4 uppercase font-bold tracking-tighter">Gestiona tu agenda propia</p>
-                    </div>
-                    {% endif %}
                 </nav>
             </div>
         </div>
@@ -95,9 +87,9 @@
                             <tr>
                                 <th class="px-6 py-4">Fecha / Hora</th>
                                 <th class="px-6 py-4">Cliente</th>
-                                <th class="px-6 py-4">Servicio</th>
+                                <th class="px-6 py-4">Servicios</th>
                                 <th class="px-6 py-4">Estado</th>
-                                <th class="px-6 py-4">Saldo Pendiente</th>
+                                <th class="px-6 py-4">Saldo</th>
                                 <th class="px-6 py-4 text-right">Acción</th>
                             </tr>
                         </thead>
@@ -106,26 +98,28 @@
                             {% if app.status != 'CANCELLED' %}
                             <tr class="hover:bg-blue-50/30 transition-colors">
                                 <td class="px-6 py-4">
-                                    <p class="text-[11px] text-gray-400">{{ app.date_time|date:"d M, Y" }}</p>
+                                    <p class="text-[11px] text-gray-400">{{ app.date_time|date:"d M" }}</p>
                                     <p class="text-gray-900 font-bold">{{ app.date_time|date:"h:i A" }}</p>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <p class="font-bold text-gray-900">{{ app.client.first_name }} {{ app.client.last_name }}</p>
+                                    <p class="font-bold text-gray-900">{{ app.client.get_full_name }}</p>
                                     <p class="text-[11px] text-blue-500 font-medium">{{ app.client.phone }}</p>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <p class="text-gray-800">{{ app.service.name }}</p>
-                                    <p class="text-[10px] text-gray-400 italic">Atiende: {{ app.employee.first_name }}</p>
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for s in app.services.all %}
+                                            <span class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">{{ s.name }}</span>
+                                        {% empty %}
+                                            <span class="text-[10px] text-gray-400 italic">Sin servicios</span>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="text-[9px] text-gray-400 mt-1 uppercase font-bold">Atiende: {{ app.employee.first_name }}</p>
                                 </td>
                                 <td class="px-6 py-4">
                                     {% if app.status == 'PENDING' %}
-                                        <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">
-                                            ⏳ Pendiente
-                                        </span>
+                                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">⏳ Pendiente</span>
                                     {% elif app.status == 'VERIFIED' %}
-                                        <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700 uppercase">
-                                            ✅ Verificada
-                                        </span>
+                                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700 uppercase">✅ Verificada</span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 font-bold text-gray-900">
@@ -133,15 +127,14 @@
                                 </td>
                                 <td class="px-6 py-4 text-right flex flex-col gap-2 items-end">
                                     {% if app.status == 'PENDING' %}
-                                    <a href="{% url 'verify_appointment' app.id %}" class="inline-block bg-black text-white text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-gray-800 transition-all shadow-sm">
+                                    <a href="{% url 'verify_appointment' app.id %}" class="bg-black text-white text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-gray-800 transition-all shadow-sm">
                                         VERIFICAR ABONO
                                     </a>
                                     {% endif %}
-                                    
                                     <a href="{% url 'cancel_appointment' app.id %}" 
-                                       onclick="return confirm('¿Estás seguro de que deseas cancelar esta cita? Esta acción liberará el horario inmediatamente.')"
-                                       class="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all">
-                                        CANCELAR CITA
+                                       onclick="return confirm('¿Cancelar cita?')"
+                                       class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all">
+                                        CANCELAR
                                     </a>
                                 </td>
                             </tr>
@@ -162,10 +155,7 @@
 </div>
 
 <style>
-    @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
+    @keyframes shimmer { 0% { left: -100%; } 100% { left: 100%; } }
 </style>
 
 <script>
