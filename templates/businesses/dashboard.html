@@ -7,7 +7,7 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-6">
         <div class="mb-4 md:mb-0">
             <h1 class="text-3xl font-serif font-bold text-gray-900">Panel de Control</h1>
-            <p class="text-gray-500 italic">Bienvenido, {{ user.first_name }}</p>
+            <p class="text-gray-500 italic">Bienvenido, {{ user.first_name }} (Administradora)</p>
         </div>
         
         {% if is_trial %}
@@ -54,7 +54,7 @@
         
         <div class="lg:col-span-1 space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 class="font-bold text-gray-400 text-[10px] uppercase tracking-widest mb-4">Administración</h3>
+                <h3 class="font-bold text-gray-400 text-[10px] uppercase tracking-widest mb-4">Administración Global</h3>
                 <nav class="space-y-2">
                     <a href="{% url 'services_list' %}" class="flex justify-between items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl group transition-all">
                         <span class="flex items-center gap-3">💇‍♀️ <span class="font-medium">Servicios</span></span>
@@ -64,15 +64,22 @@
                         <span class="flex items-center gap-3">👥 <span class="font-medium">Equipo</span></span>
                         <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-lg group-hover:bg-white">{{ employee_count }}</span>
                     </a>
-
-                    <a href="{% url 'employee_dashboard' %}" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl font-bold transition-all border border-blue-100 shadow-sm">
-                        💅 Ver Panel de Empleadas
-                    </a>
-
                     <a href="{% url 'settings_view' %}" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-all">
-                        ⚙️ Configuración
+                        ⚙️ Ajustes del Salón
                     </a>
                 </nav>
+
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <h3 class="font-bold text-gray-400 text-[10px] uppercase tracking-widest mb-4">Mi Perfil Personal</h3>
+                    
+                    <a href="{% url 'employee_dashboard' %}" class="flex flex-col gap-1 p-4 bg-gradient-to-br from-purple-50 to-pink-50 text-purple-700 hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-2xl font-bold transition-all border border-purple-100 shadow-sm group">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl group-hover:scale-110 transition-transform">⏰</span>
+                            <span>Mi Horario y Turnos</span>
+                        </div>
+                        <span class="text-[10px] opacity-70 font-normal">Configura tu disponibilidad aquí</span>
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -80,9 +87,9 @@
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <h2 class="font-bold text-gray-800 flex items-center gap-2">
-                        <span class="text-lg">📅</span> Agenda de Citas
+                        <span class="text-lg">🏢</span> Agenda General del Salón
                     </h2>
-                    <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-md font-bold uppercase">Recientes</span>
+                    <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-md font-bold uppercase">Todas las empleadas</span>
                 </div>
 
                 {% if appointments %}
