@@ -20,7 +20,7 @@ def marketplace_home(request):
     salons = Salon.objects.all()
 
     if query:
-        # AQUÍ ESTÁ LA MAGIA: Busca en el nombre del salón O en los nombres de sus servicios
+        # Busca en el nombre del salón O en los nombres de sus servicios
         salons = salons.filter(
             Q(name__icontains=query) | 
             Q(services__name__icontains=query)
@@ -203,10 +203,12 @@ def settings_view(request):
             salon_form = SalonUpdateForm(request.POST, instance=salon)
             if owner_form.is_valid() and salon_form.is_valid():
                 user_obj = owner_form.save(commit=False)
-                # Lógica para cambio de contraseña desde settings si se desea
+                
+                # CORRECCIÓN DE CONTRASEÑA PARA DUEÑO
                 new_pw = owner_form.cleaned_data.get('new_password')
                 if new_pw:
                     user_obj.set_password(new_pw)
+                
                 user_obj.save()
                 salon_form.save()
                 messages.success(request, "Datos actualizados.")
@@ -253,14 +255,17 @@ def employee_dashboard(request):
                 schedule_form.save()
                 messages.success(request, "Disponibilidad actualizada.")
                 return redirect('employee_dashboard')
+        
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
                 user_obj = profile_form.save(commit=False)
-                # LÓGICA DE ACTUALIZACIÓN DE CREDENCIALES
+                
+                # CORRECCIÓN DE CONTRASEÑA PARA EMPLEADO
                 new_pw = profile_form.cleaned_data.get('new_password')
                 if new_pw:
                     user_obj.set_password(new_pw)
+                
                 user_obj.save()
                 messages.success(request, "Perfil y credenciales actualizados.")
                 return redirect('employee_dashboard')
