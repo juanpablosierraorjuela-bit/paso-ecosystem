@@ -46,4 +46,26 @@ class EmployeeSchedule(models.Model):
     is_active_today = models.BooleanField(default=True)
     
     def __str__(self):
-        return f"Horario de {self.employee.username}"
+        return f"Horario Base de {self.employee.username}"
+
+class EmployeeWeeklySchedule(models.Model):
+    """
+    Permite configurar horarios específicos para una semana concreta del año.
+    Si no existe configuración para una semana, se usa el EmployeeSchedule (base).
+    """
+    employee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='weekly_schedules')
+    year = models.IntegerField()
+    week_number = models.IntegerField() # Número de semana ISO (1-52)
+    
+    # Horarios específicos para esta semana
+    work_start = models.TimeField(default=time(9,0))
+    work_end = models.TimeField(default=time(18,0))
+    lunch_start = models.TimeField(default=time(13,0))
+    lunch_end = models.TimeField(default=time(14,0))
+    
+    # Días activos en esta semana específica (ej: "0,2,4")
+    active_days = models.CharField(max_length=100, default="0,1,2,3,4,5") 
+
+    class Meta:
+        unique_together = ('employee', 'year', 'week_number')
+        ordering = ['year', 'week_number']

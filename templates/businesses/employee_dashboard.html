@@ -20,47 +20,121 @@
         
         <div class="lg:col-span-1 space-y-8">
             
-            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-4 flex items-center">⏰ Mi Disponibilidad</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center">📅 Calendario</h2>
+                </div>
+                
+                <form method="get" class="flex gap-2 mb-6">
+                    <select name="month" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
+                        {% for num, name in months_range %}
+                        <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="year" class="w-24 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
+                        <option value="{{ anio_sel }}" selected>{{ anio_sel }}</option>
+                        <option value="{{ anio_sel|add:'1' }}">{{ anio_sel|add:'1' }}</option>
+                    </select>
+                    <button type="submit" class="bg-black text-white px-3 py-2 rounded-lg font-bold text-xs">IR</button>
+                </form>
+
+                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {% for week in weeks_info %}
+                    <div class="bg-white p-4 rounded-xl shadow border border-gray-200 hover:border-black transition">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-100 text-black text-[10px] font-black px-2 py-1 rounded">{{ week.label }}</span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ week.range }}</span>
+                        </div>
+
+                        <form method="post" class="space-y-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="week_id" value="{{ week.instance.id }}">
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Entrada</label>
+                                    <input type="time" name="work_start" value="{{ week.instance.work_start|time:'H:i' }}" class="text-xs p-1 border rounded w-full">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Salida</label>
+                                    <input type="time" name="work_end" value="{{ week.instance.work_end|time:'H:i' }}" class="text-xs p-1 border rounded w-full">
+                                </div>
+                            </div>
+                            
+                            <div class="p-2 bg-gray-50 rounded-lg">
+                                <label class="text-[9px] font-bold text-gray-400 uppercase block mb-1">Días Laborales</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">L</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">M</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">X</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">J</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">V</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">S</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in week.instance.active_days %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition text-red-500">D</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" name="update_week" class="w-full bg-black text-white py-2 rounded-lg font-bold text-[10px] hover:bg-gray-800 uppercase tracking-widest transition">
+                                Guardar Semana
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 opacity-75 hover:opacity-100 transition">
+                <h2 class="text-sm font-bold mb-4 flex items-center text-gray-500 uppercase tracking-widest">⚙️ Horario Predeterminado</h2>
+                <p class="text-xs text-gray-400 mb-4">Este horario se usará si no configuras una semana específica.</p>
 
                 {% if schedule_form.errors %}
-                <div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
-                    Hay errores en el horario. Revisa los campos.
-                </div>
+                <div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">Hay errores.</div>
                 {% endif %}
 
                 <form method="post">
                     {% csrf_token %}
-                    <div class="bg-gray-50 p-3 rounded-lg mb-4">
-                        <label class="text-xs font-bold text-gray-400 uppercase">Jornada Laboral</label>
-                        <div class="grid grid-cols-2 gap-2 mt-2">
-                            <div><span class="text-xs text-gray-600">Entrada</span>{{ schedule_form.work_start }}</div>
-                            <div><span class="text-xs text-gray-600">Salida</span>{{ schedule_form.work_end }}</div>
+                    <div class="bg-white border border-gray-200 p-3 rounded-lg mb-4">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><span class="text-xs text-gray-600 font-bold">Entrada</span>{{ schedule_form.work_start }}</div>
+                            <div><span class="text-xs text-gray-600 font-bold">Salida</span>{{ schedule_form.work_end }}</div>
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-3 rounded-lg mb-4">
-                        <label class="text-xs font-bold text-gray-400 uppercase">Hora de Almuerzo</label>
-                        <div class="grid grid-cols-2 gap-2 mt-2">
-                            <div><span class="text-xs text-gray-600">Inicio</span>{{ schedule_form.lunch_start }}</div>
-                            <div><span class="text-xs text-gray-600">Fin</span>{{ schedule_form.lunch_end }}</div>
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Días Activos</label>
+                    <div class="mb-4">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Días Activos Base</label>
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             {% for checkbox in schedule_form.active_days %}
-                            <label class="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition border border-transparent hover:border-gray-200">
+                            <label class="flex items-center space-x-2 cursor-pointer">
                                 {{ checkbox.tag }}
-                                <span class="text-gray-700">{{ checkbox.choice_label }}</span>
+                                <span class="text-gray-600 text-xs">{{ checkbox.choice_label }}</span>
                             </label>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <button type="submit" name="update_schedule" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition shadow-lg active:scale-95">
-                        Actualizar Horario
+                    <button type="submit" name="update_schedule" class="w-full bg-white border border-gray-300 text-gray-600 py-2 rounded-lg font-bold text-xs hover:bg-gray-100 transition">
+                        Guardar Base
                     </button>
                 </form>
             </div>
@@ -70,15 +144,11 @@
                 
                 <form method="post">
                     {% csrf_token %}
-                    
                     <div class="space-y-3 mb-6">
                         <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
                         <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
                         <div><label class="text-xs font-bold text-gray-500">WhatsApp</label>{{ profile_form.phone }}</div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500">Usuario de acceso</label>
-                            {{ profile_form.username }}
-                        </div>
+                        <div><label class="text-xs font-bold text-gray-500">Usuario</label>{{ profile_form.username }}</div>
                     </div>
 
                     <button type="submit" name="update_profile" class="w-full bg-white border-2 border-black text-black py-3 rounded-lg font-bold hover:bg-black hover:text-white transition text-sm">
@@ -92,7 +162,6 @@
                 
                 <form method="post">
                     {% csrf_token %}
-                    
                     <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <label class="text-xs font-bold text-gray-500 block mb-2">Cambiar Contraseña</label>
                         <div class="text-sm">
@@ -154,8 +223,7 @@
                     {% empty %}
                     <div class="text-center py-12 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
                         <div class="text-4xl mb-3">📭</div>
-                        <p class="text-gray-500 font-medium">No tienes citas verificadas para hoy.</p>
-                        <p class="text-xs text-gray-400 mt-2">Las citas aparecerán aquí cuando el dueño confirme el pago.</p>
+                        <p class="text-gray-500 font-medium">No tienes citas verificadas.</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -165,36 +233,13 @@
 </div>
 
 <style>
-    /* Estilos para inputs dentro de los formularios del dashboard */
-    input[type="text"], 
-    input[type="password"], 
-    input[type="number"], 
-    select {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
+    input[type="text"], input[type="password"], input[type="time"], select {
+        width: 100%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.875rem;
     }
-    input:focus {
-        outline: none;
-        border-color: #000;
-        ring: 1px;
-        ring-color: #000;
-    }
-    /* Estilo adicional para los campos del SetPasswordForm que Django renderiza */
-    ul.errorlist {
-        color: #dc2626;
-        font-size: 0.75rem;
-        list-style: none;
-        margin-bottom: 0.5rem;
-    }
-    .helptext {
-        font-size: 0.7rem;
-        color: #9ca3af;
-        display: block;
-        margin-top: 0.25rem;
-    }
+    input:focus { outline: none; border-color: #000; ring: 1px; ring-color: #000; }
+    ul.errorlist { color: #dc2626; font-size: 0.75rem; list-style: none; margin-bottom: 0.5rem; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
 </style>
 {% endblock %}

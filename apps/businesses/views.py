@@ -1,13 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import update_session_auth_hash # IMPORTANTE: Para mantener sesión tras cambio de clave
-from django.contrib.auth.forms import SetPasswordForm # IMPORTANTE: Formulario estándar de seguridad
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import SetPasswordForm
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta, time
+from datetime import timedelta, time, datetime
+import calendar
 from apps.core.models import GlobalSettings, User
 from apps.marketplace.models import Appointment
-from .models import Service, Salon, EmployeeSchedule
+from .models import Service, Salon, EmployeeSchedule, EmployeeWeeklySchedule
 from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm, OwnerUpdateForm, SalonUpdateForm, EmployeeScheduleUpdateForm
 import re
 from django.db.models import Q
@@ -234,7 +235,55 @@ def employee_dashboard(request):
     if request.user.role not in ['EMPLOYEE', 'OWNER']: 
         return redirect('dashboard')
     
-    schedule, created = EmployeeSchedule.objects.get_or_create(
+    # --- 1. CONFIGURACIÓN DEL CALENDARIO POR SEMANAS ---
+    hoy = timezone.now()
+    
+    # Obtenemos mes y año de la URL, o usamos el actual
+    try:
+        mes_seleccionado = int(request.GET.get('month', hoy.month))
+        anio_seleccionado = int(request.GET.get('year', hoy.year))
+    except ValueError:
+        mes_seleccionado = hoy.month
+        anio_seleccionado = hoy.year
+
+    # Generamos los datos de las semanas para ese mes
+    cal = calendar.Calendar(firstweekday=0) # 0 = Lunes
+    month_days = cal.monthdayscalendar(anio_seleccionado, mes_seleccionado)
+    
+    weeks_info = []
+    processed_weeks = [] # Para evitar duplicados de semana ISO
+
+    for week in month_days:
+        # Encontramos un día válido en la semana para calcular su número ISO
+        for day in week:
+            if day != 0:
+                dt = datetime(anio_seleccionado, mes_seleccionado, day)
+                iso_year, iso_week, iso_day = dt.isocalendar()
+                
+                if iso_week not in processed_weeks:
+                    processed_weeks.append(iso_week)
+                    
+                    # Obtenemos o creamos la configuración específica para esta semana
+                    week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
+                        employee=request.user,
+                        year=anio_seleccionado,
+                        week_number=iso_week
+                    )
+                    
+                    # Calculamos inicio y fin de la semana para mostrar en el frontend
+                    start_of_week = dt - timedelta(days=dt.weekday())
+                    end_of_week = start_of_week + timedelta(days=6)
+                    
+                    weeks_info.append({
+                        'number': iso_week,
+                        'instance': week_schedule,
+                        'label': f"Semana {iso_week}",
+                        'range': f"{start_of_week.strftime('%d %b')} - {end_of_week.strftime('%d %b')}"
+                    })
+                break
+    
+    # --- 2. CARGA DE DATOS ESTÁNDAR ---
+    schedule, _ = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
@@ -252,40 +301,72 @@ def employee_dashboard(request):
     profile_form = OwnerUpdateForm(instance=request.user)
     password_form = SetPasswordForm(user=request.user)
 
+    # --- 3. PROCESAMIENTO DE POST ---
     if request.method == 'POST':
+        # Actualizar Horario Base (General)
         if 'update_schedule' in request.POST:
             schedule_form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
             if schedule_form.is_valid():
                 schedule_form.save()
-                messages.success(request, "Disponibilidad actualizada.")
-                return redirect('employee_dashboard')
+                messages.success(request, "Horario base actualizado.")
+                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
         
+        # Actualizar una Semana Específica
+        elif 'update_week' in request.POST:
+            week_id = request.POST.get('week_id')
+            week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
+            
+            # Actualización manual de campos
+            week_inst.work_start = request.POST.get('work_start')
+            week_inst.work_end = request.POST.get('work_end')
+            week_inst.lunch_start = request.POST.get('lunch_start')
+            week_inst.lunch_end = request.POST.get('lunch_end')
+            
+            # Guardar días activos (array de strings)
+            days = request.POST.getlist('days') # ['0', '1', ...]
+            week_inst.active_days = ",".join(days)
+            week_inst.save()
+            
+            messages.success(request, f"Horario de la semana {week_inst.week_number} guardado.")
+            return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+
+        # Actualizar Perfil
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
-                # Guardamos solo datos del perfil, sin tocar la contraseña aquí
                 profile_form.save()
-                messages.success(request, "Perfil actualizado correctamente.")
-                return redirect('employee_dashboard')
+                messages.success(request, "Perfil actualizado.")
+                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
+        # Cambiar Contraseña
         elif 'change_password' in request.POST:
             password_form = SetPasswordForm(user=request.user, data=request.POST)
             if password_form.is_valid():
                 user = password_form.save()
-                # Actualizar la sesión para que no se desconecte
                 update_session_auth_hash(request, user)
-                messages.success(request, "Tu contraseña ha sido actualizada.")
-                return redirect('employee_dashboard')
+                messages.success(request, "Contraseña actualizada.")
+                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
             else:
-                messages.error(request, "Error al cambiar la contraseña. Verifica los campos.")
+                messages.error(request, "Error al cambiar la contraseña.")
+
+    # Datos para el selector de meses
+    months_range = [
+        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+    ]
     
     salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
 
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
         'profile_form': profile_form,
-        'password_form': password_form, # Pasamos el form de password al template
+        'password_form': password_form,
         'schedule': schedule,
         'salon': salon_context,
-        'appointments': appointments
+        'appointments': appointments,
+        'weeks_info': weeks_info,
+        'months_range': months_range,
+        'mes_sel': mes_seleccionado,
+        'anio_sel': anio_seleccionado,
     })
