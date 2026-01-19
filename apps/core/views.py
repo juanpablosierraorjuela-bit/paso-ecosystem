@@ -9,6 +9,8 @@ from apps.businesses.models import Salon
 from apps.core.models import User, GlobalSettings
 from apps.marketplace.models import Appointment
 from apps.core.forms import ClientProfileForm, ClientPasswordForm
+# Si tienes un formulario de disponibilidad, impórtalo aquí. Si no, puedes comentar esta línea.
+# from apps.core.forms import EmployeeAvailabilityForm 
 import re
 
 def home(request):
@@ -69,12 +71,11 @@ def client_dashboard(request):
     profile_form = ClientProfileForm(instance=user)
     password_form = ClientPasswordForm()
     
-    # Cargamos citas y servicios eficientemente
+    # Cargamos citas y servicios eficientemente para el cliente
     appointments = Appointment.objects.filter(client=user).exclude(status='CANCELLED').order_by('-created_at').prefetch_related('services')
     
     for app in appointments:
         if app.status == 'PENDING':
-            # --- LINK DE WHATSAPP ---
             try:
                 owner_phone = app.salon.owner.phone or '573000000000'
                 clean_phone = re.sub(r'\D', '', str(owner_phone))
@@ -82,7 +83,6 @@ def client_dashboard(request):
             except:
                 clean_phone = '573000000000'
             
-            # Listar todos los servicios en el mensaje
             servicios_nombres = ", ".join([s.name for s in app.services.all()])
             
             msg = (
@@ -98,3 +98,29 @@ def client_dashboard(request):
         'password_form': password_form
     }
     return render(request, 'core/client_dashboard.html', context)
+
+@login_required
+def employee_dashboard(request):
+    user = request.user
+    
+    # Lógica para mostrar las citas confirmadas del día en adelante
+    today = timezone.now().date()
+    
+    # IMPORTANTE: prefetch_related('services') carga los servicios para poder mostrarlos en el template
+    appointments = Appointment.objects.filter(
+        employee=user, 
+        status='CONFIRMED', # Solo mostramos citas que el dueño ya verificó
+        date_time__date__gte=today
+    ).order_by('date_time').prefetch_related('services', 'client')
+
+    # Calculamos cuánto falta por cobrar (Total - Abono)
+    for app in appointments:
+        # Aseguramos que existan los campos, si total_price no existe usa 0
+        total = getattr(app, 'total_price', 0)
+        deposit = getattr(app, 'deposit_amount', 0)
+        app.balance_due = total - deposit
+
+    return render(request, 'core/employee_dashboard.html', {
+        'appointments': appointments,
+        'user': user
+    })
