@@ -79,13 +79,31 @@ class OwnerRegistrationForm(forms.ModelForm):
                 field.widget.attrs['class'] = base_class
 
 class OwnerUpdateForm(forms.ModelForm):
+    # Añadimos campos opcionales para usuario y clave
+    username = forms.CharField(label="Usuario de Acceso", required=True)
+    new_password = forms.CharField(
+        label="Nueva Contraseña (dejar en blanco para no cambiar)", 
+        widget=forms.PasswordInput(), 
+        required=False
+    )
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone']
+        fields = ['first_name', 'last_name', 'email', 'phone', 'username']
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        new_pwd = self.cleaned_data.get('new_password')
+        if new_pwd:
+            user.set_password(new_pwd)
+        if commit:
+            user.save()
+        return user
 
 class SalonUpdateForm(forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
@@ -158,19 +176,13 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # --- SOLUCIÓN: FILTRAR DÍAS SEGÚN EL SALÓN DEL DUEÑO ---
         try:
-            # Buscamos el salón asociado al dueño que creó a este empleado
-            # El dueño tiene un OTO con Salon llamado 'owned_salon'
-            # Asumiendo que buscamos el salón del OWNER relacionado.
             salon = Salon.objects.filter(owner__managed_employees=self.instance.employee).first()
             if not salon:
-                 # Intento alternativo según tu lógica de registro: Salon.owner == boss
                  salon = Salon.objects.filter(owner=self.instance.employee.boss).first()
 
             if salon and salon.active_days:
                 allowed_days = salon.active_days.split(',')
-                # Filtramos las opciones del checkbox para que solo aparezcan los días permitidos por el salón
                 self.fields['active_days'].choices = [
                     (c[0], c[1]) for c in self.DAYS_CHOICES if c[0] in allowed_days
                 ]

@@ -222,16 +222,16 @@ def settings_view(request):
 
 @login_required
 def employee_dashboard(request):
-    # CORRECCIÓN: Permitir que tanto dueños como empleados entren a configurar su agenda
+    # Permitir que tanto dueños como empleados entren a configurar su agenda y perfil
     if request.user.role not in ['EMPLOYEE', 'OWNER']: 
-        return redirect('dashboard')
+        return redirect('home')
     
     schedule, created = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # Filtramos las citas personales para el usuario logueado (sea dueño o empleado)
+    # Filtramos las citas personales para el usuario logueado
     appointments = Appointment.objects.filter(
         employee=request.user,
         status='VERIFIED'
@@ -241,6 +241,7 @@ def employee_dashboard(request):
         app.balance_due = app.total_price - app.deposit_amount
 
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
+    # El OwnerUpdateForm se usa aquí para que el empleado cambie su usuario/clave/datos
     profile_form = OwnerUpdateForm(instance=request.user)
 
     if request.method == 'POST':
@@ -258,7 +259,7 @@ def employee_dashboard(request):
                 return redirect('employee_dashboard')
     
     # Determinamos el salón para mostrar en el encabezado
-    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
+    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else (request.user.owned_salon if hasattr(request.user, 'owned_salon') else None)
 
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,

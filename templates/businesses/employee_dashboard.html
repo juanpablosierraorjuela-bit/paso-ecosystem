@@ -69,9 +69,23 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="space-y-3 mb-4">
-                        <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
-                        <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
-                        <div><label class="text-xs font-bold text-gray-500">WhatsApp</label>{{ profile_form.phone }}</div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Nombre</label>
+                            {{ profile_form.first_name }}
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Apellido</label>
+                            {{ profile_form.last_name }}
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">WhatsApp</label>
+                            {{ profile_form.phone }}
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Nombre de Usuario / Clave</label>
+                            <p class="text-[10px] text-gray-400 italic mb-1">Puedes cambiar tu usuario o contraseña abajo:</p>
+                            {{ profile_form.username }}
+                        </div>
                     </div>
                     <button type="submit" name="update_profile" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
                         Guardar Perfil
@@ -135,4 +149,21 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Estilos para inputs dentro de los formularios del dashboard */
+    input[type="text"], input[type="number"], input[type="password"], select, textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+    }
+    input:focus {
+        outline: none;
+        border-color: #000;
+        ring: 1px;
+        ring-color: #000;
+    }
+</style>
 {% endblock %}
