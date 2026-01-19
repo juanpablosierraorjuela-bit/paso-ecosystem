@@ -34,14 +34,20 @@ def owner_dashboard(request):
     wa_message = f"Hola PASO, soy el negocio {salon.name} (ID {request.user.id}). Adjunto mi comprobante de pago."
     wa_link = f"https://wa.me/{clean_phone}?text={wa_message}"
 
-    appointments = Appointment.objects.filter(salon=salon).order_by('-date_time')
+    # Separamos las citas para que el dueño vea claramente qué falta por verificar
+    pending_appointments = Appointment.objects.filter(salon=salon, status='PENDING').order_by('date_time')
+    verified_appointments = Appointment.objects.filter(salon=salon, status='VERIFIED').order_by('date_time')
     
+    # Combinamos para mantener compatibilidad si el template usa el nombre genérico 'appointments'
+    appointments = Appointment.objects.filter(salon=salon).order_by('-date_time')
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
     context = {
         'salon': salon,
         'appointments': appointments,
+        'pending_appointments': pending_appointments,
+        'verified_appointments': verified_appointments,
         'seconds_left': total_seconds_left,
         'wa_link': wa_link,
         'is_trial': not request.user.is_verified_payment,
@@ -53,13 +59,16 @@ def owner_dashboard(request):
 @login_required
 def verify_appointment(request, appointment_id):
     try:
+        # Buscamos la cita asegurándonos que pertenezca al salón del dueño
         salon = request.user.owned_salon
         appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
         
-        # Se cambia el estado a VERIFIED para que coincida con el modelo
+        # CAMBIO CLAVE: Se pone en VERIFIED. Esto hace que desaparezca el mensaje de "Pendiente"
+        # en el cliente y aparezca automáticamente en el panel del empleado.
         appointment.status = 'VERIFIED'
         appointment.save()
-        messages.success(request, f"Cita de {appointment.client.first_name} verificada correctamente.")
+        
+        messages.success(request, f"Cita de {appointment.client.first_name} verificada. El empleado {appointment.employee.first_name} ha sido notificado en su panel.")
     except Exception as e:
         messages.error(request, "No se pudo verificar la cita.")
     return redirect('dashboard')
@@ -203,6 +212,7 @@ def employee_dashboard(request):
     )
     
     # Se filtran las citas donde el empleado es el usuario actual y el estado es VERIFIED
+    # Gracias a verify_appointment, estas citas aparecerán aquí inmediatamente.
     appointments = Appointment.objects.filter(
         employee=request.user,
         status='VERIFIED'

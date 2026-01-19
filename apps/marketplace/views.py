@@ -142,6 +142,7 @@ def booking_commit(request):
                     login(request, client_user)
                     messages.success(request, f"¡Cuenta creada! Tu clave temporal es: {temp_password}")
 
+            # Se crea la cita vinculando al empleado seleccionado y con estado PENDING
             appointment = Appointment.objects.create(
                 client=client_user,
                 salon=salon,
