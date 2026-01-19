@@ -66,33 +66,42 @@
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-4 flex items-center">👤 Mis Datos y Acceso</h2>
+                <h2 class="text-xl font-bold mb-4 flex items-center">👤 Mis Datos</h2>
                 
                 <form method="post">
                     {% csrf_token %}
                     
                     <div class="space-y-3 mb-6">
-                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Información Personal</h3>
                         <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
                         <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
                         <div><label class="text-xs font-bold text-gray-500">WhatsApp</label>{{ profile_form.phone }}</div>
-                    </div>
-
-                    <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Credenciales de Acceso</h3>
                         <div>
                             <label class="text-xs font-bold text-gray-500">Usuario de acceso</label>
                             {{ profile_form.username }}
                         </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500">Nueva Contraseña</label>
-                            {{ profile_form.new_password }}
-                            <p class="text-[9px] text-gray-400 mt-1 italic text-right">Dejar en blanco para no cambiar</p>
-                        </div>
                     </div>
 
                     <button type="submit" name="update_profile" class="w-full bg-white border-2 border-black text-black py-3 rounded-lg font-bold hover:bg-black hover:text-white transition text-sm">
-                        Guardar Cambios
+                        Guardar Perfil
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h2 class="text-xl font-bold mb-4 flex items-center">🔒 Seguridad</h2>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <label class="text-xs font-bold text-gray-500 block mb-2">Cambiar Contraseña</label>
+                        <div class="text-sm">
+                            {{ password_form.as_p }}
+                        </div>
+                    </div>
+
+                    <button type="submit" name="change_password" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition text-sm">
+                        Actualizar Contraseña
                     </button>
                 </form>
             </div>
@@ -173,6 +182,19 @@
         border-color: #000;
         ring: 1px;
         ring-color: #000;
+    }
+    /* Estilo adicional para los campos del SetPasswordForm que Django renderiza */
+    ul.errorlist {
+        color: #dc2626;
+        font-size: 0.75rem;
+        list-style: none;
+        margin-bottom: 0.5rem;
+    }
+    .helptext {
+        font-size: 0.7rem;
+        color: #9ca3af;
+        display: block;
+        margin-top: 0.25rem;
     }
 </style>
 {% endblock %}

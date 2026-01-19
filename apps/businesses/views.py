@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash # IMPORTANTE: Para mantener sesión tras cambio de clave
+from django.contrib.auth.forms import SetPasswordForm # IMPORTANTE: Formulario estándar de seguridad
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta, time
@@ -8,7 +10,7 @@ from apps.marketplace.models import Appointment
 from .models import Service, Salon, EmployeeSchedule
 from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm, OwnerUpdateForm, SalonUpdateForm, EmployeeScheduleUpdateForm
 import re
-from django.db.models import Q  # Importamos Q para búsquedas avanzadas (Nombre O Servicio)
+from django.db.models import Q
 
 # --- VISTAS PÚBLICAS (MARKETPLACE) ---
 
@@ -245,8 +247,10 @@ def employee_dashboard(request):
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
+    # Inicialización de formularios
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
     profile_form = OwnerUpdateForm(instance=request.user)
+    password_form = SetPasswordForm(user=request.user)
 
     if request.method == 'POST':
         if 'update_schedule' in request.POST:
@@ -259,22 +263,28 @@ def employee_dashboard(request):
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
-                user_obj = profile_form.save(commit=False)
-                
-                # CORRECCIÓN DE CONTRASEÑA PARA EMPLEADO
-                new_pw = profile_form.cleaned_data.get('new_password')
-                if new_pw:
-                    user_obj.set_password(new_pw)
-                
-                user_obj.save()
-                messages.success(request, "Perfil y credenciales actualizados.")
+                # Guardamos solo datos del perfil, sin tocar la contraseña aquí
+                profile_form.save()
+                messages.success(request, "Perfil actualizado correctamente.")
                 return redirect('employee_dashboard')
+
+        elif 'change_password' in request.POST:
+            password_form = SetPasswordForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                # Actualizar la sesión para que no se desconecte
+                update_session_auth_hash(request, user)
+                messages.success(request, "Tu contraseña ha sido actualizada.")
+                return redirect('employee_dashboard')
+            else:
+                messages.error(request, "Error al cambiar la contraseña. Verifica los campos.")
     
     salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
 
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
         'profile_form': profile_form,
+        'password_form': password_form, # Pasamos el form de password al template
         'schedule': schedule,
         'salon': salon_context,
         'appointments': appointments
