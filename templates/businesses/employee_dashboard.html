@@ -9,10 +9,15 @@
             <h1 class="text-3xl font-serif font-bold text-gray-900">Hola, {{ user.first_name }}</h1>
             <p class="text-gray-500">Talento en <strong>{{ salon.name }}</strong></p>
         </div>
-        <div class="text-right">
+        <div class="text-right flex flex-col items-end gap-1">
             <span class="bg-black text-white text-xs font-bold px-3 py-1 rounded-full">
                 PANEL EMPLEADO
             </span>
+            {% if user.role == 'OWNER' %}
+            <a href="{% url 'dashboard' %}" class="text-[10px] font-bold text-gray-400 hover:text-black transition">
+                ← VOLVER A PANEL DUEÑO
+            </a>
+            {% endif %}
         </div>
     </div>
 

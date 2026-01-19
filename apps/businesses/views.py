@@ -197,14 +197,19 @@ def settings_view(request):
 
 @login_required
 def employee_dashboard(request):
-    if request.user.role != 'EMPLOYEE': return redirect('dashboard')
+    # Lógica híbrida: Permitir si es empleado O si es dueño con Workplace asignado
+    is_employee = request.user.role == 'EMPLOYEE'
+    is_owner_as_employee = request.user.role == 'OWNER' and request.user.workplace
+    
+    if not is_employee and not is_owner_as_employee:
+        return redirect('dashboard')
     
     schedule, created = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # Filtramos por el empleado logueado y que estén VERIFICADAS
+    # Filtramos por el usuario logueado (sea dueño o empleado) y citas VERIFICADAS
     appointments = Appointment.objects.filter(
         employee=request.user,
         status='VERIFIED'
