@@ -166,13 +166,21 @@ def booking_commit(request):
 @login_required
 def cancel_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
+    
     if request.user == appointment.client or request.user.role == 'OWNER':
         appointment.status = 'CANCELLED'
         appointment.save()
         messages.success(request, "La cita ha sido cancelada.")
+        
+        # --- LÓGICA DE REDIRECCIÓN INTELIGENTE ---
+        if request.user.role == 'OWNER':
+            return redirect('dashboard')  # Redirige al panel de dueño
+        
+        return redirect('client_dashboard') # Redirige al panel de cliente
+        # ----------------------------------------
     else:
         messages.error(request, "No tienes permiso para cancelar esta cita.")
-    return redirect('client_dashboard')
+        return redirect('home')
 
 @login_required
 def client_dashboard(request):
