@@ -39,12 +39,10 @@
                             <div>
                                 <span class="text-xs text-gray-600">Entrada</span>
                                 {{ schedule_form.work_start }}
-                                <p class="text-[10px] text-red-500">{{ schedule_form.work_start.errors.0 }}</p>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-600">Salida</span>
                                 {{ schedule_form.work_end }}
-                                <p class="text-[10px] text-red-500">{{ schedule_form.work_end.errors.0 }}</p>
                             </div>
                         </div>
                     </div>
@@ -73,7 +71,6 @@
                             </label>
                             {% endfor %}
                         </div>
-                        <p class="text-[10px] text-red-500">{{ schedule_form.active_days.errors.0 }}</p>
                     </div>
 
                     <button type="submit" name="update_schedule" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition shadow-lg active:scale-95">
@@ -101,10 +98,6 @@
                             <label class="text-xs font-bold text-gray-500">WhatsApp</label>
                             {{ profile_form.phone }}
                         </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500">Email</label>
-                            {{ profile_form.email }}
-                        </div>
                     </div>
                     <button type="submit" name="update_profile" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
                         Guardar Perfil
@@ -118,10 +111,35 @@
             <div class="bg-white p-6 rounded-xl shadow border border-gray-100 min-h-[400px]">
                 <h2 class="text-xl font-bold mb-6">📅 Mis Citas Confirmadas</h2>
                 
-                <div class="text-center py-12 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
-                    <div class="text-4xl mb-3">📭</div>
-                    <p class="text-gray-500 font-medium">No tienes citas verificadas para hoy.</p>
-                    <p class="text-xs text-gray-400 mt-2">Las citas aparecerán aquí cuando el dueño confirme el pago.</p>
+                <div class="space-y-4">
+                    {% for app in appointments %}
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-center group hover:border-black transition">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-white p-3 rounded-lg border border-gray-100 text-center min-w-[80px]">
+                                <span class="block text-xs font-black text-gray-400 uppercase">{{ app.date_time|date:"D d" }}</span>
+                                <span class="block text-xl font-serif font-bold text-gray-900">{{ app.date_time|date:"H:i" }}</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-lg">{{ app.client.get_full_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ app.service.name }}</p>
+                                <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mt-1">✓ VERIFICADA</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 md:mt-0 text-right">
+                            <p class="text-xs text-gray-400 font-bold uppercase">Saldo a Cobrar</p>
+                            <p class="text-xl font-serif font-bold text-black">${{ app.balance_due|floatformat:0 }}</p>
+                            <a href="https://wa.me/{{ app.client.phone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:underline mt-2">
+                                CONTACTAR CLIENTE
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                        <div class="text-4xl mb-3">📭</div>
+                        <p class="text-gray-500 font-medium">No tienes citas verificadas para hoy.</p>
+                        <p class="text-xs text-gray-400 mt-2">Las citas aparecerán aquí cuando el dueño confirme el pago.</p>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
