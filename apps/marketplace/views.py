@@ -26,6 +26,7 @@ def home(request):
         salons = salons.filter(city=city_filter)
 
     for salon in salons:
+        # Verifica si el salón está abierto hoy
         salon.is_open_now = AvailabilityManager.is_salon_open(salon)
         
     city_list = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
@@ -56,7 +57,8 @@ def booking_wizard(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    employees = salon.employees.all()
+    # Obtenemos los empleados del salón
+    employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
     
     total_price = sum(s.price for s in services)
     deposit_amount = int((total_price * salon.deposit_percentage) / 100)
@@ -75,6 +77,10 @@ def booking_wizard(request, salon_id):
 
 @require_GET
 def get_available_slots_api(request):
+    """
+    API que consulta la disponibilidad. 
+    Gracias a la actualización en logic.py, ahora prioriza horarios semanales.
+    """
     try:
         salon_id = request.GET.get('salon_id')
         service_ids = request.GET.get('service_ids', '').split(',')
@@ -82,10 +88,11 @@ def get_available_slots_api(request):
         date_str = request.GET.get('date')
 
         salon = get_object_or_404(Salon, pk=salon_id)
-        services = Service.objects.filter(id__in=service_ids)
+        services = Service.objects.filter(id__in=[s for s in service_ids if s.isdigit()])
         employee = get_object_or_404(User, pk=employee_id)
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
+        # Esta llamada ahora es inteligente y revisa EmployeeWeeklySchedule
         slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
         
         json_slots = []
@@ -115,7 +122,7 @@ def booking_commit(request):
             phone = request.POST.get('phone')
 
             salon = get_object_or_404(Salon, pk=salon_id)
-            services = Service.objects.filter(id__in=service_ids)
+            services = Service.objects.filter(id__in=[s for s in service_ids if s.isdigit()])
             employee = get_object_or_404(User, pk=employee_id)
             
             booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
@@ -127,6 +134,7 @@ def booking_commit(request):
 
             client_user = request.user
 
+            # Lógica para usuarios no autenticados (Invitados)
             if not client_user.is_authenticated:
                 user_exists = User.objects.filter(email=email).first()
                 if user_exists:
@@ -140,9 +148,9 @@ def booking_commit(request):
                         role='CLIENT'
                     )
                     login(request, client_user)
-                    messages.success(request, f"¡Cuenta creada! Tu clave temporal es: {temp_password}")
+                    messages.success(request, f"¡Cuenta creada! Tu clave temporal de acceso es: {temp_password}")
 
-            # Se crea la cita vinculando al empleado seleccionado y con estado PENDING
+            # Creación de la cita
             appointment = Appointment.objects.create(
                 client=client_user,
                 salon=salon,
@@ -154,7 +162,7 @@ def booking_commit(request):
             )
             appointment.services.set(services)
             
-            messages.success(request, "Cita agendada correctamente. Realiza el abono para confirmar.")
+            messages.success(request, "Cita agendada correctamente. Por favor, realiza el abono para confirmar tu espacio.")
             return redirect('client_dashboard')
             
         except Exception as e:
@@ -170,16 +178,15 @@ def cancel_appointment(request, pk):
     if request.user == appointment.client or request.user.role == 'OWNER':
         appointment.status = 'CANCELLED'
         appointment.save()
-        messages.success(request, "La cita ha sido cancelada.")
+        messages.success(request, "La cita ha sido cancelada correctamente.")
         
-        # --- LÓGICA DE REDIRECCIÓN INTELIGENTE ---
+        # Redirección inteligente según el rol
         if request.user.role == 'OWNER':
-            return redirect('dashboard')  # Redirige al panel de dueño
+            return redirect('dashboard')
         
-        return redirect('client_dashboard') # Redirige al panel de cliente
-        # ----------------------------------------
+        return redirect('client_dashboard')
     else:
-        messages.error(request, "No tienes permiso para cancelar esta cita.")
+        messages.error(request, "No tienes permisos para realizar esta acción.")
         return redirect('home')
 
 @login_required
@@ -188,9 +195,11 @@ def client_dashboard(request):
     
     for app in appointments:
         if app.status == 'PENDING':
+            # Configuración de expiración (60 minutos)
             expire_at = app.created_at + timedelta(minutes=60)
             app.expire_timestamp = int(expire_at.timestamp() * 1000)
             
+            # Link de WhatsApp para enviar comprobante
             owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""
             msg = f"Hola, soy {request.user.first_name}. Envío el comprobante de mi abono para la cita de {app.date_time.strftime('%d/%m %H:%M')}."
             app.wa_link = f"https://wa.me/{owner_phone}?text={urllib.parse.quote(msg)}"

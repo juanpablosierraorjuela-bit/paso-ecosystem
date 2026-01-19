@@ -29,9 +29,11 @@ class AvailabilityManager:
     def get_available_slots(salon, services_list, employee, target_date):
         """Genera slots validando un bloque de tiempo continuo para múltiples servicios."""
         from apps.marketplace.models import Appointment
+        # Importamos el modelo de semanas aquí para evitar errores de importación circular
+        from .models import EmployeeWeeklySchedule
         
         slots = []
-        day_of_week = str(target_date.weekday())
+        day_of_week = str(target_date.weekday()) # 0=Lunes, 6=Domingo
         now_local = timezone.localtime(timezone.now())
 
         # 1. Filtro del Dueño: ¿El Salón abre este día?
@@ -39,12 +41,46 @@ class AvailabilityManager:
             if day_of_week not in salon.active_days.split(','):
                 return []
 
-        # 2. Filtro del Empleado: ¿El Especialista trabaja este día?
-        try:
-            schedule = employee.schedule
-            if day_of_week not in schedule.active_days.split(','):
+        # 2. DETERMINAR HORARIO DEL EMPLEADO (Base vs Semanal)
+        # Calculamos qué semana del año es la fecha solicitada
+        iso_year, iso_week, _ = target_date.isocalendar()
+
+        # Buscamos si hay una configuración específica para esa semana
+        weekly_config = EmployeeWeeklySchedule.objects.filter(
+            employee=employee,
+            year=iso_year,
+            week_number=iso_week
+        ).first()
+
+        # Variables de trabajo (se llenarán con el horario semanal o el base)
+        current_work_start = None
+        current_work_end = None
+        current_lunch_start = None
+        current_lunch_end = None
+        current_active_days = []
+
+        if weekly_config:
+            # Opción A: Usar horario específico de la semana
+            current_work_start = weekly_config.work_start
+            current_work_end = weekly_config.work_end
+            current_lunch_start = weekly_config.lunch_start
+            current_lunch_end = weekly_config.lunch_end
+            current_active_days = weekly_config.active_days.split(',')
+        else:
+            # Opción B: Usar horario base (default)
+            try:
+                base_schedule = employee.schedule
+                current_work_start = base_schedule.work_start
+                current_work_end = base_schedule.work_end
+                current_lunch_start = base_schedule.lunch_start
+                current_lunch_end = base_schedule.lunch_end
+                current_active_days = base_schedule.active_days.split(',')
+            except:
+                # Si el empleado no tiene horario configurado, no mostramos nada
                 return []
-        except:
+
+        # Filtro del Empleado: ¿Trabaja este día según la configuración vigente?
+        if day_of_week not in current_active_days:
             return []
 
         # 3. Citas ya reservadas (Pre-cargamos servicios para rapidez)
@@ -53,17 +89,20 @@ class AvailabilityManager:
             date_time__date=target_date
         ).exclude(status='CANCELLED').prefetch_related('services')
 
-        # 4. INTERSECCIÓN DE HORARIOS
-        start_hour = max(salon.opening_time, schedule.work_start)
-        end_hour = min(salon.closing_time, schedule.work_end)
+        # 4. INTERSECCIÓN DE HORARIOS (Salon vs Empleado)
+        # Usamos las variables 'current_' definidas arriba
+        start_hour = max(salon.opening_time, current_work_start)
+        end_hour = min(salon.closing_time, current_work_end)
         
         if start_hour >= end_hour:
             return []
 
+        # Convertimos a objetos datetime conscientes de zona horaria
         current_dt = timezone.make_aware(datetime.combine(target_date, start_hour))
         end_dt = timezone.make_aware(datetime.combine(target_date, end_hour))
-        lunch_start_dt = timezone.make_aware(datetime.combine(target_date, schedule.lunch_start))
-        lunch_end_dt = timezone.make_aware(datetime.combine(target_date, schedule.lunch_end))
+        
+        lunch_start_dt = timezone.make_aware(datetime.combine(target_date, current_lunch_start))
+        lunch_end_dt = timezone.make_aware(datetime.combine(target_date, current_lunch_end))
         
         # CÁLCULO DE DURACIÓN TOTAL DEL COMBO
         total_duration_mins = sum(s.duration_minutes + s.buffer_time for s in services_list)
@@ -75,11 +114,11 @@ class AvailabilityManager:
             slot_end = current_dt + service_duration
             is_valid = True
             
-            # Regla A: No mostrar horas pasadas
+            # Regla A: No mostrar horas pasadas (si es hoy)
             if target_date == now_local.date() and slot_start <= now_local:
                 is_valid = False
             
-            # Regla B: Almuerzo (El bloque completo no debe tocar el almuerzo)
+            # Regla B: Almuerzo (El bloque completo no debe tocar el almuerzo definido para esta semana)
             if is_valid:
                 if (slot_end > lunch_start_dt) and (slot_start < lunch_end_dt):
                     is_valid = False
