@@ -79,10 +79,10 @@ class OwnerRegistrationForm(forms.ModelForm):
                 field.widget.attrs['class'] = base_class
 
 class OwnerUpdateForm(forms.ModelForm):
-    # Nuevos campos para el cambio de clave del empleado
+    # Campos para cambio de contraseña (usado por dueños y empleados)
     new_password = forms.CharField(
         label="Nueva Contraseña", 
-        widget=forms.PasswordInput(attrs={'placeholder': 'Escribir nueva contraseña'}),
+        widget=forms.PasswordInput(attrs={'placeholder': 'Dejar en blanco para no cambiar'}),
         required=False
     )
     confirm_password = forms.CharField(
@@ -105,10 +105,9 @@ class OwnerUpdateForm(forms.ModelForm):
         new_password = cleaned_data.get("new_password")
         confirm_password = cleaned_data.get("confirm_password")
 
-        # Validamos que si escribe en uno, escriba en el otro y coincidan
         if new_password or confirm_password:
             if new_password != confirm_password:
-                raise forms.ValidationError("Las nuevas contraseñas no coinciden.")
+                self.add_error('confirm_password', "Las nuevas contraseñas no coinciden.")
         return cleaned_data
 
 class SalonUpdateForm(forms.ModelForm):
@@ -183,10 +182,10 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         try:
-            salon = Salon.objects.filter(owner__managed_employees=self.instance.employee).first()
-            if not salon:
-                 salon = Salon.objects.filter(owner=self.instance.employee.boss).first()
-
+            # Intenta obtener el salón para filtrar los días disponibles según el negocio
+            employee = self.instance.employee
+            salon = getattr(employee, 'workplace', None)
+            
             if salon and salon.active_days:
                 allowed_days = salon.active_days.split(',')
                 self.fields['active_days'].choices = [
