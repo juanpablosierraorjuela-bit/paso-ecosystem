@@ -8,6 +8,54 @@ from apps.marketplace.models import Appointment
 from .models import Service, Salon, EmployeeSchedule
 from .forms import ServiceForm, EmployeeCreationForm, SalonScheduleForm, OwnerUpdateForm, SalonUpdateForm, EmployeeScheduleUpdateForm
 import re
+from django.db.models import Q  # Importamos Q para búsquedas avanzadas (Nombre O Servicio)
+
+# --- VISTAS PÚBLICAS (MARKETPLACE) ---
+
+def marketplace_home(request):
+    query = request.GET.get('q', '')
+    city = request.GET.get('city', '')
+    
+    # Empezamos con todos los salones
+    salons = Salon.objects.all()
+
+    if query:
+        # AQUÍ ESTÁ LA MAGIA: Busca en el nombre del salón O en los nombres de sus servicios
+        salons = salons.filter(
+            Q(name__icontains=query) | 
+            Q(services__name__icontains=query)
+        ).distinct() # distinct() es vital para que no salga el mismo salón repetido
+
+    if city:
+        salons = salons.filter(city=city)
+
+    # Obtenemos las ciudades únicas para el filtro del select
+    cities = Salon.objects.values_list('city', flat=True).distinct()
+
+    return render(request, 'index.html', {
+        'salons': salons,
+        'cities': cities,
+        'current_query': query,
+        'current_city': city
+    })
+
+def salon_detail(request, pk):
+    salon = get_object_or_404(Salon, pk=pk)
+    services = salon.services.all()
+    
+    # Lógica simple para saber si está abierto ahora
+    now = timezone.now().time()
+    is_open = False
+    if salon.opening_time and salon.closing_time:
+        is_open = salon.opening_time <= now <= salon.closing_time
+
+    return render(request, 'salon_detail.html', {
+        'salon': salon,
+        'services': services,
+        'is_open': is_open
+    })
+
+# --- VISTAS DE GESTIÓN (DASHBOARD) ---
 
 @login_required
 def owner_dashboard(request):
