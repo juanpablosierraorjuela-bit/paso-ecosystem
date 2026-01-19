@@ -202,7 +202,12 @@ def settings_view(request):
             owner_form = OwnerUpdateForm(request.POST, instance=user)
             salon_form = SalonUpdateForm(request.POST, instance=salon)
             if owner_form.is_valid() and salon_form.is_valid():
-                owner_form.save()
+                user_obj = owner_form.save(commit=False)
+                # Lógica para cambio de contraseña desde settings si se desea
+                new_pw = owner_form.cleaned_data.get('new_password')
+                if new_pw:
+                    user_obj.set_password(new_pw)
+                user_obj.save()
                 salon_form.save()
                 messages.success(request, "Datos actualizados.")
                 return redirect('settings_view')
@@ -222,16 +227,14 @@ def settings_view(request):
 
 @login_required
 def employee_dashboard(request):
-    # Permitir que tanto dueños como empleados entren a configurar su agenda y perfil
     if request.user.role not in ['EMPLOYEE', 'OWNER']: 
-        return redirect('home')
+        return redirect('dashboard')
     
     schedule, created = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
     )
     
-    # Filtramos las citas personales para el usuario logueado
     appointments = Appointment.objects.filter(
         employee=request.user,
         status='VERIFIED'
@@ -241,7 +244,6 @@ def employee_dashboard(request):
         app.balance_due = app.total_price - app.deposit_amount
 
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
-    # El OwnerUpdateForm se usa aquí para que el empleado cambie su usuario/clave/datos
     profile_form = OwnerUpdateForm(instance=request.user)
 
     if request.method == 'POST':
@@ -254,12 +256,16 @@ def employee_dashboard(request):
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
-                profile_form.save()
-                messages.success(request, "Perfil actualizado.")
+                user_obj = profile_form.save(commit=False)
+                # LÓGICA DE ACTUALIZACIÓN DE CREDENCIALES
+                new_pw = profile_form.cleaned_data.get('new_password')
+                if new_pw:
+                    user_obj.set_password(new_pw)
+                user_obj.save()
+                messages.success(request, "Perfil y credenciales actualizados.")
                 return redirect('employee_dashboard')
     
-    # Determinamos el salón para mostrar en el encabezado
-    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else (request.user.owned_salon if hasattr(request.user, 'owned_salon') else None)
+    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
 
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,

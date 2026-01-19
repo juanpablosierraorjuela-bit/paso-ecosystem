@@ -19,6 +19,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div class="lg:col-span-1 space-y-8">
+            
             <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
                 <h2 class="text-xl font-bold mb-4 flex items-center">⏰ Mi Disponibilidad</h2>
 
@@ -65,30 +66,33 @@
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-4 flex items-center">👤 Mis Datos</h2>
+                <h2 class="text-xl font-bold mb-4 flex items-center">👤 Mis Datos y Acceso</h2>
+                
                 <form method="post">
                     {% csrf_token %}
-                    <div class="space-y-3 mb-4">
+                    
+                    <div class="space-y-3 mb-6">
+                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Información Personal</h3>
+                        <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
+                        <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
+                        <div><label class="text-xs font-bold text-gray-500">WhatsApp</label>{{ profile_form.phone }}</div>
+                    </div>
+
+                    <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Credenciales de Acceso</h3>
                         <div>
-                            <label class="text-xs font-bold text-gray-500">Nombre</label>
-                            {{ profile_form.first_name }}
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500">Apellido</label>
-                            {{ profile_form.last_name }}
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500">WhatsApp</label>
-                            {{ profile_form.phone }}
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500">Nombre de Usuario / Clave</label>
-                            <p class="text-[10px] text-gray-400 italic mb-1">Puedes cambiar tu usuario o contraseña abajo:</p>
+                            <label class="text-xs font-bold text-gray-500">Usuario de acceso</label>
                             {{ profile_form.username }}
                         </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Nueva Contraseña</label>
+                            {{ profile_form.new_password }}
+                            <p class="text-[9px] text-gray-400 mt-1 italic text-right">Dejar en blanco para no cambiar</p>
+                        </div>
                     </div>
-                    <button type="submit" name="update_profile" class="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition text-sm">
-                        Guardar Perfil
+
+                    <button type="submit" name="update_profile" class="w-full bg-white border-2 border-black text-black py-3 rounded-lg font-bold hover:bg-black hover:text-white transition text-sm">
+                        Guardar Cambios
                     </button>
                 </form>
             </div>
@@ -142,6 +146,7 @@
                     <div class="text-center py-12 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
                         <div class="text-4xl mb-3">📭</div>
                         <p class="text-gray-500 font-medium">No tienes citas verificadas para hoy.</p>
+                        <p class="text-xs text-gray-400 mt-2">Las citas aparecerán aquí cuando el dueño confirme el pago.</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -152,12 +157,16 @@
 
 <style>
     /* Estilos para inputs dentro de los formularios del dashboard */
-    input[type="text"], input[type="number"], input[type="password"], select, textarea {
+    input[type="text"], 
+    input[type="password"], 
+    input[type="number"], 
+    select {
         width: 100%;
         padding: 0.5rem;
         border: 1px solid #e5e7eb;
         border-radius: 0.5rem;
         font-size: 0.875rem;
+        margin-top: 0.25rem;
     }
     input:focus {
         outline: none;

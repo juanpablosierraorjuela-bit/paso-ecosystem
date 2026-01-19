@@ -79,31 +79,37 @@ class OwnerRegistrationForm(forms.ModelForm):
                 field.widget.attrs['class'] = base_class
 
 class OwnerUpdateForm(forms.ModelForm):
-    # Añadimos campos opcionales para usuario y clave
-    username = forms.CharField(label="Usuario de Acceso", required=True)
+    # Nuevos campos para el cambio de clave del empleado
     new_password = forms.CharField(
-        label="Nueva Contraseña (dejar en blanco para no cambiar)", 
-        widget=forms.PasswordInput(), 
+        label="Nueva Contraseña", 
+        widget=forms.PasswordInput(attrs={'placeholder': 'Escribir nueva contraseña'}),
+        required=False
+    )
+    confirm_password = forms.CharField(
+        label="Confirmar Nueva Contraseña", 
+        widget=forms.PasswordInput(attrs={'placeholder': 'Repetir nueva contraseña'}),
         required=False
     )
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone', 'username']
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        new_pwd = self.cleaned_data.get('new_password')
-        if new_pwd:
-            user.set_password(new_pwd)
-        if commit:
-            user.save()
-        return user
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get("new_password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        # Validamos que si escribe en uno, escriba en el otro y coincidan
+        if new_password or confirm_password:
+            if new_password != confirm_password:
+                raise forms.ValidationError("Las nuevas contraseñas no coinciden.")
+        return cleaned_data
 
 class SalonUpdateForm(forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
