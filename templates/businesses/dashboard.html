@@ -64,6 +64,11 @@
                         <span class="flex items-center gap-3">👥 <span class="font-medium">Equipo</span></span>
                         <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-lg group-hover:bg-white">{{ employee_count }}</span>
                     </a>
+
+                    <a href="{% url 'employee_dashboard' %}" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl font-bold transition-all border border-blue-100 shadow-sm">
+                        💅 Ver Panel de Empleadas
+                    </a>
+
                     <a href="{% url 'settings_view' %}" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-all">
                         ⚙️ Configuración
                     </a>
