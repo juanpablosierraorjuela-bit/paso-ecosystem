@@ -47,7 +47,7 @@ def salon_detail(request, pk):
     services = salon.services.all()
     
     # Lógica simple para saber si está abierto ahora
-    now = timezone.now().time()
+    now = timezone.localtime(timezone.now()).time()
     is_open = False
     if salon.opening_time and salon.closing_time:
         is_open = salon.opening_time <= now <= salon.closing_time
@@ -236,13 +236,13 @@ def employee_dashboard(request):
         return redirect('dashboard')
     
     # --- 1. CONFIGURACIÓN DEL CALENDARIO POR SEMANAS ---
-    hoy = timezone.now()
+    hoy = timezone.localtime(timezone.now())
     
-    # Obtenemos mes y año de la URL, o usamos el actual
+    # Captura Mes y Año de GET o POST para que el botón "Ir" funcione
     try:
-        mes_seleccionado = int(request.GET.get('month', hoy.month))
-        anio_seleccionado = int(request.GET.get('year', hoy.year))
-    except ValueError:
+        mes_seleccionado = int(request.GET.get('month', request.POST.get('month', hoy.month)))
+        anio_seleccionado = int(request.GET.get('year', request.POST.get('year', hoy.year)))
+    except (ValueError, TypeError):
         mes_seleccionado = hoy.month
         anio_seleccionado = hoy.year
 
@@ -254,11 +254,10 @@ def employee_dashboard(request):
     processed_weeks = [] # Para evitar duplicados de semana ISO
 
     for week in month_days:
-        # Encontramos un día válido en la semana para calcular su número ISO
         for day in week:
             if day != 0:
                 dt = datetime(anio_seleccionado, mes_seleccionado, day)
-                iso_year, iso_week, iso_day = dt.isocalendar()
+                iso_year, iso_week, _ = dt.isocalendar()
                 
                 if iso_week not in processed_weeks:
                     processed_weeks.append(iso_week)
@@ -266,11 +265,11 @@ def employee_dashboard(request):
                     # Obtenemos o creamos la configuración específica para esta semana
                     week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
                         employee=request.user,
-                        year=anio_seleccionado,
+                        year=iso_year, # Usamos el año ISO para consistencia
                         week_number=iso_week
                     )
                     
-                    # Calculamos inicio y fin de la semana para mostrar en el frontend
+                    # Calculamos inicio y fin de la semana
                     start_of_week = dt - timedelta(days=dt.weekday())
                     end_of_week = start_of_week + timedelta(days=6)
                     
@@ -303,7 +302,7 @@ def employee_dashboard(request):
 
     # --- 3. PROCESAMIENTO DE POST ---
     if request.method == 'POST':
-        # Actualizar Horario Base (General)
+        # Actualizar Horario Base
         if 'update_schedule' in request.POST:
             schedule_form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
             if schedule_form.is_valid():
@@ -316,14 +315,12 @@ def employee_dashboard(request):
             week_id = request.POST.get('week_id')
             week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
             
-            # Actualización manual de campos
             week_inst.work_start = request.POST.get('work_start')
             week_inst.work_end = request.POST.get('work_end')
             week_inst.lunch_start = request.POST.get('lunch_start')
             week_inst.lunch_end = request.POST.get('lunch_end')
             
-            # Guardar días activos (array de strings)
-            days = request.POST.getlist('days') # ['0', '1', ...]
+            days = request.POST.getlist('days') 
             week_inst.active_days = ",".join(days)
             week_inst.save()
             
@@ -355,6 +352,7 @@ def employee_dashboard(request):
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
         (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
     ]
+    years_range = [hoy.year, hoy.year + 1]
     
     salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
 
@@ -367,6 +365,7 @@ def employee_dashboard(request):
         'appointments': appointments,
         'weeks_info': weeks_info,
         'months_range': months_range,
+        'years_range': years_range,
         'mes_sel': mes_seleccionado,
         'anio_sel': anio_seleccionado,
     })
