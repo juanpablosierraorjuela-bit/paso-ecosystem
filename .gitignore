@@ -1,4 +1,21 @@
+# Base de datos (Ya lo tienes)
 *.sqlite3
+
+# Python (Ya lo tienes + mejoras)
 __pycache__/
 *.pyc
 .env
+db.sqlite3-journal
+
+# Entornos virtuales (MUY IMPORTANTE para no subir gigas de basura)
+venv/
+env/
+ENV/
+
+# Archivos de configuración de editores
+.vscode/
+.idea/
+
+# Archivos estáticos de Django
+staticfiles/
+media/
