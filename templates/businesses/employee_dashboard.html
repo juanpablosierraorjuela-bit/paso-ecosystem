@@ -16,66 +16,34 @@
         </div>
     </div>
 
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl text-xs font-bold uppercase tracking-widest {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-200{% else %}bg-red-100 text-red-700 border border-red-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div class="lg:col-span-1 space-y-8">
             
-            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-4 flex items-center">
-                    ⚙️ Horario Base General
-                </h2>
-                <p class="text-[10px] text-gray-400 uppercase font-bold mb-4 leading-tight">
-                    Configuración por defecto si no hay ajustes semanales.
+            <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
+                <h2 class="text-xl font-bold mb-2 flex items-center">📅 Mi Disponibilidad</h2>
+                <p class="text-[10px] text-gray-400 uppercase font-bold mb-6 leading-tight">
+                    Configura tus días y horas de trabajo semana a semana.
                 </p>
                 
-                <form method="post" class="space-y-4">
-                    {% csrf_token %}
-                    <input type="hidden" name="update_base_schedule" value="1">
-                    
-                    <div class="bg-gray-50 p-3 rounded-lg">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[9px] font-bold text-gray-400 uppercase">Entrada Base</label>
-                                <input type="time" name="work_start" value="{{ schedule.work_start|time:'H:i' }}" class="w-full p-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-black outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-bold text-gray-400 uppercase">Salida Base</label>
-                                <input type="time" name="work_end" value="{{ schedule.work_end|time:'H:i' }}" class="w-full p-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-black outline-none">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 border border-gray-100 rounded-lg">
-                        <label class="text-[9px] font-bold text-gray-400 uppercase block mb-2">Días Laborales Base</label>
-                        <div class="flex flex-wrap gap-1">
-                            {% for i in "0123456" %}
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="days" value="{{ i }}" class="peer hidden" {% if i in schedule.active_days %}checked{% endif %}>
-                                <span class="w-8 h-8 flex items-center justify-center text-[10px] font-bold border rounded-lg bg-white peer-checked:bg-black peer-checked:text-white transition-all">
-                                    {% if i == '0' %}L{% elif i == '1' %}M{% elif i == '2' %}X{% elif i == '3' %}J{% elif i == '4' %}V{% elif i == '5' %}S{% elif i == '6' %}D{% endif %}
-                                </span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition text-[10px] uppercase tracking-widest shadow-sm">
-                        Actualizar Horario Base
-                    </button>
-                </form>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
-                <h2 class="text-xl font-bold mb-4 flex items-center">📅 Ajustes Semanales</h2>
-                
                 <form method="get" class="flex gap-2 mb-6">
-                    <select name="month" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm outline-none">
+                    <select name="month" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm outline-none focus:ring-1 focus:ring-black">
                         {% for num, name in months_range %}
                         <option value="{{ num }}" {% if num == mes_seleccionado %}selected{% endif %}>{{ name }}</option>
                         {% endfor %}
                     </select>
                     
-                    <select name="year" class="w-24 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm outline-none">
+                    <select name="year" class="w-24 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm outline-none focus:ring-1 focus:ring-black">
                         {% for y in years_range %}
                         <option value="{{ y|stringformat:'i' }}" {% if y == anio_seleccionado %}selected{% endif %}>{{ y|stringformat:"i" }}</option>
                         {% endfor %}
@@ -84,7 +52,7 @@
                     <button type="submit" class="bg-black text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-800 transition">IR</button>
                 </form>
 
-                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                <div class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                     {% for week in weeks_info %}
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-black transition-colors group">
                         <div class="flex justify-between items-center mb-3">
@@ -140,7 +108,6 @@
                     <h2 class="text-lg font-bold mb-4 flex items-center">👤 Mis Datos</h2>
                     <input type="hidden" name="month" value="{{ mes_seleccionado }}">
                     <input type="hidden" name="year" value="{{ anio_seleccionado|stringformat:'i' }}">
-                    
                     <div class="space-y-3">
                         {{ profile_form.as_p }}
                         <button type="submit" name="update_profile" class="w-full bg-black text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition">
@@ -156,7 +123,6 @@
                     <h2 class="text-lg font-bold mb-4 flex items-center text-red-600">🔒 Seguridad</h2>
                     <input type="hidden" name="month" value="{{ mes_seleccionado }}">
                     <input type="hidden" name="year" value="{{ anio_seleccionado|stringformat:'i' }}">
-                    
                     <div class="space-y-3">
                         {{ password_form.as_p }}
                         <button type="submit" name="change_password" class="w-full bg-red-50 text-red-600 border border-red-200 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition">
@@ -173,7 +139,7 @@
                     <h2 class="text-2xl font-serif font-bold">📅 Citas Confirmadas</h2>
                     <div class="bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
                         <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                            Mostrando: {{ mes_seleccionado }}/{{ anio_seleccionado|stringformat:"i" }}
+                            Viendo: {{ mes_seleccionado }}/{{ anio_seleccionado|stringformat:"i" }}
                         </span>
                     </div>
                 </div>
@@ -231,53 +197,20 @@
 
 <style>
     /* Estilos para formularios generados por Django */
-    .custom-form p {
-        margin-bottom: 1.25rem;
-    }
+    .custom-form p { margin-bottom: 1.25rem; }
     .custom-form label {
-        display: block;
-        font-size: 0.7rem;
-        font-weight: 900;
-        color: #9ca3af;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.25rem;
+        display: block; font-size: 0.7rem; font-weight: 900;
+        color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;
     }
     .custom-form input, .custom-form select, .custom-form textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #f3f4f6;
-        border-radius: 0.75rem;
-        font-size: 0.875rem;
-        background-color: #f9fafb;
-        transition: all 0.2s;
-        outline: none;
+        width: 100%; padding: 0.75rem; border: 1px solid #f3f4f6;
+        border-radius: 0.75rem; font-size: 0.875rem; background-color: #f9fafb;
+        transition: all 0.2s; outline: none;
     }
-    .custom-form input:focus {
-        border-color: #000;
-        background-color: #fff;
-        box-shadow: 0 0 0 1px #000;
-    }
+    .custom-form input:focus { border-color: #000; background-color: #fff; box-shadow: 0 0 0 1px #000; }
 
-    /* Scrollbar minimalista */
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 3px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #000;
-        border-radius: 10px;
-    }
-    
-    .errorlist {
-        color: #ef4444;
-        font-size: 0.7rem;
-        font-weight: bold;
-        margin-top: 0.25rem;
-        list-style: none;
-    }
+    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 10px; }
 </style>
 {% endblock %}

@@ -11,10 +11,10 @@ from django.db.models import Q
 
 from apps.core.models import GlobalSettings, User
 from apps.marketplace.models import Appointment
-from .models import Service, Salon, EmployeeSchedule, EmployeeWeeklySchedule
+from .models import Service, Salon, EmployeeWeeklySchedule
 from .forms import (
     ServiceForm, EmployeeCreationForm, SalonScheduleForm, 
-    OwnerUpdateForm, SalonUpdateForm, EmployeeScheduleUpdateForm
+    OwnerUpdateForm, SalonUpdateForm
 )
 
 # --- VISTAS PÚBLICAS (MARKETPLACE) ---
@@ -221,7 +221,7 @@ def settings_view(request):
         'salon': salon
     })
 
-# --- PANEL DE EMPLEADO (CALENDARIO Y CITAS) ---
+# --- PANEL DE EMPLEADO (SOLO SEMANAL) ---
 
 @login_required
 def employee_dashboard(request):
@@ -230,26 +230,21 @@ def employee_dashboard(request):
     
     hoy = timezone.localtime(timezone.now())
     
-    # LIMPIEZA DE DATOS PARA EVITAR ERROR "2.026"
-    raw_month = str(request.GET.get('month', request.POST.get('month', hoy.month)))
-    raw_year = str(request.GET.get('year', request.POST.get('year', hoy.year)))
-    
+    # Limpieza de parámetros de fecha
+    raw_month = str(request.GET.get('month', hoy.month))
+    raw_year = str(request.GET.get('year', hoy.year))
     clean_month = re.sub(r'\D', '', raw_month)
     clean_year = re.sub(r'\D', '', raw_year)
     
     mes_seleccionado = int(clean_month) if clean_month else hoy.month
     anio_seleccionado = int(clean_year) if clean_year else hoy.year
 
+    # Procesamiento de semanas para el calendario
     cal = calendar.Calendar(firstweekday=0) 
     month_days = cal.monthdayscalendar(anio_seleccionado, mes_seleccionado)
     
     weeks_info = []
     processed_weeks = []
-
-    schedule, _ = EmployeeSchedule.objects.get_or_create(
-        employee=request.user, 
-        defaults={'work_start': time(9,0), 'work_end': time(18,0)}
-    )
 
     for week in month_days:
         for day in week:
@@ -259,14 +254,15 @@ def employee_dashboard(request):
                 
                 if iso_week not in processed_weeks:
                     processed_weeks.append(iso_week)
+                    # Si no existe la semana, se crea con horarios por defecto (9 a 18)
                     week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
                         employee=request.user,
                         year=iso_year, 
                         week_number=iso_week,
                         defaults={
-                            'work_start': schedule.work_start,
-                            'work_end': schedule.work_end,
-                            'active_days': schedule.active_days
+                            'work_start': time(9,0),
+                            'work_end': time(18,0),
+                            'active_days': '0,1,2,3,4,5'
                         }
                     )
                     start_of_week = dt - timedelta(days=dt.weekday())
@@ -275,55 +271,37 @@ def employee_dashboard(request):
                     weeks_info.append({
                         'number': iso_week,
                         'instance': week_schedule,
-                        'label': f"{iso_week}",
                         'range': f"{start_of_week.strftime('%d %b')} - {end_of_week.strftime('%d %b')}"
                     })
                 break
     
+    # Citas del empleado
     appointments = Appointment.objects.filter(
         employee=request.user,
-        status='VERIFIED'
-    ).order_by('date_time')
-    
-    for app in appointments:
-        app.balance_due = app.total_price - app.deposit_amount
+        date_time__date__gte=hoy.date()
+    ).exclude(status='CANCELLED').order_by('date_time')
 
-    schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
+    # Formularios de Perfil
     profile_form = OwnerUpdateForm(instance=request.user)
     password_form = SetPasswordForm(user=request.user)
 
     if request.method == 'POST':
-        # AJUSTE: Identificamos formulario de horario base
-        if 'update_base_schedule' in request.POST:
-            schedule_form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
-            if schedule_form.is_valid():
-                inst = schedule_form.save(commit=False)
-                # Capturamos los días específicos del checkbox base
-                days = request.POST.getlist('days')
-                inst.active_days = ",".join(days)
-                inst.save()
-                messages.success(request, "Horario base actualizado.")
-                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
-        
-        elif 'update_week' in request.POST:
+        # 1. ACTUALIZAR SEMANA (Única lógica de horarios)
+        if 'update_week' in request.POST:
             week_id = request.POST.get('week_id')
             week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
             try:
-                new_start = request.POST.get('work_start')
-                new_end = request.POST.get('work_end')
-                
-                if new_start: week_inst.work_start = new_start
-                if new_end: week_inst.work_end = new_end
-                
-                # AJUSTE: Capturamos los días específicos de este formulario de semana
+                week_inst.work_start = request.POST.get('work_start')
+                week_inst.work_end = request.POST.get('work_end')
                 days = request.POST.getlist('days') 
                 week_inst.active_days = ",".join(days)
                 week_inst.save()
-                messages.success(request, f"Semana {week_inst.week_number} guardada correctamente.")
+                messages.success(request, f"Horario de la semana {week_inst.week_number} actualizado.")
             except Exception:
-                messages.error(request, "Error al guardar los horarios de la semana.")
+                messages.error(request, "Error al guardar los horarios.")
             return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
+        # 2. ACTUALIZAR PERFIL
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
@@ -331,6 +309,7 @@ def employee_dashboard(request):
                 messages.success(request, "Perfil actualizado.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
+        # 3. CAMBIAR CONTRASEÑA
         elif 'change_password' in request.POST:
             password_form = SetPasswordForm(user=request.user, data=request.POST)
             if password_form.is_valid():
@@ -338,31 +317,16 @@ def employee_dashboard(request):
                 update_session_auth_hash(request, user)
                 messages.success(request, "Contraseña actualizada.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
-            else:
-                messages.error(request, "Error al actualizar la contraseña. Revisa los requisitos.")
 
-    months_range = [
-        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
-        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
-        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
-    ]
-    years_range = [hoy.year, hoy.year + 1]
-    
-    if request.user.role == 'EMPLOYEE':
-        salon_context = request.user.workplace
-    else:
-        salon_context = getattr(request.user, 'owned_salon', None)
-
-    return render(request, 'businesses/employee_dashboard.html', {
-        'schedule_form': schedule_form,
+    context = {
         'profile_form': profile_form,
         'password_form': password_form,
-        'schedule': schedule,
-        'salon': salon_context,
+        'salon': request.user.workplace if request.user.role == 'EMPLOYEE' else getattr(request.user, 'owned_salon', None),
         'appointments': appointments,
         'weeks_info': weeks_info,
-        'months_range': months_range,
-        'years_range': years_range,
+        'months_range': [(i, calendar.month_name[i].capitalize()) for i in range(1, 13)],
+        'years_range': [hoy.year, hoy.year + 1],
         'mes_seleccionado': mes_seleccionado,
         'anio_seleccionado': anio_seleccionado,
-    })
+    }
+    return render(request, 'businesses/employee_dashboard.html', context)
