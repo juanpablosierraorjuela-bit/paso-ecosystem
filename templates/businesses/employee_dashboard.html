@@ -39,7 +39,9 @@
                 <form method="get" class="flex gap-2 mb-6">
                     <select name="month" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm outline-none focus:ring-1 focus:ring-black">
                         {% for num, name in months_range %}
-                        <option value="{{ num }}" {% if num == mes_seleccionado %}selected{% endif %}>{{ name }}</option>
+                        <option value="{{ num }}" {% if num == mes_seleccionado %}selected{% endif %}>
+                            {% if num == 1 %}Enero{% elif num == 2 %}Febrero{% elif num == 3 %}Marzo{% elif num == 4 %}Abril{% elif num == 5 %}Mayo{% elif num == 6 %}Junio{% elif num == 7 %}Julio{% elif num == 8 %}Agosto{% elif num == 9 %}Septiembre{% elif num == 10 %}Octubre{% elif num == 11 %}Noviembre{% elif num == 12 %}Diciembre{% else %}{{ name }}{% endif %}
+                        </option>
                         {% endfor %}
                     </select>
                     
@@ -181,7 +183,7 @@
                             
                             {% if app.client.phone %}
                                 {% with phone_clean=app.client.phone|stringformat:"s"|cut:" " %}
-                                <a href="https://wa.me/57{{ phone_clean }}?text=Hola%20{{ app.client.first_name }},%20te%20escribo%20de%20{{ salon.name }}%20para%20confirmar%20tu%20cita%20a%20las%20{{ app.date_time|date:'H:i' }}." 
+                                <a href="https://wa.me/57{{ phone_clean }}?text=👋%20Hola%20{{ app.client.first_name }},%20te%20escribo%20de%20*{{ salon.name }}*.%0A%0A🗓%20*Recordatorio%20de%20Cita*:%0A📌%20*Fecha:*%20{{ app.date_time|date:'d/m/Y' }}%0A⏰%20*Hora:*%20{{ app.date_time|date:'H:i' }}%0A💇‍♂️%20*Servicios:*%20{% for s in app.services.all %}{{ s.name }}{% if not forloop.last %},%20{% endif %}{% endfor %}%0A💰%20*Saldo%20a%20pagar:*%20$%20{% if app.balance_due %}{{ app.balance_due|floatformat:0|intcomma }}{% else %}0{% endif %}%0A%0A⚠️%20*Nota:*%20Este%20es%20un%20sistema%20automatizado.%20Agradecemos%20tu%20*puntualidad*%20para%20brindarte%20el%20mejor%20servicio.%20¡Te%20esperamos!" 
                                    target="_blank" class="inline-flex items-center gap-2 text-[10px] font-black text-white bg-[#25D366] px-4 py-2 rounded-full hover:shadow-lg transition-all mt-4 uppercase tracking-widest">
                                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.483 8.413-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.308 1.654zm6.749-3.336l.393.233c1.524.905 3.292 1.382 5.09 1.382 5.44 0 9.863-4.422 9.865-9.864 0-2.637-1.028-5.115-2.895-6.983-1.866-1.867-4.346-2.895-6.982-2.895-5.442 0-9.866 4.423-9.869 9.866 0 2.099.549 4.14 1.595 5.945l.256.441-.99 3.62 3.737-.98z"/></svg>
                                     Contactar Cliente
