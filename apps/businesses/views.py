@@ -2,27 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import SetPasswordForm
-from django.contrib.auth import login
 from django.contrib import messages
 from django.utils import timezone
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
 from datetime import timedelta, time, datetime
-from decimal import Decimal
 import calendar
 import re
-import uuid
-import urllib.parse
 from django.db.models import Q
 
-# Importamos modelos
 from apps.core.models import GlobalSettings, User
 from apps.marketplace.models import Appointment
 from .models import Service, Salon, EmployeeSchedule, EmployeeWeeklySchedule
-
-# IMPORTANTE: Importamos la lógica corregida
-from apps.businesses.logic import AvailabilityManager
-
 from .forms import (
     ServiceForm, EmployeeCreationForm, SalonScheduleForm, 
     OwnerUpdateForm, SalonUpdateForm, EmployeeScheduleUpdateForm
@@ -44,10 +33,6 @@ def marketplace_home(request):
 
     if city:
         salons = salons.filter(city=city)
-        
-    # Verificar estado abierto/cerrado
-    for salon in salons:
-        salon.is_open_now = AvailabilityManager.is_salon_open(salon)
 
     cities = Salon.objects.values_list('city', flat=True).distinct()
 
@@ -62,175 +47,15 @@ def salon_detail(request, pk):
     salon = get_object_or_404(Salon, pk=pk)
     services = salon.services.all()
     
-    is_open = AvailabilityManager.is_salon_open(salon)
+    now = timezone.localtime(timezone.now()).time()
+    is_open = False
+    if salon.opening_time and salon.closing_time:
+        is_open = salon.opening_time <= now <= salon.closing_time
 
     return render(request, 'salon_detail.html', {
         'salon': salon,
         'services': services,
         'is_open': is_open
-    })
-
-def booking_wizard(request, salon_id):
-    """
-    Paso 1 del agendamiento: Renderiza la página.
-    """
-    service_ids_str = request.GET.get('services', '')
-    if not service_ids_str:
-        messages.error(request, "Debes seleccionar al menos un servicio.")
-        return redirect('salon_detail', pk=salon_id)
-    
-    # Validar IDs vacíos
-    service_ids = [s for s in service_ids_str.split(',') if s.isdigit()]
-    
-    salon = get_object_or_404(Salon, pk=salon_id)
-    services = Service.objects.filter(id__in=service_ids, salon=salon)
-    
-    # Filtramos usuarios que trabajen en este salón
-    employees = User.objects.filter(workplace=salon)
-    
-    total_price = sum(s.price for s in services)
-    deposit_perc = salon.deposit_percentage if salon.deposit_percentage else 0
-    deposit_amount = int((total_price * deposit_perc) / 100)
-    
-    context = {
-        'salon': salon,
-        'services': services,
-        'service_ids_str': service_ids_str,
-        'employees': employees,
-        'total_price': total_price,
-        'deposit_amount': deposit_amount,
-        'today': timezone.localtime(timezone.now()).date().isoformat(),
-        'is_guest': not request.user.is_authenticated
-    }
-    return render(request, 'booking_wizard.html', context)
-
-@require_GET
-def get_available_slots_api(request):
-    """
-    API llamada por JS en booking_wizard.html.
-    Conecta con logic.py para obtener disponibilidad REAL (Semanal vs Base).
-    """
-    try:
-        salon_id = request.GET.get('salon_id')
-        service_ids = request.GET.get('service_ids', '').split(',')
-        employee_id = request.GET.get('employee_id')
-        date_str = request.GET.get('date')
-
-        if not all([salon_id, employee_id, date_str]):
-            return JsonResponse({'error': 'Faltan parámetros'}, status=400)
-
-        salon = get_object_or_404(Salon, pk=salon_id)
-        valid_service_ids = [s for s in service_ids if s and s.isdigit()]
-        services = Service.objects.filter(id__in=valid_service_ids)
-        employee = get_object_or_404(User, pk=employee_id)
-        
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        
-        # Llamada a la lógica centralizada
-        slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
-        
-        # Formatear para JSON
-        json_slots = []
-        for slot in slots:
-            json_slots.append({
-                'time': slot['time'],      # Hora limpia HH:MM
-                'label': slot['label'],    # Etiqueta bonita
-                'available': slot['is_available']
-            })
-            
-        return JsonResponse({'slots': json_slots})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
-
-def booking_commit(request):
-    if request.method == 'POST':
-        try:
-            salon_id = request.POST.get('salon_id')
-            service_ids = request.POST.get('service_ids', '').split(',')
-            employee_id = request.POST.get('employee_id')
-            date_str = request.POST.get('date')
-            time_str = request.POST.get('time')
-            
-            # Datos de contacto
-            first_name = request.POST.get('first_name')
-            last_name = request.POST.get('last_name')
-            email = request.POST.get('email')
-            phone = request.POST.get('phone')
-
-            salon = get_object_or_404(Salon, pk=salon_id)
-            valid_service_ids = [s for s in service_ids if s and s.isdigit()]
-            services = Service.objects.filter(id__in=valid_service_ids)
-            employee = get_object_or_404(User, pk=employee_id)
-            
-            booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-            booking_datetime = timezone.make_aware(booking_datetime)
-            
-            total_price = sum(s.price for s in services)
-            deposit_perc = salon.deposit_percentage if salon.deposit_percentage else 0
-            deposit_val = (Decimal(str(total_price)) * Decimal(str(deposit_perc))) / Decimal('100')
-
-            client_user = request.user
-
-            if not client_user.is_authenticated:
-                if not email:
-                    raise ValueError("El email es obligatorio.")
-                    
-                user_exists = User.objects.filter(email=email).first()
-                if user_exists:
-                    client_user = user_exists
-                    login(request, client_user)
-                else:
-                    temp_password = str(uuid.uuid4())[:8]
-                    client_user = User.objects.create_user(
-                        username=email, 
-                        email=email, 
-                        password=temp_password,
-                        first_name=first_name or "Cliente", 
-                        last_name=last_name or "Invitado", 
-                        phone=phone,
-                        role='CLIENT'
-                    )
-                    login(request, client_user)
-                    messages.success(request, f"¡Cuenta creada! Clave temporal: {temp_password}")
-
-            appointment = Appointment.objects.create(
-                client=client_user,
-                salon=salon,
-                employee=employee,
-                date_time=booking_datetime,
-                total_price=total_price,
-                deposit_amount=deposit_val,
-                status='PENDING'
-            )
-            appointment.services.set(services)
-            
-            messages.success(request, "Cita agendada. Por favor envía el comprobante.")
-            return redirect('client_dashboard')
-            
-        except Exception as e:
-            messages.error(request, f"Error: {str(e)}")
-            return redirect('marketplace_home')
-            
-    return redirect('marketplace_home')
-
-@login_required
-def client_dashboard(request):
-    appointments = Appointment.objects.filter(client=request.user).prefetch_related('services', 'salon').order_by('-created_at')
-    
-    for app in appointments:
-        if app.status == 'PENDING':
-            expire_at = app.created_at + timedelta(minutes=60)
-            app.expire_timestamp = int(expire_at.timestamp() * 1000)
-            
-            owner_phone = app.salon.owner.phone if app.salon.owner and app.salon.owner.phone else ""
-            msg = f"Hola, soy {request.user.first_name}. Envío comprobante para cita del {app.date_time.strftime('%d/%m %H:%M')}."
-            app.wa_link = f"https://wa.me/{owner_phone}?text={urllib.parse.quote(msg)}"
-        else:
-            app.expire_timestamp = 0
-            app.wa_link = "#"
-
-    return render(request, 'client_dashboard.html', {
-        'appointments': appointments,
     })
 
 # --- VISTAS DE GESTIÓN (DASHBOARD DUEÑO) ---
@@ -240,7 +65,7 @@ def owner_dashboard(request):
     if request.user.role != 'OWNER':
         if request.user.role == 'EMPLOYEE':
             return redirect('employee_dashboard')
-        return redirect('marketplace_home')
+        return redirect('home')
     
     try:
         salon = request.user.owned_salon
@@ -289,7 +114,7 @@ def verify_appointment(request, appointment_id):
 
 @login_required
 def services_list(request):
-    if request.user.role != 'OWNER': return redirect('marketplace_home')
+    if request.user.role != 'OWNER': return redirect('home')
     salon = request.user.owned_salon
     services = salon.services.all()
 
@@ -307,7 +132,7 @@ def services_list(request):
 
 @login_required
 def service_edit(request, pk):
-    if request.user.role != 'OWNER': return redirect('marketplace_home')
+    if request.user.role != 'OWNER': return redirect('home')
     service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
     if request.method == 'POST':
         form = ServiceForm(request.POST, instance=service)
@@ -321,7 +146,7 @@ def service_edit(request, pk):
 
 @login_required
 def service_delete(request, pk):
-    if request.user.role != 'OWNER': return redirect('marketplace_home')
+    if request.user.role != 'OWNER': return redirect('home')
     service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
     service.delete()
     messages.success(request, "Servicio eliminado.")
@@ -329,7 +154,7 @@ def service_delete(request, pk):
 
 @login_required
 def employees_list(request):
-    if request.user.role != 'OWNER': return redirect('marketplace_home')
+    if request.user.role != 'OWNER': return redirect('home')
     salon = request.user.owned_salon
     employees = salon.employees.all()
     if request.method == 'POST':
@@ -353,7 +178,7 @@ def employees_list(request):
 
 @login_required
 def employee_delete(request, pk):
-    if request.user.role != 'OWNER': return redirect('marketplace_home')
+    if request.user.role != 'OWNER': return redirect('home')
     employee = get_object_or_404(User, pk=pk, workplace=request.user.owned_salon)
     employee.delete()
     messages.success(request, "Empleado eliminado.")
@@ -361,7 +186,7 @@ def employee_delete(request, pk):
 
 @login_required
 def settings_view(request):
-    if request.user.role != 'OWNER': return redirect('marketplace_home')
+    if request.user.role != 'OWNER': return redirect('home')
     salon = request.user.owned_salon
     user = request.user
 
@@ -409,6 +234,7 @@ def employee_dashboard(request):
     raw_month = str(request.GET.get('month', request.POST.get('month', hoy.month)))
     raw_year = str(request.GET.get('year', request.POST.get('year', hoy.year)))
     
+    # Eliminamos cualquier cosa que no sea un número (puntos, comas, etc.)
     clean_month = re.sub(r'\D', '', raw_month)
     clean_year = re.sub(r'\D', '', raw_year)
     
@@ -434,7 +260,6 @@ def employee_dashboard(request):
                 
                 if iso_week not in processed_weeks:
                     processed_weeks.append(iso_week)
-                    # Crea la instancia si no existe para que logic.py la encuentre
                     week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
                         employee=request.user,
                         year=iso_year, 
@@ -456,10 +281,9 @@ def employee_dashboard(request):
                     })
                 break
     
-    # Mostramos VERIFIED y PENDING para que el empleado sepa qué viene
     appointments = Appointment.objects.filter(
         employee=request.user,
-        status__in=['VERIFIED', 'CONFIRMED', 'PENDING']
+        status='VERIFIED'
     ).order_by('date_time')
     
     for app in appointments:
@@ -488,7 +312,6 @@ def employee_dashboard(request):
                 if new_end: week_inst.work_end = new_end
                 
                 days = request.POST.getlist('days') 
-                # Guardamos como string separado por comas para que logic.py lo lea
                 week_inst.active_days = ",".join(days)
                 week_inst.save()
                 messages.success(request, f"Semana {week_inst.week_number} guardada correctamente.")
@@ -525,7 +348,7 @@ def employee_dashboard(request):
     else:
         salon_context = getattr(request.user, 'owned_salon', None)
 
-    return render(request, 'employee_dashboard.html', {
+    return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
         'profile_form': profile_form,
         'password_form': password_form,
@@ -535,6 +358,6 @@ def employee_dashboard(request):
         'weeks_info': weeks_info,
         'months_range': months_range,
         'years_range': years_range,
-        'mes_seleccionado': mes_seleccionado,
-        'anio_seleccionado': anio_seleccionado,
+        'mes_sel': mes_seleccionado,
+        'anio_sel': anio_seleccionado,
     })
