@@ -229,7 +229,6 @@ def employee_dashboard(request):
         return redirect('dashboard')
     
     hoy = timezone.localtime(timezone.now())
-    # Capturamos mes y año del GET o POST para mantener la navegación
     mes_seleccionado = int(request.GET.get('month', request.POST.get('month', hoy.month)))
     anio_seleccionado = int(request.GET.get('year', request.POST.get('year', hoy.year)))
 
@@ -239,6 +238,12 @@ def employee_dashboard(request):
     weeks_info = []
     processed_weeks = []
 
+    # 1. Obtener horario base para usarlo como default
+    schedule, _ = EmployeeSchedule.objects.get_or_create(
+        employee=request.user, 
+        defaults={'work_start': time(9,0), 'work_end': time(18,0)}
+    )
+
     for week in month_days:
         for day in week:
             if day != 0:
@@ -247,10 +252,16 @@ def employee_dashboard(request):
                 
                 if iso_week not in processed_weeks:
                     processed_weeks.append(iso_week)
+                    # Al crear una semana, usamos las horas del horario base por defecto
                     week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
                         employee=request.user,
                         year=iso_year, 
-                        week_number=iso_week
+                        week_number=iso_week,
+                        defaults={
+                            'work_start': schedule.work_start,
+                            'work_end': schedule.work_end,
+                            'active_days': schedule.active_days
+                        }
                     )
                     start_of_week = dt - timedelta(days=dt.weekday())
                     end_of_week = start_of_week + timedelta(days=6)
@@ -262,11 +273,6 @@ def employee_dashboard(request):
                         'range': f"{start_of_week.strftime('%d %b')} - {end_of_week.strftime('%d %b')}"
                     })
                 break
-    
-    schedule, _ = EmployeeSchedule.objects.get_or_create(
-        employee=request.user, 
-        defaults={'work_start': time(9,0), 'work_end': time(18,0)}
-    )
     
     appointments = Appointment.objects.filter(
         employee=request.user,
@@ -292,8 +298,13 @@ def employee_dashboard(request):
             week_id = request.POST.get('week_id')
             week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
             try:
-                week_inst.work_start = request.POST.get('work_start')
-                week_inst.work_end = request.POST.get('work_end')
+                # CORRECCIÓN: Ahora sí tomamos los valores del formulario
+                new_start = request.POST.get('work_start')
+                new_end = request.POST.get('work_end')
+                
+                if new_start: week_inst.work_start = new_start
+                if new_end: week_inst.work_end = new_end
+                
                 days = request.POST.getlist('days') 
                 week_inst.active_days = ",".join(days)
                 week_inst.save()
@@ -319,7 +330,6 @@ def employee_dashboard(request):
             else:
                 messages.error(request, "Error al actualizar la contraseña. Revisa los requisitos.")
 
-    # Traducción manual para asegurar español
     months_range = [
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
@@ -327,7 +337,6 @@ def employee_dashboard(request):
     ]
     years_range = [hoy.year, hoy.year + 1]
     
-    # Manejo seguro del salón según el rol
     if request.user.role == 'EMPLOYEE':
         salon_context = request.user.workplace
     else:
@@ -343,6 +352,6 @@ def employee_dashboard(request):
         'weeks_info': weeks_info,
         'months_range': months_range,
         'years_range': years_range,
-        'mes_sel': mes_seleccionado, # Para coincidir con el HTML
-        'anio_sel': anio_seleccionado, # Para coincidir con el HTML
+        'mes_sel': mes_seleccionado,
+        'anio_sel': anio_seleccionado,
     })
