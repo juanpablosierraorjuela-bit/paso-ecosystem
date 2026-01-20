@@ -11,8 +11,9 @@ import uuid
 import urllib.parse
 
 # Importes de tus modelos y lógica
-from apps.businesses.models import Salon, Service, EmployeeSchedule, EmployeeWeeklySchedule
+from apps.businesses.models import Salon, Service
 from apps.core.models import User
+# Asegúrate de que logic.py esté en apps/businesses/logic.py
 from apps.businesses.logic import AvailabilityManager
 from apps.marketplace.models import Appointment
 
@@ -30,7 +31,6 @@ def home(request):
         salons = salons.filter(city=city_filter)
 
     for salon in salons:
-        # Verifica si el salón está abierto hoy usando la lógica centralizada
         salon.is_open_now = AvailabilityManager.is_salon_open(salon)
         
     city_list = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
@@ -60,15 +60,18 @@ def booking_wizard(request, salon_id):
         messages.error(request, "Debes seleccionar al menos un servicio.")
         return redirect('salon_detail', pk=salon_id)
     
-    service_ids = service_ids_str.split(',')
+    # Validar IDs y evitar errores si hay comas vacías
+    service_ids = [s for s in service_ids_str.split(',') if s.isdigit()]
+    
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    # Filtramos usuarios que trabajen en este salón (Dueño o empleados añadidos)
+    # Filtramos usuarios que trabajen en este salón
     employees = User.objects.filter(workplace=salon)
     
     total_price = sum(s.price for s in services)
-    deposit_amount = int((total_price * salon.deposit_percentage) / 100)
+    deposit_perc = salon.deposit_percentage if salon.deposit_percentage else 0
+    deposit_amount = int((total_price * deposit_perc) / 100)
     
     context = {
         'salon': salon,
@@ -77,7 +80,6 @@ def booking_wizard(request, salon_id):
         'employees': employees,
         'total_price': total_price,
         'deposit_amount': deposit_amount,
-        # 'today' asegura que el calendario no permita fechas pasadas
         'today': timezone.localtime(timezone.now()).date().isoformat(),
         'is_guest': not request.user.is_authenticated
     }
@@ -86,9 +88,7 @@ def booking_wizard(request, salon_id):
 @require_GET
 def get_available_slots_api(request):
     """
-    API crítica: Se llama vía JS cuando el cliente elige fecha/empleado.
-    Consulta AvailabilityManager que ya debe tener la lógica de prioridad:
-    Semanal > Base.
+    API crítica: Conecta el front con logic.py para ver disponibilidad real.
     """
     try:
         salon_id = request.GET.get('salon_id')
@@ -100,24 +100,17 @@ def get_available_slots_api(request):
             return JsonResponse({'error': 'Faltan parámetros'}, status=400)
 
         salon = get_object_or_404(Salon, pk=salon_id)
-        # Limpiamos IDs vacíos
         valid_service_ids = [s for s in service_ids if s and s.isdigit()]
         services = Service.objects.filter(id__in=valid_service_ids)
         employee = get_object_or_404(User, pk=employee_id)
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Esta función en logic.py DEBE buscar en EmployeeWeeklySchedule primero
+        # Llamamos a logic.py que ahora sí revisa el horario semanal
         slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
         
-        json_slots = []
-        for slot in slots:
-            json_slots.append({
-                'time': slot['time_obj'].strftime('%H:%M'),
-                'label': slot['label'],
-                'available': slot['is_available']
-            })
-            
-        return JsonResponse({'slots': json_slots})
+        # logic.py ya devuelve los diccionarios formateados, los pasamos directo
+        return JsonResponse({'slots': slots})
+        
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -144,18 +137,15 @@ def booking_commit(request):
             services = Service.objects.filter(id__in=valid_service_ids)
             employee = get_object_or_404(User, pk=employee_id)
             
-            # Formatear fecha y hora consciente de zona horaria
             booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
             booking_datetime = timezone.make_aware(booking_datetime)
             
-            # Cálculos financieros
             total_price = sum(s.price for s in services)
-            perc = Decimal(str(salon.deposit_percentage))
-            deposit_val = (Decimal(str(total_price)) * perc) / Decimal('100')
+            deposit_perc = salon.deposit_percentage if salon.deposit_percentage else 0
+            deposit_val = (Decimal(str(total_price)) * Decimal(str(deposit_perc))) / Decimal('100')
 
             client_user = request.user
 
-            # Lógica para usuarios Invitados (Crea cuenta si no existe)
             if not client_user.is_authenticated:
                 if not email:
                     raise ValueError("El email es obligatorio para la reserva.")
@@ -176,9 +166,8 @@ def booking_commit(request):
                         role='CLIENT'
                     )
                     login(request, client_user)
-                    messages.success(request, f"¡Cuenta creada! Tu clave temporal de acceso es: {temp_password}")
+                    messages.success(request, f"¡Cuenta creada! Tu clave temporal es: {temp_password}")
 
-            # Creación de la cita definitiva
             appointment = Appointment.objects.create(
                 client=client_user,
                 salon=salon,
@@ -190,7 +179,7 @@ def booking_commit(request):
             )
             appointment.services.set(services)
             
-            messages.success(request, "Cita agendada correctamente. Por favor, envía tu comprobante de pago.")
+            messages.success(request, "Cita agendada correctamente.")
             return redirect('client_dashboard')
             
         except Exception as e:
@@ -203,35 +192,29 @@ def booking_commit(request):
 def cancel_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
     
-    # Solo el cliente dueño de la cita o el dueño del salón pueden cancelar
     if request.user == appointment.client or request.user.role == 'OWNER':
         appointment.status = 'CANCELLED'
         appointment.save()
-        messages.success(request, "La cita ha sido cancelada correctamente.")
+        messages.success(request, "Cita cancelada correctamente.")
         
         if request.user.role == 'OWNER':
             return redirect('dashboard')
         return redirect('client_dashboard')
     
     messages.error(request, "No tienes permisos para cancelar esta cita.")
-    return redirect('home')
+    return redirect('marketplace_home')
 
 @login_required
 def client_dashboard(request):
-    """
-    Muestra las citas del cliente y los links de pago (WhatsApp).
-    """
     appointments = Appointment.objects.filter(client=request.user).prefetch_related('services', 'salon').order_by('-created_at')
     
     for app in appointments:
         if app.status == 'PENDING':
-            # Tiempo límite para pagar: 60 minutos desde la creación
             expire_at = app.created_at + timedelta(minutes=60)
             app.expire_timestamp = int(expire_at.timestamp() * 1000)
             
-            # Generar link de WhatsApp directo al dueño del salón
-            owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""
-            msg = f"Hola, soy {request.user.first_name}. Envío el comprobante de pago para mi cita del {app.date_time.strftime('%d/%m %H:%M')}."
+            owner_phone = app.salon.owner.phone if app.salon.owner and app.salon.owner.phone else ""
+            msg = f"Hola, soy {request.user.first_name}. Envío el comprobante para mi cita del {app.date_time.strftime('%d/%m %H:%M')}."
             app.wa_link = f"https://wa.me/{owner_phone}?text={urllib.parse.quote(msg)}"
         else:
             app.expire_timestamp = 0
