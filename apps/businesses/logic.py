@@ -58,8 +58,9 @@ class AvailabilityManager:
         current_work_end = None
         current_active_days = []
 
-        if weekly_config and weekly_config.active_days:
-            # PRIORIDAD 1: Ajuste Semanal
+        # AJUSTE: Si existe la semana pero NO tiene días activos, se ignora y pasa al horario base
+        if weekly_config and weekly_config.active_days and len(weekly_config.active_days.strip()) > 0:
+            # PRIORIDAD 1: Ajuste Semanal (Solo si tiene días marcados)
             current_work_start = weekly_config.work_start
             current_work_end = weekly_config.work_end
             current_active_days = weekly_config.active_days.split(',')
@@ -88,7 +89,6 @@ class AvailabilityManager:
         ).exclude(status='CANCELLED').prefetch_related('services')
 
         # 5. Definir el rango de atención real (Intersección Salón vs Empleado)
-        # El servicio empieza cuando ambos estén abiertos y termina cuando el primero cierre
         start_hour = max(salon.opening_time, current_work_start)
         end_hour = min(salon.closing_time, current_work_end)
         
