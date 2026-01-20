@@ -238,7 +238,7 @@ def employee_dashboard(request):
     weeks_info = []
     processed_weeks = []
 
-    # 1. Obtener horario base para usarlo como default
+    # 1. Obtener horario base
     schedule, _ = EmployeeSchedule.objects.get_or_create(
         employee=request.user, 
         defaults={'work_start': time(9,0), 'work_end': time(18,0)}
@@ -252,7 +252,6 @@ def employee_dashboard(request):
                 
                 if iso_week not in processed_weeks:
                     processed_weeks.append(iso_week)
-                    # Al crear una semana, usamos las horas del horario base por defecto
                     week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
                         employee=request.user,
                         year=iso_year, 
@@ -287,21 +286,22 @@ def employee_dashboard(request):
     password_form = SetPasswordForm(user=request.user)
 
     if request.method == 'POST':
+        # Redirección base por si fallan los bloques internos
+        response_redirect = redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+
         if 'update_schedule' in request.POST:
             schedule_form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
             if schedule_form.is_valid():
                 schedule_form.save()
                 messages.success(request, "Horario base actualizado.")
-                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+                return response_redirect
         
         elif 'update_week' in request.POST:
             week_id = request.POST.get('week_id')
             week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
             try:
-                # CORRECCIÓN: Ahora sí tomamos los valores del formulario
                 new_start = request.POST.get('work_start')
                 new_end = request.POST.get('work_end')
-                
                 if new_start: week_inst.work_start = new_start
                 if new_end: week_inst.work_end = new_end
                 
@@ -309,16 +309,16 @@ def employee_dashboard(request):
                 week_inst.active_days = ",".join(days)
                 week_inst.save()
                 messages.success(request, f"Semana {week_inst.week_number} guardada correctamente.")
-            except Exception:
-                messages.error(request, "Error al guardar los horarios de la semana.")
-            return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+            except Exception as e:
+                messages.error(request, f"Error al guardar: {str(e)}")
+            return response_redirect
 
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, "Perfil actualizado.")
-                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+                return response_redirect
 
         elif 'change_password' in request.POST:
             password_form = SetPasswordForm(user=request.user, data=request.POST)
@@ -326,10 +326,12 @@ def employee_dashboard(request):
                 user = password_form.save()
                 update_session_auth_hash(request, user)
                 messages.success(request, "Contraseña actualizada.")
-                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+                return response_redirect
             else:
-                messages.error(request, "Error al actualizar la contraseña. Revisa los requisitos.")
+                messages.error(request, "Error al actualizar la contraseña.")
+                return response_redirect
 
+    # Preparación de datos de contexto
     months_range = [
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
@@ -338,7 +340,7 @@ def employee_dashboard(request):
     years_range = [hoy.year, hoy.year + 1]
     
     if request.user.role == 'EMPLOYEE':
-        salon_context = request.user.workplace
+        salon_context = getattr(request.user, 'workplace', None)
     else:
         salon_context = getattr(request.user, 'owned_salon', None)
 
