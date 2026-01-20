@@ -20,9 +20,52 @@
         
         <div class="lg:col-span-1 space-y-8">
             
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    ⚙️ Horario Base General
+                </h2>
+                <p class="text-[10px] text-gray-400 uppercase font-bold mb-4">Configuración que se aplica por defecto</p>
+                
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="update_base_schedule" value="1">
+                    
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-400 uppercase">Entrada Base</label>
+                                <input type="time" name="work_start" value="{{ schedule.work_start|time:'H:i' }}" class="w-full p-2 border rounded-lg text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-400 uppercase">Salida Base</label>
+                                <input type="time" name="work_end" value="{{ schedule.work_end|time:'H:i' }}" class="w-full p-2 border rounded-lg text-xs">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border rounded-lg">
+                        <label class="text-[9px] font-bold text-gray-400 uppercase block mb-2">Días Laborales Base</label>
+                        <div class="flex flex-wrap gap-1">
+                            {% for i in "0123456" %}
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="days" value="{{ i }}" class="peer hidden" {% if i in schedule.active_days %}checked{% endif %}>
+                                <span class="w-7 h-7 flex items-center justify-center text-[10px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">
+                                    {% if i == '0' %}L{% elif i == '1' %}M{% elif i == '2' %}X{% elif i == '3' %}J{% elif i == '4' %}V{% elif i == '5' %}S{% elif i == '6' %}D{% endif %}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gray-100 text-black py-2 rounded-lg font-bold hover:bg-black hover:text-white transition text-[10px] uppercase">
+                        Actualizar Horario Base
+                    </button>
+                </form>
+            </div>
+
             <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold flex items-center">📅 Mi Horario</h2>
+                    <h2 class="text-xl font-bold flex items-center">📅 Ajustes Semanales</h2>
                 </div>
                 
                 <form method="get" class="flex gap-2 mb-6">
@@ -70,34 +113,14 @@
                                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-1">Días Laborales</label>
                                 <div class="flex flex-wrap gap-1">
                                     {% with d=week.instance.active_days %}
+                                    {% for day_idx in "0123456" %}
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">L</span>
+                                        <input type="checkbox" name="days" value="{{ day_idx }}" class="peer hidden" {% if day_idx in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">
+                                            {% if day_idx == '0' %}L{% elif day_idx == '1' %}M{% elif day_idx == '2' %}X{% elif day_idx == '3' %}J{% elif day_idx == '4' %}V{% elif day_idx == '5' %}S{% elif day_idx == '6' %}D{% endif %}
+                                        </span>
                                     </label>
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">M</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">X</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">J</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">V</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">S</span>
-                                    </label>
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in d %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-red-600 peer-checked:text-white transition">D</span>
-                                    </label>
+                                    {% endfor %}
                                     {% endwith %}
                                 </div>
                             </div>
