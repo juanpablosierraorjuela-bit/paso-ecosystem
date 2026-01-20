@@ -79,18 +79,7 @@ class OwnerRegistrationForm(forms.ModelForm):
                 field.widget.attrs['class'] = base_class
 
 class OwnerUpdateForm(forms.ModelForm):
-    # Campos para cambio de contraseña (usado por dueños y empleados)
-    new_password = forms.CharField(
-        label="Nueva Contraseña", 
-        widget=forms.PasswordInput(attrs={'placeholder': 'Dejar en blanco para no cambiar'}),
-        required=False
-    )
-    confirm_password = forms.CharField(
-        label="Confirmar Nueva Contraseña", 
-        widget=forms.PasswordInput(attrs={'placeholder': 'Repetir nueva contraseña'}),
-        required=False
-    )
-
+    # Se eliminaron los campos de contraseña redundantes que no funcionaban aquí
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'phone']
@@ -101,14 +90,8 @@ class OwnerUpdateForm(forms.ModelForm):
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
     def clean(self):
-        cleaned_data = super().clean()
-        new_password = cleaned_data.get("new_password")
-        confirm_password = cleaned_data.get("confirm_password")
-
-        if new_password or confirm_password:
-            if new_password != confirm_password:
-                self.add_error('confirm_password', "Las nuevas contraseñas no coinciden.")
-        return cleaned_data
+        # Limpiamos el método clean para que solo devuelva los datos básicos sin validar contraseñas
+        return super().clean()
 
 class SalonUpdateForm(forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
@@ -182,7 +165,6 @@ class EmployeeScheduleUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         try:
-            # Intenta obtener el salón para filtrar los días disponibles según el negocio
             employee = self.instance.employee
             salon = getattr(employee, 'workplace', None)
             
