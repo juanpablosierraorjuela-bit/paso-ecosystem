@@ -22,7 +22,7 @@
             
             <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold flex items-center">📅 Calendario</h2>
+                    <h2 class="text-xl font-bold flex items-center">📅 Mi Horario</h2>
                 </div>
                 
                 <form method="get" class="flex gap-2 mb-6">
@@ -69,34 +69,34 @@
                             <div class="p-2 bg-gray-50 rounded-lg">
                                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-1">Días Laborales</label>
                                 <div class="flex flex-wrap gap-1">
-                                    {% with active_days=week.instance.active_days %}
+                                    {% with d=week.instance.active_days %}
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in d %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">L</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in d %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">M</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in d %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">X</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in d %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">J</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in d %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">V</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in d %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">S</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in active_days %}checked{% endif %}>
-                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition text-red-500">D</span>
+                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-red-600 peer-checked:text-white transition">D</span>
                                     </label>
                                     {% endwith %}
                                 </div>
@@ -111,129 +111,73 @@
                 </div>
             </div>
 
-            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 opacity-75 hover:opacity-100 transition">
-                <h2 class="text-sm font-bold mb-4 flex items-center text-gray-500 uppercase tracking-widest">⚙️ Horario Predeterminado</h2>
-                <p class="text-xs text-gray-400 mb-4">Este horario se usará si no configuras una semana específica.</p>
-
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100 space-y-6">
                 <form method="post">
                     {% csrf_token %}
+                    <h2 class="text-lg font-bold mb-4">👤 Mis Datos</h2>
                     <input type="hidden" name="month" value="{{ mes_sel }}">
                     <input type="hidden" name="year" value="{{ anio_sel }}">
-                    
-                    <div class="bg-white border border-gray-200 p-3 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><span class="text-xs text-gray-600 font-bold">Entrada</span>{{ schedule_form.work_start }}</div>
-                            <div><span class="text-xs text-gray-600 font-bold">Salida</span>{{ schedule_form.work_end }}</div>
-                        </div>
+                    <div class="space-y-3 custom-form">
+                        {{ profile_form.as_p }}
+                        <button type="submit" name="update_profile" class="w-full bg-black text-white py-2 rounded-lg font-bold text-sm">Actualizar Perfil</button>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Días Activos Base</label>
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            {% for checkbox in schedule_form.active_days %}
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                {{ checkbox.tag }}
-                                <span class="text-gray-600 text-xs">{{ checkbox.choice_label }}</span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <button type="submit" name="update_schedule" class="w-full bg-white border border-gray-300 text-gray-600 py-2 rounded-lg font-bold text-xs hover:bg-gray-100 transition">
-                        Guardar Base
-                    </button>
                 </form>
-            </div>
 
-            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-4 flex items-center">👤 Mis Datos</h2>
-                
+                <hr>
+
                 <form method="post">
                     {% csrf_token %}
+                    <h2 class="text-lg font-bold mb-4">🔒 Seguridad</h2>
                     <input type="hidden" name="month" value="{{ mes_sel }}">
                     <input type="hidden" name="year" value="{{ anio_sel }}">
-                    <div class="space-y-3 mb-6">
-                        <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
-                        <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
-                        <div><label class="text-xs font-bold text-gray-500">WhatsApp</label>{{ profile_form.phone }}</div>
-                        <div><label class="text-xs font-bold text-gray-500">Usuario</label>{{ profile_form.username }}</div>
+                    <div class="space-y-3 custom-form">
+                        {{ password_form.as_p }}
+                        <button type="submit" name="change_password" class="w-full bg-red-600 text-white py-2 rounded-lg font-bold text-sm">Cambiar Contraseña</button>
                     </div>
-
-                    <button type="submit" name="update_profile" class="w-full bg-white border-2 border-black text-black py-3 rounded-lg font-bold hover:bg-black hover:text-white transition text-sm">
-                        Guardar Perfil
-                    </button>
-                </form>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-4 flex items-center">🔒 Seguridad</h2>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="month" value="{{ mes_sel }}">
-                    <input type="hidden" name="year" value="{{ anio_sel }}">
-                    <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <label class="text-xs font-bold text-gray-500 block mb-2">Cambiar Contraseña</label>
-                        <div class="text-sm">
-                            {{ password_form.as_p }}
-                        </div>
-                    </div>
-
-                    <button type="submit" name="change_password" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition text-sm">
-                        Actualizar Contraseña
-                    </button>
                 </form>
             </div>
         </div>
 
         <div class="lg:col-span-2">
             <div class="bg-white p-6 rounded-xl shadow border border-gray-100 min-h-[400px]">
-                <h2 class="text-xl font-bold mb-6">📅 Mis Citas Confirmadas</h2>
+                <h2 class="text-xl font-bold mb-6">📅 Citas Verificadas</h2>
                 
                 <div class="space-y-4">
                     {% for app in appointments %}
-                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center group hover:border-black transition">
-                        
-                        <div class="flex items-start gap-4 w-full md:w-auto">
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start group hover:border-black transition">
+                        <div class="flex items-start gap-4">
                             <div class="bg-white p-3 rounded-lg border border-gray-100 text-center min-w-[80px]">
                                 <span class="block text-xs font-black text-gray-400 uppercase">{{ app.date_time|date:"D d" }}</span>
                                 <span class="block text-xl font-serif font-bold text-gray-900">{{ app.date_time|date:"H:i" }}</span>
                             </div>
                             
-                            <div class="flex-1">
+                            <div>
                                 <h3 class="font-bold text-gray-900 text-lg">{{ app.client.get_full_name }}</h3>
-                                <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mt-1 mb-2">✓ VERIFICADA</p>
-                                
-                                <div class="bg-white rounded border border-gray-200 p-2 inline-block">
-                                    <p class="text-[10px] text-gray-400 font-bold uppercase flex items-center mb-1">✂️ Servicios:</p>
-                                    <ul class="text-sm font-medium text-gray-800 list-disc list-inside leading-tight">
-                                        {% for service in app.services.all %}
-                                            <li>{{ service.name }}</li>
-                                        {% empty %}
-                                            <li>Servicio General</li>
-                                        {% endfor %}
-                                    </ul>
+                                <p class="text-[10px] font-bold text-green-600 uppercase mt-1">✓ {{ app.get_status_display }}</p>
+                                <div class="mt-2 flex flex-wrap gap-1">
+                                    {% for service in app.services.all %}
+                                        <span class="bg-white border border-gray-200 px-2 py-1 rounded text-[10px] font-bold text-gray-600">{{ service.name }}</span>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-4 md:mt-0 text-left md:text-right w-full md:w-auto pl-0 md:pl-4 border-t md:border-t-0 border-gray-200 pt-4 md:pt-0">
-                            <p class="text-xs text-gray-400 font-bold uppercase">Saldo a Cobrar</p>
+                        <div class="mt-4 md:mt-0 text-right w-full md:w-auto">
+                            <p class="text-xs text-gray-400 font-bold uppercase">Saldo Pendiente</p>
                             <p class="text-xl font-serif font-bold text-black">${{ app.balance_due|floatformat:0|intcomma }}</p>
                             
                             {% if app.client.phone %}
-                            <a href="https://wa.me/57{{ app.client.phone }}?text=Hola%20{{ app.client.first_name }}%2C%20te%20saludamos%20de%20{{ salon.name|urlencode }}%20para%20recordarte%20tu%20cita%20a%20las%20{{ app.date_time|date:'H:i' }}.%20Por%20favor%2C%20te%20pedimos%20puntualidad.%20%C2%A1Te%20esperamos%21" 
-                               target="_blank" 
-                               class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:underline mt-2">
-                                CONTACTAR CLIENTE
+                            <a href="https://wa.me/57{{ app.client.phone }}?text=Hola%20{{ app.client.first_name }},%20te%20escribo%20de%20{{ salon.name }}%20sobre%20tu%20cita." 
+                               target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:underline mt-2">
+                                📱 CONTACTAR CLIENTE
                             </a>
                             {% endif %}
                         </div>
                     </div>
                     {% empty %}
-                    <div class="text-center py-12 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
-                        <div class="text-4xl mb-3">📭</div>
-                        <p class="text-gray-500 font-medium">No tienes citas verificadas.</p>
+                    <div class="text-center py-20 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                        <div class="text-4xl mb-3">📅</div>
+                        <p class="text-gray-500 font-medium">No tienes citas agendadas para este periodo.</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -243,16 +187,28 @@
 </div>
 
 <style>
-    /* Estilos generales para inputs dentro del panel */
-    input[type="text"], input[type="password"], input[type="time"], select {
-        width: 100%; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.875rem;
+    /* Estilos para inputs de Django dentro de los formularios */
+    .custom-form input[type="text"], 
+    .custom-form input[type="password"], 
+    .custom-form input[type="time"], 
+    .custom-form input[type="tel"], 
+    .custom-form select {
+        width: 100%; 
+        padding: 0.6rem; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 0.5rem; 
+        font-size: 0.875rem; 
+        margin-top: 4px;
+        background-color: #f9fafb;
     }
-    input:focus { outline: none; border-color: #000; ring: 1px; ring-color: #000; }
-    ul.errorlist { color: #dc2626; font-size: 0.75rem; list-style: none; margin-bottom: 0.5rem; }
+    .custom-form input:focus { border-color: #000; outline: none; background-color: #fff; }
+    .custom-form p { margin-bottom: 1.25rem; }
+    .custom-form label { font-size: 0.75rem; font-weight: bold; color: #374151; text-transform: uppercase; }
     
-    /* Scrollbar minimalista para el calendario */
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 10px; }
+    
+    /* Error list de Django */
+    .errorlist { color: #dc2626; font-size: 0.75rem; font-weight: bold; margin-bottom: 0.5rem; list-style: none; }
 </style>
 {% endblock %}

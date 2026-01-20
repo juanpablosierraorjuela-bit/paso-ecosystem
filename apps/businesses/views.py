@@ -229,6 +229,7 @@ def employee_dashboard(request):
         return redirect('dashboard')
     
     hoy = timezone.localtime(timezone.now())
+    # Capturamos mes y año del GET o POST para mantener la navegación
     mes_seleccionado = int(request.GET.get('month', request.POST.get('month', hoy.month)))
     anio_seleccionado = int(request.GET.get('year', request.POST.get('year', hoy.year)))
 
@@ -290,12 +291,15 @@ def employee_dashboard(request):
         elif 'update_week' in request.POST:
             week_id = request.POST.get('week_id')
             week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
-            week_inst.work_start = request.POST.get('work_start')
-            week_inst.work_end = request.POST.get('work_end')
-            days = request.POST.getlist('days') 
-            week_inst.active_days = ",".join(days)
-            week_inst.save()
-            messages.success(request, f"Semana {week_inst.week_number} guardada.")
+            try:
+                week_inst.work_start = request.POST.get('work_start')
+                week_inst.work_end = request.POST.get('work_end')
+                days = request.POST.getlist('days') 
+                week_inst.active_days = ",".join(days)
+                week_inst.save()
+                messages.success(request, f"Semana {week_inst.week_number} guardada correctamente.")
+            except Exception:
+                messages.error(request, "Error al guardar los horarios de la semana.")
             return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
         elif 'update_profile' in request.POST:
@@ -312,10 +316,22 @@ def employee_dashboard(request):
                 update_session_auth_hash(request, user)
                 messages.success(request, "Contraseña actualizada.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+            else:
+                messages.error(request, "Error al actualizar la contraseña. Revisa los requisitos.")
 
-    months_range = [(i, calendar.month_name[i].capitalize()) for i in range(1, 13)]
+    # Traducción manual para asegurar español
+    months_range = [
+        (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+        (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+        (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+    ]
     years_range = [hoy.year, hoy.year + 1]
-    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
+    
+    # Manejo seguro del salón según el rol
+    if request.user.role == 'EMPLOYEE':
+        salon_context = request.user.workplace
+    else:
+        salon_context = getattr(request.user, 'owned_salon', None)
 
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
@@ -327,6 +343,6 @@ def employee_dashboard(request):
         'weeks_info': weeks_info,
         'months_range': months_range,
         'years_range': years_range,
-        'mes_sel': mes_seleccionado,
-        'anio_sel': anio_seleccionado,
+        'mes_sel': mes_seleccionado, # Para coincidir con el HTML
+        'anio_sel': anio_seleccionado, # Para coincidir con el HTML
     })
