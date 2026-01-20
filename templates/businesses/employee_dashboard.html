@@ -31,10 +31,13 @@
                         <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ name }}</option>
                         {% endfor %}
                     </select>
+                    
                     <select name="year" class="w-24 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
-                        <option value="{{ anio_sel }}" selected>{{ anio_sel }}</option>
-                        <option value="{{ anio_sel|add:'1' }}">{{ anio_sel|add:'1' }}</option>
+                        {% for y in years_range %}
+                        <option value="{{ y }}" {% if y == anio_sel %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
                     </select>
+                    
                     <button type="submit" class="bg-black text-white px-3 py-2 rounded-lg font-bold text-xs">IR</button>
                 </form>
 
@@ -48,6 +51,8 @@
 
                         <form method="post" class="space-y-3">
                             {% csrf_token %}
+                            <input type="hidden" name="month" value="{{ mes_sel }}">
+                            <input type="hidden" name="year" value="{{ anio_sel }}">
                             <input type="hidden" name="week_id" value="{{ week.instance.id }}">
                             
                             <div class="grid grid-cols-2 gap-2">
@@ -64,34 +69,36 @@
                             <div class="p-2 bg-gray-50 rounded-lg">
                                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-1">Días Laborales</label>
                                 <div class="flex flex-wrap gap-1">
+                                    {% with active_days=week.instance.active_days %}
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">L</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">M</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">X</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">J</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">V</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">S</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in week.instance.active_days %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition text-red-500">D</span>
                                     </label>
+                                    {% endwith %}
                                 </div>
                             </div>
 
@@ -108,12 +115,11 @@
                 <h2 class="text-sm font-bold mb-4 flex items-center text-gray-500 uppercase tracking-widest">⚙️ Horario Predeterminado</h2>
                 <p class="text-xs text-gray-400 mb-4">Este horario se usará si no configuras una semana específica.</p>
 
-                {% if schedule_form.errors %}
-                <div class="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">Hay errores.</div>
-                {% endif %}
-
                 <form method="post">
                     {% csrf_token %}
+                    <input type="hidden" name="month" value="{{ mes_sel }}">
+                    <input type="hidden" name="year" value="{{ anio_sel }}">
+                    
                     <div class="bg-white border border-gray-200 p-3 rounded-lg mb-4">
                         <div class="grid grid-cols-2 gap-2">
                             <div><span class="text-xs text-gray-600 font-bold">Entrada</span>{{ schedule_form.work_start }}</div>
@@ -144,6 +150,8 @@
                 
                 <form method="post">
                     {% csrf_token %}
+                    <input type="hidden" name="month" value="{{ mes_sel }}">
+                    <input type="hidden" name="year" value="{{ anio_sel }}">
                     <div class="space-y-3 mb-6">
                         <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
                         <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
@@ -162,6 +170,8 @@
                 
                 <form method="post">
                     {% csrf_token %}
+                    <input type="hidden" name="month" value="{{ mes_sel }}">
+                    <input type="hidden" name="year" value="{{ anio_sel }}">
                     <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <label class="text-xs font-bold text-gray-500 block mb-2">Cambiar Contraseña</label>
                         <div class="text-sm">

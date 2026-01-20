@@ -238,13 +238,9 @@ def employee_dashboard(request):
     # --- 1. CONFIGURACIÓN DEL CALENDARIO POR SEMANAS ---
     hoy = timezone.localtime(timezone.now())
     
-    # Captura Mes y Año de GET o POST para que el botón "Ir" funcione
-    try:
-        mes_seleccionado = int(request.GET.get('month', request.POST.get('month', hoy.month)))
-        anio_seleccionado = int(request.GET.get('year', request.POST.get('year', hoy.year)))
-    except (ValueError, TypeError):
-        mes_seleccionado = hoy.month
-        anio_seleccionado = hoy.year
+    # Captura Mes y Año: Priorizamos GET para que el filtro "IR" funcione siempre
+    mes_seleccionado = int(request.GET.get('month', request.POST.get('month', hoy.month)))
+    anio_seleccionado = int(request.GET.get('year', request.POST.get('year', hoy.year)))
 
     # Generamos los datos de las semanas para ese mes
     cal = calendar.Calendar(firstweekday=0) # 0 = Lunes
@@ -265,7 +261,7 @@ def employee_dashboard(request):
                     # Obtenemos o creamos la configuración específica para esta semana
                     week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
                         employee=request.user,
-                        year=iso_year, # Usamos el año ISO para consistencia
+                        year=iso_year, 
                         week_number=iso_week
                     )
                     
@@ -317,8 +313,6 @@ def employee_dashboard(request):
             
             week_inst.work_start = request.POST.get('work_start')
             week_inst.work_end = request.POST.get('work_end')
-            week_inst.lunch_start = request.POST.get('lunch_start')
-            week_inst.lunch_end = request.POST.get('lunch_end')
             
             days = request.POST.getlist('days') 
             week_inst.active_days = ",".join(days)
@@ -346,13 +340,13 @@ def employee_dashboard(request):
             else:
                 messages.error(request, "Error al cambiar la contraseña.")
 
-    # Datos para el selector de meses
+    # Datos para el selector de meses y años
     months_range = [
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
         (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
     ]
-    years_range = [hoy.year, hoy.year + 1]
+    years_range = [hoy.year, hoy.year + 1] # Solo mostramos el año actual y el siguiente
     
     salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
 
