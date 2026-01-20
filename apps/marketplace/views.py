@@ -57,8 +57,10 @@ def booking_wizard(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    # Obtenemos los empleados del salón
-    employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
+    # --- CORRECCIÓN AQUÍ ---
+    # Eliminamos el filtro role='EMPLOYEE' para que si el Dueño tiene asignado este 
+    # salon en su campo 'workplace', también aparezca en la lista para agendar.
+    employees = User.objects.filter(workplace=salon)
     
     total_price = sum(s.price for s in services)
     deposit_amount = int((total_price * salon.deposit_percentage) / 100)
@@ -207,6 +209,6 @@ def client_dashboard(request):
             app.expire_timestamp = 0
             app.wa_link = "#"
 
-    return render(request, 'client_dashboard.html', {
+    return render(request, 'marketplace/client_dashboard.html', {
         'appointments': appointments,
     })
