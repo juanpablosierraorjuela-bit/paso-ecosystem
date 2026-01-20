@@ -29,6 +29,14 @@
                     <div>
                         <h3 class="text-lg font-bold">{{ employee.first_name }} {{ employee.last_name }}</h3>
                         <p class="text-xs text-gray-500">Usuario: {{ employee.username }}</p>
+                        
+                        {% if employee.phone %}
+                        <a href="https://wa.me/{{ employee.phone|cut:' ' }}" target="_blank" class="flex items-center text-xs text-green-600 font-bold mt-1 hover:underline">
+                            <span class="mr-1">📞</span> {{ employee.phone }}
+                        </a>
+                        {% else %}
+                        <p class="text-xs text-gray-400 mt-1 italic">Sin teléfono registrado</p>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="mt-auto">
@@ -39,7 +47,7 @@
             </div>
             {% empty %}
             <div class="col-span-2 text-center py-10 bg-gray-50 rounded-xl">
-                <p class="text-gray-400">Aún no tienes empleados en tu equipo.</p>
+                <p class="text-gray-500">Aún no has registrado empleados en tu equipo.</p>
             </div>
             {% endfor %}
         </div>
