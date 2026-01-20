@@ -27,103 +27,60 @@ def marketplace_home(request):
         salons = salons.filter(
             Q(name__icontains=query) | 
             Q(services__name__icontains=query)
-        ).distinct() # distinct() es vital para que no salga el mismo salón repetido
+        ).distinct() 
 
     if city:
         salons = salons.filter(city=city)
 
-    # Obtenemos las ciudades únicas para el filtro del select
     cities = Salon.objects.values_list('city', flat=True).distinct()
 
-    return render(request, 'index.html', {
+    return render(request, 'marketplace/home.html', {
         'salons': salons,
         'cities': cities,
-        'current_query': query,
-        'current_city': city
+        'query': query,
+        'selected_city': city
     })
 
 def salon_detail(request, pk):
     salon = get_object_or_404(Salon, pk=pk)
     services = salon.services.all()
+    employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
     
-    # Lógica simple para saber si está abierto ahora
-    now = timezone.localtime(timezone.now()).time()
-    is_open = False
-    if salon.opening_time and salon.closing_time:
-        is_open = salon.opening_time <= now <= salon.closing_time
-
-    return render(request, 'salon_detail.html', {
+    return render(request, 'marketplace/salon_detail.html', {
         'salon': salon,
         'services': services,
-        'is_open': is_open
+        'employees': employees
     })
 
-# --- VISTAS DE GESTIÓN (DASHBOARD) ---
+# --- DASHBOARD DEL DUEÑO ---
 
 @login_required
 def owner_dashboard(request):
     if request.user.role != 'OWNER':
-        if request.user.role == 'EMPLOYEE':
-            return redirect('employee_dashboard')
-        return redirect('home')
-    
-    try:
-        salon = request.user.owned_salon
-    except:
-        return redirect('register_owner')
-
-    # Lógica de expiración de prueba (24h)
-    elapsed_time = timezone.now() - request.user.registration_timestamp
-    time_limit = timedelta(hours=24)
-    remaining_time = time_limit - elapsed_time
-    total_seconds_left = max(0, int(remaining_time.total_seconds()))
-
-    # Configuración de soporte de WhatsApp
-    admin_settings = GlobalSettings.objects.first()
-    raw_phone = admin_settings.whatsapp_support if (admin_settings and admin_settings.whatsapp_support) else '573000000000'
-    clean_phone = re.sub(r'\D', '', str(raw_phone))
-    if not clean_phone.startswith('57'): clean_phone = '57' + clean_phone
+        return redirect('marketplace_home')
         
-    wa_message = f"Hola, soy el dueño de {salon.name} (ID {request.user.id}). Adjunto mi comprobante de pago para renovar mi membresía."
-    wa_link = f"https://wa.me/{clean_phone}?text={wa_message}"
+    salon = getattr(request.user, 'owned_salon', None)
+    if not salon:
+        return render(request, 'businesses/no_salon.html')
 
-    # Obtener todas las citas y calcular saldo a cobrar
-    appointments = Appointment.objects.filter(salon=salon).order_by('-date_time')
-    for app in appointments:
-        app.balance_due = app.total_price - app.deposit_amount
+    # Citas del día para este salón
+    today = timezone.localtime(timezone.now()).date()
+    appointments = Appointment.objects.filter(
+        services__salon=salon,
+        date_time__date=today
+    ).distinct().order_by('date_time')
 
-    context = {
+    return render(request, 'businesses/owner_dashboard.html', {
         'salon': salon,
         'appointments': appointments,
-        'seconds_left': total_seconds_left,
-        'wa_link': wa_link,
-        'is_trial': not request.user.is_verified_payment,
-        'service_count': salon.services.count(),
-        'employee_count': salon.employees.count(),
-    }
-    return render(request, 'businesses/dashboard.html', context)
-
-@login_required
-def verify_appointment(request, appointment_id):
-    try:
-        salon = request.user.owned_salon
-        appointment = get_object_or_404(Appointment, id=appointment_id, salon=salon)
-        appointment.status = 'VERIFIED'
-        appointment.save()
-        messages.success(request, f"Cita de {appointment.client.first_name} verificada. El empleado ha sido notificado.")
-    except Exception as e:
-        messages.error(request, "No se pudo verificar la cita.")
-    return redirect('dashboard')
+        'today': today
+    })
 
 @login_required
 def services_list(request):
-    if request.user.role != 'OWNER': return redirect('home')
-    try:
-        salon = request.user.owned_salon
-        services = salon.services.all()
-    except:
-        return redirect('dashboard')
-
+    salon = request.user.owned_salon
+    services = salon.services.all()
+    
     if request.method == 'POST':
         form = ServiceForm(request.POST)
         if form.is_valid():
@@ -134,11 +91,14 @@ def services_list(request):
             return redirect('services_list')
     else:
         form = ServiceForm()
-    return render(request, 'businesses/services.html', {'services': services, 'form': form})
+        
+    return render(request, 'businesses/services_list.html', {
+        'services': services,
+        'form': form
+    })
 
 @login_required
 def service_edit(request, pk):
-    if request.user.role != 'OWNER': return redirect('home')
     service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
     if request.method == 'POST':
         form = ServiceForm(request.POST, instance=service)
@@ -148,11 +108,10 @@ def service_edit(request, pk):
             return redirect('services_list')
     else:
         form = ServiceForm(instance=service)
-    return render(request, 'businesses/service_edit.html', {'form': form, 'service': service})
+    return render(request, 'businesses/service_form.html', {'form': form, 'service': service})
 
 @login_required
 def service_delete(request, pk):
-    if request.user.role != 'OWNER': return redirect('home')
     service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
     service.delete()
     messages.success(request, "Servicio eliminado.")
@@ -160,145 +119,96 @@ def service_delete(request, pk):
 
 @login_required
 def employees_list(request):
-    if request.user.role != 'OWNER': return redirect('home')
     salon = request.user.owned_salon
-    employees = salon.employees.all()
+    employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
+    
     if request.method == 'POST':
         form = EmployeeCreationForm(request.POST)
         if form.is_valid():
-            User.objects.create_user(
+            user = User.objects.create_user(
                 username=form.cleaned_data['username'],
                 password=form.cleaned_data['password'],
                 first_name=form.cleaned_data['first_name'],
                 last_name=form.cleaned_data['last_name'],
-                phone=form.cleaned_data['phone'],
                 role='EMPLOYEE',
                 workplace=salon,
-                is_verified_payment=True
+                phone=form.cleaned_data.get('phone', '')
             )
-            messages.success(request, "Empleado creado.")
+            # Crear horario base por defecto
+            EmployeeSchedule.objects.create(employee=user)
+            messages.success(request, f"Empleado {user.first_name} creado.")
             return redirect('employees_list')
     else:
         form = EmployeeCreationForm()
-    return render(request, 'businesses/employees.html', {'employees': employees, 'form': form})
+        
+    return render(request, 'businesses/employees_list.html', {
+        'employees': employees,
+        'form': form
+    })
 
 @login_required
 def employee_delete(request, pk):
-    if request.user.role != 'OWNER': return redirect('home')
-    employee = get_object_or_404(User, pk=pk, workplace=request.user.owned_salon)
+    employee = get_object_or_404(User, pk=pk, workplace=request.user.owned_salon, role='EMPLOYEE')
     employee.delete()
     messages.success(request, "Empleado eliminado.")
     return redirect('employees_list')
 
 @login_required
 def settings_view(request):
-    if request.user.role != 'OWNER': return redirect('home')
     salon = request.user.owned_salon
-    user = request.user
-
-    owner_form = OwnerUpdateForm(instance=user)
-    salon_form = SalonUpdateForm(instance=salon)
-    schedule_form = SalonScheduleForm(instance=salon)
-
     if request.method == 'POST':
-        if 'update_profile' in request.POST:
-            owner_form = OwnerUpdateForm(request.POST, instance=user)
-            salon_form = SalonUpdateForm(request.POST, instance=salon)
-            if owner_form.is_valid() and salon_form.is_valid():
-                user_obj = owner_form.save(commit=False)
-                
-                # CORRECCIÓN DE CONTRASEÑA PARA DUEÑO
-                new_pw = owner_form.cleaned_data.get('new_password')
-                if new_pw:
-                    user_obj.set_password(new_pw)
-                
-                user_obj.save()
-                salon_form.save()
-                messages.success(request, "Datos actualizados.")
-                return redirect('settings_view')
-        elif 'update_schedule' in request.POST:
-            schedule_form = SalonScheduleForm(request.POST, instance=salon)
-            if schedule_form.is_valid():
-                schedule_form.save()
-                messages.success(request, "Horarios actualizados.")
-                return redirect('settings_view')
+        form = SalonUpdateForm(request.POST, instance=salon)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Configuración actualizada.")
+            return redirect('settings_view')
+    else:
+        form = SalonUpdateForm(instance=salon)
+    return render(request, 'businesses/settings.html', {'form': form, 'salon': salon})
 
-    return render(request, 'businesses/settings.html', {
-        'owner_form': owner_form, 
-        'salon_form': salon_form,
-        'schedule_form': schedule_form,
-        'salon': salon
-    })
+@login_required
+def verify_appointment(request, appointment_id):
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+    # Seguridad: Solo el dueño del salón o el empleado asignado pueden verificar
+    if request.user.role == 'OWNER' or request.user == appointment.employee:
+        appointment.is_verified = True
+        appointment.save()
+        messages.success(request, "Cita verificada correctamente.")
+    
+    return redirect(request.META.get('HTTP_REFERER', 'marketplace_home'))
+
+# --- DASHBOARD DEL EMPLEADO (MI AGENDA) ---
 
 @login_required
 def employee_dashboard(request):
-    if request.user.role not in ['EMPLOYEE', 'OWNER']: 
-        return redirect('dashboard')
-    
-    # --- 1. CONFIGURACIÓN DEL CALENDARIO POR SEMANAS ---
+    if request.user.role != 'EMPLOYEE':
+        return redirect('marketplace_home')
+
     hoy = timezone.localtime(timezone.now())
     
-    # Captura Mes y Año: Priorizamos GET para que el filtro "IR" funcione siempre
-    mes_seleccionado = int(request.GET.get('month', request.POST.get('month', hoy.month)))
-    anio_seleccionado = int(request.GET.get('year', request.POST.get('year', hoy.year)))
+    # --- CORRECCIÓN ERROR 500 (Procesamiento robusto de parámetros) ---
+    try:
+        raw_month = str(request.GET.get('month', request.POST.get('month', hoy.month)))
+        raw_year = str(request.GET.get('year', request.POST.get('year', hoy.year)))
+        
+        # Limpiamos puntos y comas (ej: "2.026" -> "2026")
+        mes_seleccionado = int(raw_month.split('.')[0])
+        anio_seleccionado = int(raw_year.replace('.', '').replace(',', ''))
+    except (ValueError, TypeError, AttributeError):
+        mes_seleccionado = hoy.month
+        anio_seleccionado = hoy.year
 
-    # Generamos los datos de las semanas para ese mes
-    cal = calendar.Calendar(firstweekday=0) # 0 = Lunes
-    month_days = cal.monthdayscalendar(anio_seleccionado, mes_seleccionado)
+    # Horario Base
+    schedule, created = EmployeeSchedule.objects.get_or_create(employee=request.user)
     
-    weeks_info = []
-    processed_weeks = [] # Para evitar duplicados de semana ISO
-
-    for week in month_days:
-        for day in week:
-            if day != 0:
-                dt = datetime(anio_seleccionado, mes_seleccionado, day)
-                iso_year, iso_week, _ = dt.isocalendar()
-                
-                if iso_week not in processed_weeks:
-                    processed_weeks.append(iso_week)
-                    
-                    # Obtenemos o creamos la configuración específica para esta semana
-                    week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
-                        employee=request.user,
-                        year=iso_year, 
-                        week_number=iso_week
-                    )
-                    
-                    # Calculamos inicio y fin de la semana
-                    start_of_week = dt - timedelta(days=dt.weekday())
-                    end_of_week = start_of_week + timedelta(days=6)
-                    
-                    weeks_info.append({
-                        'number': iso_week,
-                        'instance': week_schedule,
-                        'label': f"Semana {iso_week}",
-                        'range': f"{start_of_week.strftime('%d %b')} - {end_of_week.strftime('%d %b')}"
-                    })
-                break
-    
-    # --- 2. CARGA DE DATOS ESTÁNDAR ---
-    schedule, _ = EmployeeSchedule.objects.get_or_create(
-        employee=request.user, 
-        defaults={'work_start': time(9,0), 'work_end': time(18,0)}
-    )
-    
-    appointments = Appointment.objects.filter(
-        employee=request.user,
-        status='VERIFIED'
-    ).order_by('date_time')
-    
-    for app in appointments:
-        app.balance_due = app.total_price - app.deposit_amount
-
-    # Inicialización de formularios
+    # Formularios
     schedule_form = EmployeeScheduleUpdateForm(instance=schedule)
-    profile_form = OwnerUpdateForm(instance=request.user)
+    from apps.core.forms import UserProfileForm
+    profile_form = UserProfileForm(instance=request.user)
     password_form = SetPasswordForm(user=request.user)
 
-    # --- 3. PROCESAMIENTO DE POST ---
     if request.method == 'POST':
-        # Actualizar Horario Base
+        # Guardar Horario Base
         if 'update_schedule' in request.POST:
             schedule_form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
             if schedule_form.is_valid():
@@ -306,24 +216,30 @@ def employee_dashboard(request):
                 messages.success(request, "Horario base actualizado.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
         
-        # Actualizar una Semana Específica
-        elif 'update_week' in request.POST:
-            week_id = request.POST.get('week_id')
-            week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
+        # Guardar Configuración Semanal Específica
+        elif 'update_weekly' in request.POST:
+            iso_year = int(request.POST.get('year_val'))
+            iso_week = int(request.POST.get('week_val'))
+            
+            week_inst, _ = EmployeeWeeklySchedule.objects.get_or_create(
+                employee=request.user, 
+                year=iso_year, 
+                week_number=iso_week
+            )
             
             week_inst.work_start = request.POST.get('work_start')
             week_inst.work_end = request.POST.get('work_end')
-            
-            days = request.POST.getlist('days') 
-            week_inst.active_days = ",".join(days)
+            week_inst.lunch_start = request.POST.get('lunch_start')
+            week_inst.lunch_end = request.POST.get('lunch_end')
+            week_inst.is_active = request.POST.get('is_active') == 'on'
             week_inst.save()
             
-            messages.success(request, f"Horario de la semana {week_inst.week_number} guardado.")
+            messages.success(request, f"Semana {iso_week} actualizada.")
             return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
-        # Actualizar Perfil
+        # Guardar Perfil
         elif 'update_profile' in request.POST:
-            profile_form = OwnerUpdateForm(request.POST, instance=request.user)
+            profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, "Perfil actualizado.")
@@ -340,26 +256,55 @@ def employee_dashboard(request):
             else:
                 messages.error(request, "Error al cambiar la contraseña.")
 
-    # Datos para el selector de meses y años
+    # Lógica de Calendario
+    cal = calendar.Calendar(firstweekday=0)
+    month_days = cal.monthdatescalendar(anio_seleccionado, mes_seleccionado)
+    
+    weeks_data = []
+    for week in month_days:
+        first_day = week[0]
+        iso_year, iso_week, _ = first_day.isocalendar()
+        
+        # Buscar si hay horario específico para esta semana
+        specific_week = EmployeeWeeklySchedule.objects.filter(
+            employee=request.user, 
+            year=iso_year, 
+            week_number=iso_week
+        ).first()
+        
+        weeks_data.append({
+            'iso_week': iso_week,
+            'iso_year': iso_year,
+            'start': first_day,
+            'end': week[-1],
+            'instance': specific_week if specific_week else schedule
+        })
+
+    # Citas Verificadas
+    verified_appointments = Appointment.objects.filter(
+        employee=request.user,
+        is_verified=True
+    ).order_by('-date_time')[:10]
+
     months_range = [
         (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
         (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
         (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
     ]
-    years_range = [hoy.year, hoy.year + 1] # Solo mostramos el año actual y el siguiente
+    years_range = [hoy.year, hoy.year + 1]
     
-    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else request.user.owned_salon
+    salon_context = request.user.workplace if request.user.role == 'EMPLOYEE' else getattr(request.user, 'owned_salon', None)
 
     return render(request, 'businesses/employee_dashboard.html', {
         'schedule_form': schedule_form,
         'profile_form': profile_form,
         'password_form': password_form,
         'schedule': schedule,
-        'salon': salon_context,
-        'appointments': appointments,
-        'weeks_info': weeks_info,
-        'months_range': months_range,
-        'years_range': years_range,
+        'weeks_data': weeks_data,
+        'verified_appointments': verified_appointments,
         'mes_sel': mes_seleccionado,
         'anio_sel': anio_seleccionado,
+        'months_range': months_range,
+        'years_range': years_range,
+        'salon': salon_context
     })

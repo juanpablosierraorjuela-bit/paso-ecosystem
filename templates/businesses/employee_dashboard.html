@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load l10n %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
@@ -28,13 +29,13 @@
                 <form method="get" class="flex gap-2 mb-6">
                     <select name="month" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
                         {% for num, name in months_range %}
-                        <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ name }}</option>
+                        <option value="{{ num|unlocalize }}" {% if num == mes_sel %}selected{% endif %}>{{ name }}</option>
                         {% endfor %}
                     </select>
                     
                     <select name="year" class="w-24 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
                         {% for y in years_range %}
-                        <option value="{{ y }}" {% if y == anio_sel %}selected{% endif %}>{{ y }}</option>
+                        <option value="{{ y|unlocalize }}" {% if y == anio_sel %}selected{% endif %}>{{ y }}</option>
                         {% endfor %}
                     </select>
                     
@@ -42,18 +43,19 @@
                 </form>
 
                 <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {% for week in weeks_info %}
+                    {% for week in weeks_data %}
                     <div class="bg-white p-4 rounded-xl shadow border border-gray-200 hover:border-black transition">
                         <div class="flex justify-between items-center mb-3">
-                            <span class="bg-gray-100 text-black text-[10px] font-black px-2 py-1 rounded">{{ week.label }}</span>
-                            <span class="text-[10px] font-bold text-gray-400">{{ week.range }}</span>
+                            <span class="bg-gray-100 text-black text-[10px] font-black px-2 py-1 rounded">SEMANA {{ week.iso_week }}</span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ week.start|date:"d M" }} - {{ week.end|date:"d M" }}</span>
                         </div>
 
                         <form method="post" class="space-y-3">
                             {% csrf_token %}
-                            <input type="hidden" name="month" value="{{ mes_sel }}">
-                            <input type="hidden" name="year" value="{{ anio_sel }}">
-                            <input type="hidden" name="week_id" value="{{ week.instance.id }}">
+                            <input type="hidden" name="month" value="{{ mes_sel|unlocalize }}">
+                            <input type="hidden" name="year" value="{{ anio_sel|unlocalize }}">
+                            <input type="hidden" name="year_val" value="{{ week.iso_year|unlocalize }}">
+                            <input type="hidden" name="week_val" value="{{ week.iso_week|unlocalize }}">
                             
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
@@ -102,7 +104,7 @@
                                 </div>
                             </div>
 
-                            <button type="submit" name="update_week" class="w-full bg-black text-white py-2 rounded-lg font-bold text-[10px] hover:bg-gray-800 uppercase tracking-widest transition">
+                            <button type="submit" name="update_weekly" class="w-full bg-black text-white py-2 rounded-lg font-bold text-[10px] hover:bg-gray-800 uppercase tracking-widest transition">
                                 Guardar Semana
                             </button>
                         </form>
@@ -117,8 +119,8 @@
 
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="month" value="{{ mes_sel }}">
-                    <input type="hidden" name="year" value="{{ anio_sel }}">
+                    <input type="hidden" name="month" value="{{ mes_sel|unlocalize }}">
+                    <input type="hidden" name="year" value="{{ anio_sel|unlocalize }}">
                     
                     <div class="bg-white border border-gray-200 p-3 rounded-lg mb-4">
                         <div class="grid grid-cols-2 gap-2">
@@ -150,8 +152,8 @@
                 
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="month" value="{{ mes_sel }}">
-                    <input type="hidden" name="year" value="{{ anio_sel }}">
+                    <input type="hidden" name="month" value="{{ mes_sel|unlocalize }}">
+                    <input type="hidden" name="year" value="{{ anio_sel|unlocalize }}">
                     <div class="space-y-3 mb-6">
                         <div><label class="text-xs font-bold text-gray-500">Nombre</label>{{ profile_form.first_name }}</div>
                         <div><label class="text-xs font-bold text-gray-500">Apellido</label>{{ profile_form.last_name }}</div>
@@ -170,8 +172,8 @@
                 
                 <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="month" value="{{ mes_sel }}">
-                    <input type="hidden" name="year" value="{{ anio_sel }}">
+                    <input type="hidden" name="month" value="{{ mes_sel|unlocalize }}">
+                    <input type="hidden" name="year" value="{{ anio_sel|unlocalize }}">
                     <div class="space-y-3 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100">
                         <label class="text-xs font-bold text-gray-500 block mb-2">Cambiar Contraseña</label>
                         <div class="text-sm">
@@ -191,7 +193,7 @@
                 <h2 class="text-xl font-bold mb-6">📅 Mis Citas Confirmadas</h2>
                 
                 <div class="space-y-4">
-                    {% for app in appointments %}
+                    {% for app in verified_appointments %}
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center group hover:border-black transition">
                         
                         <div class="flex items-start gap-4 w-full md:w-auto">
