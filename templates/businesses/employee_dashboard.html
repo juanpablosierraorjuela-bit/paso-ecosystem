@@ -96,32 +96,31 @@
                             {% csrf_token %}
                             <input type="hidden" name="month" value="{{ mes_seleccionado }}">
                             <input type="hidden" name="year" value="{{ anio_seleccionado }}">
-                            <input type="hidden" name="week_id" value="{{ week.instance.id }}">
+                            <input type="hidden" name="week_number" value="{{ week.week_number }}">
                             
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="text-[9px] font-bold text-gray-400 uppercase">Entrada</label>
-                                    <input type="time" name="work_start" value="{{ week.instance.work_start|time:'H:i' }}" class="text-xs p-1.5 border border-gray-200 rounded w-full outline-none focus:border-black">
+                                    <input type="time" name="work_start" value="{{ week.instance.work_start|time:'H:i'|default:'09:00' }}" class="text-xs p-1.5 border border-gray-200 rounded w-full outline-none focus:border-black">
                                 </div>
                                 <div>
                                     <label class="text-[9px] font-bold text-gray-400 uppercase">Salida</label>
-                                    <input type="time" name="work_end" value="{{ week.instance.work_end|time:'H:i' }}" class="text-xs p-1.5 border border-gray-200 rounded w-full outline-none focus:border-black">
+                                    <input type="time" name="work_end" value="{{ week.instance.work_end|time:'H:i'|default:'18:00' }}" class="text-xs p-1.5 border border-gray-200 rounded w-full outline-none focus:border-black">
                                 </div>
                             </div>
                             
                             <div class="p-2 bg-gray-50 rounded-lg border border-gray-100">
                                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-1.5">Días Laborales</label>
                                 <div class="flex flex-wrap gap-1">
-                                    {% with d=week.instance.active_days %}
                                     {% for day_idx in "0123456" %}
                                     <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="days" value="{{ day_idx }}" class="peer hidden" {% if day_idx in d %}checked{% endif %}>
+                                        <input type="checkbox" name="days" value="{{ day_idx }}" class="peer hidden" 
+                                               {% if week.instance and day_idx in week.instance.active_days %}checked{% elif not week.instance and day_idx in schedule.active_days %}checked{% endif %}>
                                         <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition-all">
                                             {% if day_idx == '0' %}L{% elif day_idx == '1' %}M{% elif day_idx == '2' %}X{% elif day_idx == '3' %}J{% elif day_idx == '4' %}V{% elif day_idx == '5' %}S{% elif day_idx == '6' %}D{% endif %}
                                         </span>
                                     </label>
                                     {% endfor %}
-                                    {% endwith %}
                                 </div>
                             </div>
 
