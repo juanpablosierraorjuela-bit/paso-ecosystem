@@ -69,6 +69,7 @@
                     </a>
                 </nav>
 
+                {% if user.workplace %}
                 <div class="mt-8 pt-6 border-t border-gray-100">
                     <h3 class="font-bold text-gray-400 text-[10px] uppercase tracking-widest mb-4">Mi Perfil Personal</h3>
                     
@@ -80,6 +81,8 @@
                         <span class="text-[10px] opacity-70 font-normal">Configura tu disponibilidad aquí</span>
                     </a>
                 </div>
+                {% endif %}
+                
             </div>
         </div>
 

@@ -57,8 +57,8 @@ def booking_wizard(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    # Obtenemos los empleados del salón
-    employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
+    # CORRECCIÓN: Filtramos por workplace. Esto incluye al Dueño si tiene el salón asignado.
+    employees = User.objects.filter(workplace=salon)
     
     total_price = sum(s.price for s in services)
     deposit_amount = int((total_price * salon.deposit_percentage) / 100)
@@ -167,9 +167,9 @@ def booking_commit(request):
             
         except Exception as e:
             messages.error(request, f"Hubo un error al procesar tu reserva: {str(e)}")
-            return redirect('home')
+            return redirect('marketplace_home')
             
-    return redirect('home')
+    return redirect('marketplace_home')
 
 @login_required
 def cancel_appointment(request, pk):
@@ -187,7 +187,7 @@ def cancel_appointment(request, pk):
         return redirect('client_dashboard')
     else:
         messages.error(request, "No tienes permisos para realizar esta acción.")
-        return redirect('home')
+        return redirect('marketplace_home')
 
 @login_required
 def client_dashboard(request):
@@ -207,6 +207,6 @@ def client_dashboard(request):
             app.expire_timestamp = 0
             app.wa_link = "#"
 
-    return render(request, 'client_dashboard.html', {
+    return render(request, 'marketplace/client_dashboard.html', {
         'appointments': appointments,
     })
