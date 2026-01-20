@@ -57,7 +57,10 @@ def booking_wizard(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    # CORRECCIÓN: Filtramos por workplace. Esto incluye al Dueño si tiene el salón asignado.
+    # --- CORRECCIÓN BASADA EN TU BACKUP ---
+    # Antes usabas salon.employees.all(). 
+    # Al hacer filter(workplace=salon), obtenemos el mismo resultado:
+    # Trae a CUALQUIER usuario (Dueño o Empleado) que tenga este salón asignado.
     employees = User.objects.filter(workplace=salon)
     
     total_price = sum(s.price for s in services)
@@ -79,7 +82,7 @@ def booking_wizard(request, salon_id):
 def get_available_slots_api(request):
     """
     API que consulta la disponibilidad. 
-    Gracias a la actualización en logic.py, ahora prioriza horarios semanales.
+    Prioriza horarios semanales (EmployeeWeeklySchedule).
     """
     try:
         salon_id = request.GET.get('salon_id')
@@ -92,7 +95,7 @@ def get_available_slots_api(request):
         employee = get_object_or_404(User, pk=employee_id)
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Esta llamada ahora es inteligente y revisa EmployeeWeeklySchedule
+        # Esta llamada es inteligente y revisa EmployeeWeeklySchedule
         slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
         
         json_slots = []
@@ -187,7 +190,7 @@ def cancel_appointment(request, pk):
         return redirect('client_dashboard')
     else:
         messages.error(request, "No tienes permisos para realizar esta acción.")
-        return redirect('marketplace_home')
+        return redirect('home')
 
 @login_required
 def client_dashboard(request):
