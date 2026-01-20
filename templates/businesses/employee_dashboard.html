@@ -4,229 +4,209 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     
-    <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-6">
-        <div class="mb-4 md:mb-0">
-            <h1 class="text-3xl font-serif font-bold text-gray-900">Panel de Control</h1>
-            <p class="text-gray-500 italic">Bienvenido, {{ user.first_name }} (Administradora)</p>
+    <div class="flex justify-between items-center mb-8 border-b pb-4">
+        <div>
+            <h1 class="text-3xl font-serif font-bold text-gray-900">Hola, {{ user.first_name }}</h1>
+            <p class="text-gray-500">Talento en <strong>{{ salon.name }}</strong></p>
         </div>
-        
-        {% if is_trial %}
-        <div class="mt-4 md:mt-0 bg-amber-50 border border-amber-200 p-1 rounded-2xl flex items-center shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
-            <div class="absolute inset-y-0 -left-full w-1/2 bg-gradient-to-r from-transparent via-white/50 to-transparent group-hover:animate-[shimmer_2s_infinite] pointer-events-none"></div>
-            
-            <div class="flex items-center p-3 z-10">
-                <div class="mr-4 bg-amber-500/10 p-2 rounded-xl text-amber-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                
-                <div class="pr-6">
-                    <p class="text-[10px] font-black text-amber-800 uppercase tracking-[0.2em] mb-1">Membresía Premium</p>
-                    <p class="text-sm font-bold text-amber-900 leading-tight">
-                        Expira en: <span class="font-mono text-amber-600" id="countdown">--:--:--</span>
-                    </p>
-                    <p class="text-[11px] text-amber-700 mt-0.5">Valor mensual: <span class="font-bold text-gray-900">$50.000 COP</span></p>
-                </div>
-
-                <a href="{{ wa_link }}" 
-                   target="_blank" 
-                   class="bg-amber-600 text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-black transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap">
-                    <span>RENOVAR ACCESO</span>
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.417-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.305 1.652zm6.599-3.835c1.516.903 3.003 1.387 4.793 1.388 5.239 0 9.502-4.263 9.505-9.503.002-2.538-.987-4.926-2.785-6.723-1.797-1.798-4.184-2.788-6.733-2.789-5.245 0-9.509 4.264-9.511 9.505-.001 1.903.499 3.411 1.442 4.887l-1.05 3.834 3.939-1.033z"/></svg>
-                </a>
-            </div>
+        <div class="text-right">
+            <span class="bg-black text-white text-xs font-bold px-3 py-1 rounded-full">
+                PANEL EMPLEADO
+            </span>
         </div>
-        {% else %}
-        <div class="mt-4 md:mt-0 bg-green-50 border border-green-100 px-5 py-3 rounded-2xl flex items-center shadow-sm">
-            <div class="bg-green-100 p-2 rounded-full mr-3">
-                <span class="text-green-600 text-lg">✓</span>
-            </div>
-            <div>
-                <p class="text-xs font-black text-green-800 uppercase tracking-widest">Suscripción Activa</p>
-                <p class="text-xs text-green-600">Tu cuenta está verificada</p>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div class="lg:col-span-1 space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 class="font-bold text-gray-400 text-[10px] uppercase tracking-widest mb-4">Administración Global</h3>
-                <nav class="space-y-2">
-                    <a href="{% url 'services_list' %}" class="flex justify-between items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl group transition-all">
-                        <span class="flex items-center gap-3">💇‍♀️ <span class="font-medium">Servicios</span></span>
-                        <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-lg group-hover:bg-white">{{ service_count }}</span>
-                    </a>
-                    <a href="{% url 'employees_list' %}" class="flex justify-between items-center px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl group transition-all">
-                        <span class="flex items-center gap-3">👥 <span class="font-medium">Equipo</span></span>
-                        <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-lg group-hover:bg-white">{{ employee_count }}</span>
-                    </a>
-                    <a href="{% url 'settings_view' %}" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-all">
-                        ⚙️ Ajustes del Salón
-                    </a>
-                </nav>
-
-                {% if user.workplace %}
-                <div class="mt-8 pt-6 border-t border-gray-100">
-                    <h3 class="font-bold text-gray-400 text-[10px] uppercase tracking-widest mb-4">Mi Perfil Personal</h3>
-                    <a href="{% url 'employee_dashboard' %}" class="flex flex-col gap-1 p-4 bg-gradient-to-br from-purple-50 to-pink-50 text-purple-700 hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-2xl font-bold transition-all border border-purple-100 shadow-sm group">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl group-hover:scale-110 transition-transform">⏰</span>
-                            <span>Mi Horario y Turnos</span>
-                        </div>
-                        <span class="text-[10px] opacity-70 font-normal">Configura tu disponibilidad aquí</span>
-                    </a>
+        <div class="lg:col-span-1 space-y-8">
+            
+            <div class="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center">📅 Mi Horario</h2>
                 </div>
-                {% endif %}
+                
+                <form method="get" class="flex gap-2 mb-6">
+                    <select name="month" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
+                        {% for num, name in months_range %}
+                        <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <select name="year" class="w-24 bg-gray-50 border border-gray-200 rounded-lg p-2 font-bold text-sm">
+                        {% for y in years_range %}
+                        <option value="{{ y|stringformat:'i' }}" {% if y == anio_sel %}selected{% endif %}>{{ y|stringformat:"i" }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <button type="submit" class="bg-black text-white px-3 py-2 rounded-lg font-bold text-xs">IR</button>
+                </form>
+
+                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {% for week in weeks_info %}
+                    <div class="bg-white p-4 rounded-xl shadow border border-gray-200 hover:border-black transition">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-gray-100 text-black text-[10px] font-black px-2 py-1 rounded">{{ week.label }}</span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ week.range }}</span>
+                        </div>
+
+                        <form method="post" class="space-y-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="month" value="{{ mes_sel }}">
+                            <input type="hidden" name="year" value="{{ anio_sel|stringformat:'i' }}">
+                            <input type="hidden" name="week_id" value="{{ week.instance.id }}">
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Entrada</label>
+                                    <input type="time" name="work_start" value="{{ week.instance.work_start|time:'H:i' }}" class="text-xs p-1 border rounded w-full">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase">Salida</label>
+                                    <input type="time" name="work_end" value="{{ week.instance.work_end|time:'H:i' }}" class="text-xs p-1 border rounded w-full">
+                                </div>
+                            </div>
+                            
+                            <div class="p-2 bg-gray-50 rounded-lg">
+                                <label class="text-[9px] font-bold text-gray-400 uppercase block mb-1">Días Laborales</label>
+                                <div class="flex flex-wrap gap-1">
+                                    {% with d=week.instance.active_days %}
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="0" class="peer hidden" {% if '0' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">L</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="1" class="peer hidden" {% if '1' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">M</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="2" class="peer hidden" {% if '2' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">X</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="3" class="peer hidden" {% if '3' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">J</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="4" class="peer hidden" {% if '4' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">V</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="5" class="peer hidden" {% if '5' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-black peer-checked:text-white transition">S</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="days" value="6" class="peer hidden" {% if '6' in d %}checked{% endif %}>
+                                        <span class="w-6 h-6 flex items-center justify-center text-[9px] font-bold border rounded bg-white peer-checked:bg-red-600 peer-checked:text-white transition">D</span>
+                                    </label>
+                                    {% endwith %}
+                                </div>
+                            </div>
+
+                            <button type="submit" name="update_week" class="w-full bg-black text-white py-2 rounded-lg font-bold text-[10px] hover:bg-gray-800 uppercase tracking-widest transition">
+                                Guardar Semana
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="bg-gray-50 px-5 py-3 border-b border-gray-100">
-                    <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Configuración Horario Base</h3>
-                </div>
-                <form method="post" class="p-5">
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100 space-y-6">
+                <form method="post">
                     {% csrf_token %}
-                    <input type="hidden" name="update_schedule" value="1">
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Entrada</label>
-                            {{ schedule_form.work_start }}
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Salida</label>
-                            {{ schedule_form.work_end }}
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Días Laborales</label>
-                            <div class="text-xs text-gray-600 scale-90 origin-left">
-                                {{ schedule_form.active_days }}
-                            </div>
-                        </div>
-                        <button type="submit" class="w-full bg-black text-white py-3 rounded-xl text-xs font-bold hover:bg-gray-800 transition-all shadow-md">
-                            GUARDAR HORARIO
-                        </button>
+                    <h2 class="text-lg font-bold mb-4">👤 Mis Datos</h2>
+                    <input type="hidden" name="month" value="{{ mes_sel }}">
+                    <input type="hidden" name="year" value="{{ anio_sel|stringformat:'i' }}">
+                    <div class="space-y-3 custom-form">
+                        {{ profile_form.as_p }}
+                        <button type="submit" name="update_profile" class="w-full bg-black text-white py-2 rounded-lg font-bold text-sm">Actualizar Perfil</button>
+                    </div>
+                </form>
+
+                <hr>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <h2 class="text-lg font-bold mb-4">🔒 Seguridad</h2>
+                    <input type="hidden" name="month" value="{{ mes_sel }}">
+                    <input type="hidden" name="year" value="{{ anio_sel|stringformat:'i' }}">
+                    <div class="space-y-3 custom-form">
+                        {{ password_form.as_p }}
+                        <button type="submit" name="change_password" class="w-full bg-red-600 text-white py-2 rounded-lg font-bold text-sm">Cambiar Contraseña</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div class="lg:col-span-3">
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h2 class="font-bold text-gray-800 flex items-center gap-2">
-                        <span class="text-lg">🏢</span> Agenda General del Salón
-                    </h2>
-                    <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded-md font-bold uppercase">Todas las empleadas</span>
-                </div>
+        <div class="lg:col-span-2">
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-100 min-h-[400px]">
+                <h2 class="text-xl font-bold mb-6">📅 Citas Verificadas</h2>
+                
+                <div class="space-y-4">
+                    {% for app in appointments %}
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start group hover:border-black transition">
+                        <div class="flex items-start gap-4">
+                            <div class="bg-white p-3 rounded-lg border border-gray-100 text-center min-w-[80px]">
+                                <span class="block text-xs font-black text-gray-400 uppercase">{{ app.date_time|date:"D d" }}</span>
+                                <span class="block text-xl font-serif font-bold text-gray-900">{{ app.date_time|date:"H:i" }}</span>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-lg">{{ app.client.get_full_name }}</h3>
+                                <p class="text-[10px] font-bold text-green-600 uppercase mt-1">✓ {{ app.get_status_display }}</p>
+                                <div class="mt-2 flex flex-wrap gap-1">
+                                    {% for service in app.services.all %}
+                                        <span class="bg-white border border-gray-200 px-2 py-1 rounded text-[10px] font-bold text-gray-600">{{ service.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
 
-                {% if appointments %}
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-600">
-                        <thead class="bg-gray-50/80 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                            <tr>
-                                <th class="px-6 py-4">Fecha / Hora</th>
-                                <th class="px-6 py-4">Cliente</th>
-                                <th class="px-6 py-4">Servicios</th>
-                                <th class="px-6 py-4">Estado</th>
-                                <th class="px-6 py-4">Saldo</th>
-                                <th class="px-6 py-4 text-right">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            {% for app in appointments %}
-                            {% if app.status != 'CANCELLED' %}
-                            <tr class="hover:bg-blue-50/30 transition-colors">
-                                <td class="px-6 py-4">
-                                    <p class="text-[11px] text-gray-400">{{ app.date_time|date:"d M" }}</p>
-                                    <p class="text-gray-900 font-bold">{{ app.date_time|date:"h:i A" }}</p>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <p class="font-bold text-gray-900">{{ app.client.get_full_name }}</p>
-                                    <p class="text-[11px] text-blue-500 font-medium">{{ app.client.phone }}</p>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-wrap gap-1">
-                                        {% for s in app.services.all %}
-                                            <span class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">{{ s.name }}</span>
-                                        {% empty %}
-                                            <span class="text-[10px] text-gray-400 italic">Sin servicios</span>
-                                        {% endfor %}
-                                    </div>
-                                    <p class="text-[9px] text-gray-400 mt-1 uppercase font-bold">Atiende: {{ app.employee.first_name }}</p>
-                                </td>
-                                <td class="px-6 py-4">
-                                    {% if app.status == 'PENDING' %}
-                                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">⏳ Pendiente</span>
-                                    {% elif app.status == 'VERIFIED' %}
-                                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-green-100 text-green-700 uppercase">✅ Verificada</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 font-bold text-gray-900">
-                                    ${{ app.balance_due|floatformat:0|intcomma }}
-                                </td>
-                                <td class="px-6 py-4 text-right flex flex-col gap-2 items-end">
-                                    {% if app.status == 'PENDING' %}
-                                    <a href="{% url 'verify_appointment' app.id %}" class="bg-black text-white text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-gray-800 transition-all shadow-sm">
-                                        VERIFICAR ABONO
-                                    </a>
-                                    {% endif %}
-                                    <a href="{% url 'cancel_appointment' app.id %}" 
-                                       onclick="return confirm('¿Cancelar cita?')"
-                                       class="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-red-600 hover:text-white transition-all">
-                                         CANCELAR
-                                    </a>
-                                </td>
-                            </tr>
+                        <div class="mt-4 md:mt-0 text-right w-full md:w-auto">
+                            <p class="text-xs text-gray-400 font-bold uppercase">Saldo Pendiente</p>
+                            <p class="text-xl font-serif font-bold text-black">${{ app.balance_due|floatformat:0|intcomma }}</p>
+                            
+                            {% if app.client.phone %}
+                            <a href="https://wa.me/{{ app.client.phone }}?text=Hola%20{{ app.client.first_name }},%20te%20escribo%20de%20{{ salon.name }}%20sobre%20tu%20cita." 
+                               target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:underline mt-2">
+                                📱 CONTACTAR CLIENTE
+                            </a>
                             {% endif %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-20 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                        <div class="text-4xl mb-3">📅</div>
+                        <p class="text-gray-500 font-medium">No tienes citas agendadas para este periodo.</p>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% else %}
-                <div class="text-center py-20">
-                    <div class="text-5xl mb-4 opacity-20">📅</div>
-                    <p class="text-gray-400 font-serif italic text-lg">No hay citas en la agenda todavía.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    @keyframes shimmer { 0% { left: -100%; } 100% { left: 100%; } }
-    /* Estilo para los inputs de Django para que no se vean feos */
-    input[type="time"], select {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-        font-size: 0.875rem;
+    .custom-form input[type="text"], 
+    .custom-form input[type="password"], 
+    .custom-form input[type="time"], 
+    .custom-form input[type="tel"], 
+    .custom-form select {
+        width: 100%; 
+        padding: 0.6rem; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 0.5rem; 
+        font-size: 0.875rem; 
+        margin-top: 4px;
+        background-color: #f9fafb;
     }
+    .custom-form input:focus { border-color: #000; outline: none; background-color: #fff; }
+    .custom-form p { margin-bottom: 1.25rem; }
+    .custom-form label { font-size: 0.75rem; font-weight: bold; color: #374151; text-transform: uppercase; }
+    
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #000; border-radius: 10px; }
+    
+    .errorlist { color: #dc2626; font-size: 0.75rem; font-weight: bold; margin-bottom: 0.5rem; list-style: none; }
 </style>
-
-<script>
-    (function() {
-        let seconds = parseInt("{{ seconds_left|default:0 }}") || 0;
-        const timerEl = document.getElementById('countdown');
-        if (timerEl && seconds > 0) {
-            const interval = setInterval(() => {
-                if (seconds <= 0) {
-                    clearInterval(interval);
-                    timerEl.innerText = "EXPIRADO";
-                    return;
-                }
-                let h = Math.floor(seconds / 3600);
-                let m = Math.floor((seconds % 3600) / 60);
-                let s = seconds % 60;
-                timerEl.innerText = `${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
-                seconds--;
-            }, 1000);
-        }
-    })();
-</script>
 {% endblock %}
