@@ -234,7 +234,6 @@ def employee_dashboard(request):
     raw_month = str(request.GET.get('month', request.POST.get('month', hoy.month)))
     raw_year = str(request.GET.get('year', request.POST.get('year', hoy.year)))
     
-    # Eliminamos cualquier cosa que no sea un número (puntos, comas, etc.)
     clean_month = re.sub(r'\D', '', raw_month)
     clean_year = re.sub(r'\D', '', raw_year)
     
@@ -276,7 +275,7 @@ def employee_dashboard(request):
                     weeks_info.append({
                         'number': iso_week,
                         'instance': week_schedule,
-                        'label': f"Semana {iso_week}",
+                        'label': f"{iso_week}",
                         'range': f"{start_of_week.strftime('%d %b')} - {end_of_week.strftime('%d %b')}"
                     })
                 break
@@ -294,10 +293,15 @@ def employee_dashboard(request):
     password_form = SetPasswordForm(user=request.user)
 
     if request.method == 'POST':
-        if 'update_schedule' in request.POST:
+        # AJUSTE: Identificamos formulario de horario base
+        if 'update_base_schedule' in request.POST:
             schedule_form = EmployeeScheduleUpdateForm(request.POST, instance=schedule)
             if schedule_form.is_valid():
-                schedule_form.save()
+                inst = schedule_form.save(commit=False)
+                # Capturamos los días específicos del checkbox base
+                days = request.POST.getlist('days')
+                inst.active_days = ",".join(days)
+                inst.save()
                 messages.success(request, "Horario base actualizado.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
         
@@ -311,6 +315,7 @@ def employee_dashboard(request):
                 if new_start: week_inst.work_start = new_start
                 if new_end: week_inst.work_end = new_end
                 
+                # AJUSTE: Capturamos los días específicos de este formulario de semana
                 days = request.POST.getlist('days') 
                 week_inst.active_days = ",".join(days)
                 week_inst.save()
@@ -358,6 +363,6 @@ def employee_dashboard(request):
         'weeks_info': weeks_info,
         'months_range': months_range,
         'years_range': years_range,
-        'mes_sel': mes_seleccionado,
-        'anio_sel': anio_seleccionado,
+        'mes_seleccionado': mes_seleccionado,
+        'anio_seleccionado': anio_seleccionado,
     })
