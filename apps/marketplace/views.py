@@ -7,12 +7,16 @@ from django.utils import timezone
 from django.contrib import messages
 from datetime import datetime, timedelta
 from decimal import Decimal
-from apps.businesses.models import Salon, Service
+import uuid
+import urllib.parse
+
+# Importes de tus modelos y lógica
+from apps.businesses.models import Salon, Service, EmployeeSchedule, EmployeeWeeklySchedule
 from apps.core.models import User
 from apps.businesses.logic import AvailabilityManager
 from apps.marketplace.models import Appointment
-import uuid
-import urllib.parse
+
+# --- VISTAS PÚBLICAS (MARKETPLACE) ---
 
 def home(request):
     query = request.GET.get('q', '')
@@ -26,7 +30,7 @@ def home(request):
         salons = salons.filter(city=city_filter)
 
     for salon in salons:
-        # Verifica si el salón está abierto hoy
+        # Verifica si el salón está abierto hoy usando la lógica centralizada
         salon.is_open_now = AvailabilityManager.is_salon_open(salon)
         
     city_list = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
@@ -48,6 +52,9 @@ def salon_detail(request, pk):
     })
 
 def booking_wizard(request, salon_id):
+    """
+    Paso 1 del agendamiento: Selección de Profesional y Fecha.
+    """
     service_ids_str = request.GET.get('services', '')
     if not service_ids_str:
         messages.error(request, "Debes seleccionar al menos un servicio.")
@@ -57,10 +64,7 @@ def booking_wizard(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    # --- CORRECCIÓN BASADA EN TU BACKUP ---
-    # Antes usabas salon.employees.all(). 
-    # Al hacer filter(workplace=salon), obtenemos el mismo resultado:
-    # Trae a CUALQUIER usuario (Dueño o Empleado) que tenga este salón asignado.
+    # Filtramos usuarios que trabajen en este salón (Dueño o empleados añadidos)
     employees = User.objects.filter(workplace=salon)
     
     total_price = sum(s.price for s in services)
@@ -73,7 +77,8 @@ def booking_wizard(request, salon_id):
         'employees': employees,
         'total_price': total_price,
         'deposit_amount': deposit_amount,
-        'today': timezone.localtime(timezone.now()).strftime('%Y-%m-%d'),
+        # 'today' asegura que el calendario no permita fechas pasadas
+        'today': timezone.localtime(timezone.now()).date().isoformat(),
         'is_guest': not request.user.is_authenticated
     }
     return render(request, 'marketplace/booking_wizard.html', context)
@@ -81,8 +86,9 @@ def booking_wizard(request, salon_id):
 @require_GET
 def get_available_slots_api(request):
     """
-    API que consulta la disponibilidad. 
-    Prioriza horarios semanales (EmployeeWeeklySchedule).
+    API crítica: Se llama vía JS cuando el cliente elige fecha/empleado.
+    Consulta AvailabilityManager que ya debe tener la lógica de prioridad:
+    Semanal > Base.
     """
     try:
         salon_id = request.GET.get('salon_id')
@@ -90,12 +96,17 @@ def get_available_slots_api(request):
         employee_id = request.GET.get('employee_id')
         date_str = request.GET.get('date')
 
+        if not all([salon_id, employee_id, date_str]):
+            return JsonResponse({'error': 'Faltan parámetros'}, status=400)
+
         salon = get_object_or_404(Salon, pk=salon_id)
-        services = Service.objects.filter(id__in=[s for s in service_ids if s.isdigit()])
+        # Limpiamos IDs vacíos
+        valid_service_ids = [s for s in service_ids if s and s.isdigit()]
+        services = Service.objects.filter(id__in=valid_service_ids)
         employee = get_object_or_404(User, pk=employee_id)
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Esta llamada es inteligente y revisa EmployeeWeeklySchedule
+        # Esta función en logic.py DEBE buscar en EmployeeWeeklySchedule primero
         slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
         
         json_slots = []
@@ -111,6 +122,9 @@ def get_available_slots_api(request):
         return JsonResponse({'error': str(e)}, status=400)
 
 def booking_commit(request):
+    """
+    Guarda la reserva en la base de datos.
+    """
     if request.method == 'POST':
         try:
             salon_id = request.POST.get('salon_id')
@@ -119,26 +133,33 @@ def booking_commit(request):
             date_str = request.POST.get('date')
             time_str = request.POST.get('time')
             
+            # Datos de contacto
             first_name = request.POST.get('first_name')
             last_name = request.POST.get('last_name')
             email = request.POST.get('email')
             phone = request.POST.get('phone')
 
             salon = get_object_or_404(Salon, pk=salon_id)
-            services = Service.objects.filter(id__in=[s for s in service_ids if s.isdigit()])
+            valid_service_ids = [s for s in service_ids if s and s.isdigit()]
+            services = Service.objects.filter(id__in=valid_service_ids)
             employee = get_object_or_404(User, pk=employee_id)
             
+            # Formatear fecha y hora consciente de zona horaria
             booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
             booking_datetime = timezone.make_aware(booking_datetime)
             
+            # Cálculos financieros
             total_price = sum(s.price for s in services)
             perc = Decimal(str(salon.deposit_percentage))
             deposit_val = (Decimal(str(total_price)) * perc) / Decimal('100')
 
             client_user = request.user
 
-            # Lógica para usuarios no autenticados (Invitados)
+            # Lógica para usuarios Invitados (Crea cuenta si no existe)
             if not client_user.is_authenticated:
+                if not email:
+                    raise ValueError("El email es obligatorio para la reserva.")
+                    
                 user_exists = User.objects.filter(email=email).first()
                 if user_exists:
                     client_user = user_exists
@@ -146,14 +167,18 @@ def booking_commit(request):
                 else:
                     temp_password = str(uuid.uuid4())[:8]
                     client_user = User.objects.create_user(
-                        username=email, email=email, password=temp_password,
-                        first_name=first_name, last_name=last_name, phone=phone,
+                        username=email, 
+                        email=email, 
+                        password=temp_password,
+                        first_name=first_name or "Cliente", 
+                        last_name=last_name or "Invitado", 
+                        phone=phone,
                         role='CLIENT'
                     )
                     login(request, client_user)
                     messages.success(request, f"¡Cuenta creada! Tu clave temporal de acceso es: {temp_password}")
 
-            # Creación de la cita
+            # Creación de la cita definitiva
             appointment = Appointment.objects.create(
                 client=client_user,
                 salon=salon,
@@ -165,11 +190,11 @@ def booking_commit(request):
             )
             appointment.services.set(services)
             
-            messages.success(request, "Cita agendada correctamente. Por favor, realiza el abono para confirmar tu espacio.")
+            messages.success(request, "Cita agendada correctamente. Por favor, envía tu comprobante de pago.")
             return redirect('client_dashboard')
             
         except Exception as e:
-            messages.error(request, f"Hubo un error al procesar tu reserva: {str(e)}")
+            messages.error(request, f"Error en la reserva: {str(e)}")
             return redirect('marketplace_home')
             
     return redirect('marketplace_home')
@@ -178,33 +203,35 @@ def booking_commit(request):
 def cancel_appointment(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
     
+    # Solo el cliente dueño de la cita o el dueño del salón pueden cancelar
     if request.user == appointment.client or request.user.role == 'OWNER':
         appointment.status = 'CANCELLED'
         appointment.save()
         messages.success(request, "La cita ha sido cancelada correctamente.")
         
-        # Redirección inteligente según el rol
         if request.user.role == 'OWNER':
             return redirect('dashboard')
-        
         return redirect('client_dashboard')
-    else:
-        messages.error(request, "No tienes permisos para realizar esta acción.")
-        return redirect('home')
+    
+    messages.error(request, "No tienes permisos para cancelar esta cita.")
+    return redirect('home')
 
 @login_required
 def client_dashboard(request):
+    """
+    Muestra las citas del cliente y los links de pago (WhatsApp).
+    """
     appointments = Appointment.objects.filter(client=request.user).prefetch_related('services', 'salon').order_by('-created_at')
     
     for app in appointments:
         if app.status == 'PENDING':
-            # Configuración de expiración (60 minutos)
+            # Tiempo límite para pagar: 60 minutos desde la creación
             expire_at = app.created_at + timedelta(minutes=60)
             app.expire_timestamp = int(expire_at.timestamp() * 1000)
             
-            # Link de WhatsApp para enviar comprobante
+            # Generar link de WhatsApp directo al dueño del salón
             owner_phone = app.salon.owner.phone if app.salon.owner.phone else ""
-            msg = f"Hola, soy {request.user.first_name}. Envío el comprobante de mi abono para la cita de {app.date_time.strftime('%d/%m %H:%M')}."
+            msg = f"Hola, soy {request.user.first_name}. Envío el comprobante de pago para mi cita del {app.date_time.strftime('%d/%m %H:%M')}."
             app.wa_link = f"https://wa.me/{owner_phone}?text={urllib.parse.quote(msg)}"
         else:
             app.expire_timestamp = 0
