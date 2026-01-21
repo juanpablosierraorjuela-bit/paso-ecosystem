@@ -41,7 +41,7 @@
 
     <nav class="bg-black/95 text-white py-5 shadow-2xl sticky top-0 z-50 backdrop-blur-md">
         <div class="container mx-auto px-6 flex justify-between items-center">
-            <a href="/" class="text-3xl font-serif font-bold text-white tracking-widest hover:text-gold transition duration-300 flex items-center gap-2">
+            <a href="{% url 'home' %}" class="text-3xl font-serif font-bold text-white tracking-widest hover:text-gold transition duration-300 flex items-center gap-2">
                 <span class="text-gold text-4xl">✦</span> PASO
             </a>
 
@@ -55,13 +55,13 @@
                         <a href="{% url 'dashboard' %}" class="bg-white text-black px-6 py-2 rounded-full hover:bg-gold hover:text-white transition duration-300 shadow-lg">
                             MI PANEL
                         </a>
-                    {% elif user.role == 'CLIENT' %}
-                        <a href="{% url 'client_dashboard' %}" class="bg-white text-black px-6 py-2 rounded-full hover:bg-gold hover:text-white transition duration-300 shadow-lg">
-                            MIS CITAS
-                        </a>
                     {% elif user.role == 'EMPLOYEE' %}
                         <a href="{% url 'employee_dashboard' %}" class="bg-white text-black px-6 py-2 rounded-full hover:bg-gold hover:text-white transition duration-300 shadow-lg">
                             MI AGENDA
+                        </a>
+                    {% else %}
+                        <a href="{% url 'client_dashboard' %}" class="bg-white text-black px-6 py-2 rounded-full hover:bg-gold hover:text-white transition duration-300 shadow-lg">
+                            MIS CITAS
                         </a>
                     {% endif %}
                     
@@ -104,11 +104,7 @@
                 &copy; 2026 ECOSISTEMA PASO. TODOS LOS DERECHOS RESERVADOS.
             </div>
             <div class="flex space-x-6 mt-6 md:mt-0">
-                {% if global_settings.instagram_url %}
-                    <a href="{{ global_settings.instagram_url }}" target="_blank" class="text-gray-500 hover:text-gold transition transform hover:scale-110">
-                        INSTAGRAM
-                    </a>
-                {% endif %}
+                <a href="#" class="text-gray-500 hover:text-gold transition transform hover:scale-110">INSTAGRAM</a>
             </div>
         </div>
     </footer>
