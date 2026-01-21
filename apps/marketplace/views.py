@@ -11,7 +11,7 @@ import uuid
 import urllib.parse
 
 # Importes de tus modelos y lógica
-from apps.businesses.models import Salon, Service, EmployeeSchedule, EmployeeWeeklySchedule
+from apps.businesses.models import Salon, Service
 from apps.core.models import User
 from apps.businesses.logic import AvailabilityManager
 from apps.marketplace.models import Appointment
@@ -29,8 +29,8 @@ def home(request):
     if city_filter:
         salons = salons.filter(city=city_filter)
 
+    # Verifica si el salón está abierto hoy usando la lógica centralizada
     for salon in salons:
-        # Verifica si el salón está abierto hoy usando la lógica centralizada
         salon.is_open_now = AvailabilityManager.is_salon_open(salon)
         
     city_list = Salon.objects.values_list('city', flat=True).distinct().order_by('city')
@@ -64,7 +64,7 @@ def booking_wizard(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     services = Service.objects.filter(id__in=service_ids, salon=salon)
     
-    # Filtramos usuarios que trabajen en este salón (Dueño o empleados añadidos)
+    # Filtramos usuarios que trabajen en este salón
     employees = User.objects.filter(workplace=salon)
     
     total_price = sum(s.price for s in services)
@@ -77,7 +77,6 @@ def booking_wizard(request, salon_id):
         'employees': employees,
         'total_price': total_price,
         'deposit_amount': deposit_amount,
-        # 'today' asegura que el calendario no permita fechas pasadas
         'today': timezone.localtime(timezone.now()).date().isoformat(),
         'is_guest': not request.user.is_authenticated
     }
@@ -86,39 +85,55 @@ def booking_wizard(request, salon_id):
 @require_GET
 def get_available_slots_api(request):
     """
-    API crítica: Se llama vía JS cuando el cliente elige fecha/empleado.
-    Consulta AvailabilityManager que ya debe tener la lógica de prioridad:
-    Semanal > Base.
+    API crítica: Conecta con AvailabilityManager (logic.py).
+    CORRECCIÓN: Pasa objetos Service completos, no IDs.
     """
     try:
         salon_id = request.GET.get('salon_id')
-        service_ids = request.GET.get('service_ids', '').split(',')
+        # Soporta tanto 'service_ids' (string separado por comas) como formato lista si fuera necesario
+        service_ids_str = request.GET.get('service_ids', '')
         employee_id = request.GET.get('employee_id')
         date_str = request.GET.get('date')
 
         if not all([salon_id, employee_id, date_str]):
-            return JsonResponse({'error': 'Faltan parámetros'}, status=400)
+            return JsonResponse({'slots': []}) # Retorna vacío si faltan datos
 
         salon = get_object_or_404(Salon, pk=salon_id)
-        # Limpiamos IDs vacíos
-        valid_service_ids = [s for s in service_ids if s and s.isdigit()]
-        services = Service.objects.filter(id__in=valid_service_ids)
         employee = get_object_or_404(User, pk=employee_id)
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Esta función en logic.py DEBE buscar en EmployeeWeeklySchedule primero
-        slots = AvailabilityManager.get_available_slots(salon, list(services), employee, target_date)
+        # Parsear fecha
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+             return JsonResponse({'error': 'Formato de fecha inválido'}, status=400)
+
+        # Obtener OBJETOS Service (necesarios para calcular duración en logic.py)
+        if service_ids_str:
+            ids_list = [sid for sid in service_ids_str.split(',') if sid.isdigit()]
+            services = Service.objects.filter(id__in=ids_list)
+        else:
+            services = []
+
+        if not services:
+             return JsonResponse({'slots': []})
+
+        # --- LLAMADA A TU LÓGICA STRICTA ---
+        # logic.py iterará sobre 'services' buscando .duration_minutes
+        slots = AvailabilityManager.get_available_slots(salon, services, employee, target_date)
         
+        # Formatear respuesta JSON
         json_slots = []
         for slot in slots:
             json_slots.append({
-                'time': slot['time_obj'].strftime('%H:%M'),
-                'label': slot['label'],
+                'time': slot['time_obj'].strftime('%H:%M'), # Hora militar para value
+                'label': slot['label'],                     # Hora AM/PM para mostrar
                 'available': slot['is_available']
             })
             
         return JsonResponse({'slots': json_slots})
+
     except Exception as e:
+        # En producción, podrías loguear el error 'e'
         return JsonResponse({'error': str(e)}, status=400)
 
 def booking_commit(request):
@@ -210,11 +225,12 @@ def cancel_appointment(request, pk):
         messages.success(request, "La cita ha sido cancelada correctamente.")
         
         if request.user.role == 'OWNER':
+            # Redirección asumiendo que el dueño tiene un dashboard llamado 'dashboard'
             return redirect('dashboard')
         return redirect('client_dashboard')
     
     messages.error(request, "No tienes permisos para cancelar esta cita.")
-    return redirect('home')
+    return redirect('marketplace_home')
 
 @login_required
 def client_dashboard(request):
