@@ -4,7 +4,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta, time, datetime
+from datetime import timedelta, time, datetime, date
 import calendar
 import re
 from django.db.models import Q
@@ -230,7 +230,7 @@ def employee_dashboard(request):
     
     hoy = timezone.localtime(timezone.now())
     
-    # Limpieza de parámetros de fecha
+    # 1. Obtener parámetros de fecha con limpieza
     raw_month = str(request.GET.get('month', hoy.month))
     raw_year = str(request.GET.get('year', hoy.year))
     clean_month = re.sub(r'\D', '', raw_month)
@@ -239,69 +239,86 @@ def employee_dashboard(request):
     mes_seleccionado = int(clean_month) if clean_month else hoy.month
     anio_seleccionado = int(clean_year) if clean_year else hoy.year
 
-    # Procesamiento de semanas para el calendario
-    cal = calendar.Calendar(firstweekday=0) 
-    month_days = cal.monthdayscalendar(anio_seleccionado, mes_seleccionado)
-    
+    # 2. Lógica para generar las semanas CORRECTAS del mes seleccionado
+    # Usamos date objects para calcular los lunes reales y evitar errores de etiqueta
     weeks_info = []
-    processed_weeks = []
-
-    for week in month_days:
-        for day in week:
-            if day != 0:
-                dt = datetime(anio_seleccionado, mes_seleccionado, day)
-                iso_year, iso_week, _ = dt.isocalendar()
-                
-                if iso_week not in processed_weeks:
-                    processed_weeks.append(iso_week)
-                    # Si no existe la semana, se crea con horarios por defecto (9 a 18)
-                    week_schedule, _ = EmployeeWeeklySchedule.objects.get_or_create(
-                        employee=request.user,
-                        year=iso_year, 
-                        week_number=iso_week,
-                        defaults={
-                            'work_start': time(9,0),
-                            'work_end': time(18,0),
-                            'active_days': '0,1,2,3,4,5'
-                        }
-                    )
-                    start_of_week = dt - timedelta(days=dt.weekday())
-                    end_of_week = start_of_week + timedelta(days=6)
-                    
-                    weeks_info.append({
-                        'number': iso_week,
-                        'instance': week_schedule,
-                        'range': f"{start_of_week.strftime('%d %b')} - {end_of_week.strftime('%d %b')}"
-                    })
-                break
+    processed_iso_weeks = []
     
-    # Citas del empleado
+    # Obtener el primer y último día del mes
+    last_day = calendar.monthrange(anio_seleccionado, mes_seleccionado)[1]
+    
+    for day in range(1, last_day + 1):
+        current_date = date(anio_seleccionado, mes_seleccionado, day)
+        iso_year, iso_week, iso_weekday = current_date.isocalendar()
+        
+        # Identificador único de semana (Año ISO + Semana ISO)
+        week_key = (iso_year, iso_week)
+        
+        if week_key not in processed_iso_weeks:
+            processed_iso_weeks.append(week_key)
+            
+            # Calcular Lunes y Domingo reales de esta semana ISO
+            # Lunes = FechaActual - (DiaSemanaISO - 1)
+            monday_of_week = current_date - timedelta(days=iso_weekday - 1)
+            sunday_of_week = monday_of_week + timedelta(days=6)
+            
+            # Formato de etiqueta bonito: "10 Jun - 16 Jun"
+            label = f"{monday_of_week.day} {calendar.month_name[monday_of_week.month][:3]} - {sunday_of_week.day} {calendar.month_name[sunday_of_week.month][:3]}"
+            
+            # Buscar o Crear (SIN ACTIVAR) el horario
+            # IMPORTANTE: active_days='' por defecto para que aparezca "Cerrado" hasta que el usuario lo active
+            week_schedule, created = EmployeeWeeklySchedule.objects.get_or_create(
+                employee=request.user,
+                year=iso_year, 
+                week_number=iso_week,
+                defaults={
+                    'work_start': time(9,0),
+                    'work_end': time(18,0),
+                    'active_days': '' # VACÍO POR DEFECTO: El empleado debe entrar y guardar para activar
+                }
+            )
+            
+            weeks_info.append({
+                'label': label,
+                'instance': week_schedule,
+                'range': label # Usamos la misma etiqueta corregida
+            })
+
+    # 3. Citas del empleado
     appointments = Appointment.objects.filter(
         employee=request.user,
         date_time__date__gte=hoy.date()
     ).exclude(status='CANCELLED').order_by('date_time')
 
-    # Formularios de Perfil
+    # 4. Formularios de Perfil
     profile_form = OwnerUpdateForm(instance=request.user)
     password_form = SetPasswordForm(user=request.user)
 
     if request.method == 'POST':
-        # 1. ACTUALIZAR SEMANA (Única lógica de horarios)
+        # ACTUALIZAR SEMANA
         if 'update_week' in request.POST:
             week_id = request.POST.get('week_id')
+            # Recuperamos por ID, que ya existe gracias al get_or_create del GET
             week_inst = get_object_or_404(EmployeeWeeklySchedule, id=week_id, employee=request.user)
+            
             try:
+                # Actualizar horas
                 week_inst.work_start = request.POST.get('work_start')
                 week_inst.work_end = request.POST.get('work_end')
+                
+                # Actualizar días activos
+                # Si el usuario no marca nada, days será [] y active_days será "", por lo tanto NO DISPONIBLE
                 days = request.POST.getlist('days') 
                 week_inst.active_days = ",".join(days)
+                
                 week_inst.save()
-                messages.success(request, f"Horario de la semana {week_inst.week_number} actualizado.")
+                messages.success(request, f"Horario actualizado correctamente.")
             except Exception:
                 messages.error(request, "Error al guardar los horarios.")
+            
             return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
-        # 2. ACTUALIZAR PERFIL
+        # ACTUALIZAR PERFIL
         elif 'update_profile' in request.POST:
             profile_form = OwnerUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():
@@ -309,7 +326,7 @@ def employee_dashboard(request):
                 messages.success(request, "Perfil actualizado.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
 
-        # 3. CAMBIAR CONTRASEÑA
+        # CAMBIAR CONTRASEÑA
         elif 'change_password' in request.POST:
             password_form = SetPasswordForm(user=request.user, data=request.POST)
             if password_form.is_valid():
