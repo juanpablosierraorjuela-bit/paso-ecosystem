@@ -1,8 +1,12 @@
 from django import template
 register = template.Library()
 
-@register.filter(name='split_day')
+@register.filter
 def split_day(value):
-    if not value: return ["", ""]
-    if ":" in str(value): return value.split(":")
-    return [value, value]
+    try:
+        if ':' in value:
+            parts = value.split(':')
+            return {'index': parts[0], 'number': parts[1]}
+    except:
+        pass
+    return {'index': 0, 'number': ''}
