@@ -217,6 +217,30 @@ def services_list(request):
     return render(request, 'businesses/services.html', {'services': services, 'form': form})
 
 @login_required
+def service_edit(request, pk):
+    if request.user.role != 'OWNER': 
+        return redirect('marketplace_home')
+        
+    salon = request.user.owned_salon
+    service = get_object_or_404(Service, pk=pk, salon=salon)
+    
+    from .forms import ServiceForm
+    
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, instance=service)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Servicio actualizado correctamente.")
+            return redirect('services_list')
+    else:
+        form = ServiceForm(instance=service)
+        
+    return render(request, 'businesses/service_edit.html', {
+        'form': form,
+        'service': service
+    })
+
+@login_required
 def service_delete(request, pk):
     if request.user.role != 'OWNER': return redirect('marketplace_home')
     service = get_object_or_404(Service, pk=pk, salon=request.user.owned_salon)
