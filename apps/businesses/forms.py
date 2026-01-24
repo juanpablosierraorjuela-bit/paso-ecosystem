@@ -141,15 +141,13 @@ class SalonScheduleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Recuperar días guardados para marcarlos en los checkboxes
         if self.instance and self.instance.active_days:
             self.initial['active_days'] = self.instance.active_days.split(',')
             
         for field_name, field in self.fields.items():
-            # Aplicar estilos a todos MENOS a los checkboxes
             if field_name != 'active_days':
                 field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
     def clean_active_days(self):
+        # ESTA ES LA CLAVE: Convierte la lista ['0','1'] a texto "0,1" para que la logica funcione
         return ','.join(self.cleaned_data.get('active_days', []))
