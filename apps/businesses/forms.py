@@ -22,7 +22,7 @@ COLOMBIA_CITIES = [
     ('Ibagué', 'Ibagué'), ('Santa Marta', 'Santa Marta'), ('Villavicencio', 'Villavicencio'),
 ]
 
-# --- FORMULARIO DE REGISTRO (EL QUE FALTABA) ---
+# --- FORMULARIO DE REGISTRO ---
 class OwnerRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(), label="Contraseña")
     confirm_password = forms.CharField(widget=forms.PasswordInput(), label="Confirmar Contraseña")
@@ -75,36 +75,53 @@ class OwnerUpdateForm(forms.ModelForm):
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- HORARIOS DE EMPLEADO ---
+# --- HORARIOS DE EMPLEADO (CORREGIDO) ---
 class EmployeeScheduleUpdateForm(forms.ModelForm):
-    work_start = forms.ChoiceField(choices=TIME_CHOICES)
-    work_end = forms.ChoiceField(choices=TIME_CHOICES)
+    work_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio Jornada")
+    work_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin Jornada")
+    
+    # AGREGADOS: Campos de Almuerzo para que el horario funcione bien
+    lunch_start = forms.ChoiceField(choices=TIME_CHOICES, label="Inicio Almuerzo")
+    lunch_end = forms.ChoiceField(choices=TIME_CHOICES, label="Fin Almuerzo")
+
     active_days = forms.MultipleChoiceField(
         choices=[(str(i), d) for i, d in enumerate(['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'])], 
-        widget=forms.CheckboxSelectMultiple
+        widget=forms.CheckboxSelectMultiple,
+        label="Días Laborales"
     )
 
     class Meta:
         model = EmployeeSchedule
-        fields = ['work_start', 'work_end', 'active_days']
+        fields = ['work_start', 'work_end', 'lunch_start', 'lunch_end', 'active_days']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.active_days:
             self.initial['active_days'] = self.instance.active_days.split(',')
         
-        for field in self.fields.values():
+        for name, field in self.fields.items():
+            # CORRECCIÓN: Si es Checkbox NO le ponemos 'appearance-none' para que se vea
             if not isinstance(field.widget, forms.CheckboxSelectMultiple):
                 field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+            else:
+                # Estilo específico para que los checkboxes se vean bien
+                field.widget.attrs['class'] = 'h-4 w-4 text-black border-gray-300 rounded focus:ring-black'
 
     def clean_active_days(self):
         return ','.join(self.cleaned_data.get('active_days', []))
 
-# --- FORMULARIO DE SERVICIOS ---
+# --- FORMULARIO DE SERVICIOS (CORREGIDO) ---
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ['name', 'duration_minutes', 'price']
+        # AGREGADO: 'deposit_amount' para que aparezca el cuadro de abono
+        fields = ['name', 'duration_minutes', 'price', 'deposit_amount']
+        labels = {
+            'name': 'Nombre del Servicio',
+            'duration_minutes': 'Duración (minutos)',
+            'price': 'Precio Total',
+            'deposit_amount': 'Valor del Abono (Reserva)'
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,7 +130,7 @@ class ServiceForm(forms.ModelForm):
 
 # --- FORMULARIO CREACIÓN DE EMPLEADO ---
 class EmployeeCreationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
+    password = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
     class Meta:
         model = User
         fields = ['username', 'password', 'first_name', 'last_name', 'phone']
@@ -125,9 +142,16 @@ class EmployeeCreationForm(forms.ModelForm):
 
 # --- FORMULARIO HORARIO GENERAL DEL SALÓN (SETTINGS) ---
 class SalonScheduleForm(forms.ModelForm):
+    active_days = forms.MultipleChoiceField(
+        choices=[(str(i), d) for i, d in enumerate(['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'])], 
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Días que abre el negocio"
+    )
+
     class Meta:
         model = Salon
-        fields = ['opening_time', 'closing_time']
+        fields = ['opening_time', 'closing_time', 'active_days', 'deposit_percentage']
         widgets = {
             'opening_time': forms.Select(choices=TIME_CHOICES),
             'closing_time': forms.Select(choices=TIME_CHOICES),
@@ -135,5 +159,15 @@ class SalonScheduleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+        if self.instance and self.instance.active_days:
+            self.initial['active_days'] = self.instance.active_days.split(',')
+            
+        for name, field in self.fields.items():
+            # CORRECCIÓN: Evitar ocultar los checkboxes del salón también
+            if name != 'active_days':
+                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+            else:
+                 field.widget.attrs['class'] = 'h-4 w-4 text-black border-gray-300 rounded focus:ring-black'
+
+    def clean_active_days(self):
+        return ','.join(self.cleaned_data.get('active_days', []))
