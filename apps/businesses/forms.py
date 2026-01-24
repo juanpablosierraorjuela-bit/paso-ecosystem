@@ -22,11 +22,12 @@ COLOMBIA_CITIES = [
     ('Ibagué', 'Ibagué'), ('Santa Marta', 'Santa Marta'), ('Villavicencio', 'Villavicencio'),
 ]
 
-# --- FORMULARIO DE REGISTRO ---
+# --- FORMULARIO DE REGISTRO (EL QUE FALTABA) ---
 class OwnerRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(), label="Contraseña")
     confirm_password = forms.CharField(widget=forms.PasswordInput(), label="Confirmar Contraseña")
     
+    # Campos para el Salón
     salon_name = forms.CharField(max_length=200, label="Nombre del Negocio")
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad")
 
@@ -124,15 +125,9 @@ class EmployeeCreationForm(forms.ModelForm):
 
 # --- FORMULARIO HORARIO GENERAL DEL SALÓN (SETTINGS) ---
 class SalonScheduleForm(forms.ModelForm):
-    active_days = forms.MultipleChoiceField(
-        choices=[(str(i), d) for i, d in enumerate(['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'])], 
-        widget=forms.CheckboxSelectMultiple,
-        required=False
-    )
-
     class Meta:
         model = Salon
-        fields = ['opening_time', 'closing_time', 'active_days', 'deposit_percentage']
+        fields = ['opening_time', 'closing_time']
         widgets = {
             'opening_time': forms.Select(choices=TIME_CHOICES),
             'closing_time': forms.Select(choices=TIME_CHOICES),
@@ -140,13 +135,5 @@ class SalonScheduleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and self.instance.active_days:
-            self.initial['active_days'] = self.instance.active_days.split(',')
-            
-        for field_name, field in self.fields.items():
-            if field_name != 'active_days':
-                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
-
-    def clean_active_days(self):
-        # ESTA FUNCIÓN FALTABA: Convierte la lista ['0','1'] a "0,1" para que la lógica funcione
-        return ','.join(self.cleaned_data.get('active_days', []))
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
