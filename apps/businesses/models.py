@@ -1,6 +1,7 @@
-from datetime import time
+from datetime import time, datetime
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 class Salon(models.Model):
     owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_salon')
@@ -9,9 +10,9 @@ class Salon(models.Model):
     address = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     
-    # AJUSTE: Se añade null=True y default para mayor flexibilidad al guardar
-    opening_time = models.TimeField(null=True, blank=True, default=time(9, 0))
-    closing_time = models.TimeField(null=True, blank=True, default=time(18, 0))
+    # Horarios con valores por defecto seguros
+    opening_time = models.TimeField(default=time(9, 0))
+    closing_time = models.TimeField(default=time(18, 0))
     
     # Días que abre el negocio (0=Lunes)
     active_days = models.CharField(max_length=20, default="0,1,2,3,4,5") 
@@ -28,9 +29,23 @@ class Salon(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        # Si active_days llega como lista (desde el formulario de checkboxes), lo unimos con comas
+        # 1. Corregir días activos si vienen como lista desde el formulario
         if isinstance(self.active_days, list):
             self.active_days = ",".join(self.active_days)
+        
+        # 2. Forzar conversión de hora si llega como string (evita el fallo de guardado)
+        if isinstance(self.opening_time, str):
+            try:
+                self.opening_time = datetime.strptime(self.opening_time, '%H:%M').time()
+            except ValueError:
+                pass # Si falla el formato, Django lanzará error de validación normal
+
+        if isinstance(self.closing_time, str):
+            try:
+                self.closing_time = datetime.strptime(self.closing_time, '%H:%M').time()
+            except ValueError:
+                pass
+
         super().save(*args, **kwargs)
 
 class Service(models.Model):
@@ -61,21 +76,13 @@ class EmployeeSchedule(models.Model):
         super().save(*args, **kwargs)
 
 class EmployeeWeeklySchedule(models.Model):
-    """
-    Permite configurar horarios específicos para una semana concreta del año.
-    Si no existe configuración para una semana, se usa el EmployeeSchedule (base).
-    """
     employee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='weekly_schedules')
     year = models.IntegerField()
-    week_number = models.IntegerField() # Número de semana ISO (1-52)
-    
-    # Horarios específicos para esta semana
+    week_number = models.IntegerField()
     work_start = models.TimeField(default=time(9,0))
     work_end = models.TimeField(default=time(18,0))
     lunch_start = models.TimeField(default=time(13,0))
     lunch_end = models.TimeField(default=time(14,0))
-    
-    # Días activos en esta semana específica (ej: "0,2,4")
     active_days = models.CharField(max_length=100, default="0,1,2,3,4,5") 
 
     class Meta:
