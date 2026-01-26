@@ -150,7 +150,7 @@ def owner_dashboard(request):
     except:
         return redirect('register_owner')
 
-    # CORRECCIÓN ERROR 500: Validación de timestamp nulo
+    # Validación de timestamp nulo
     reg_ts = request.user.registration_timestamp or timezone.now()
     elapsed_time = timezone.now() - reg_ts
     time_limit = timedelta(hours=24)
@@ -170,7 +170,6 @@ def owner_dashboard(request):
     for app in appointments:
         app.balance_due = app.total_price - app.deposit_amount
 
-    # CORRECCIÓN ERROR 500: Uso de filtro directo por si falla el related_name
     employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
 
     context = {
@@ -202,8 +201,8 @@ def services_list(request):
     salon = request.user.owned_salon
     services = salon.services.all()
 
+    from .forms import ServiceForm
     if request.method == 'POST':
-        from .forms import ServiceForm
         form = ServiceForm(request.POST)
         if form.is_valid():
             service = form.save(commit=False)
@@ -212,20 +211,16 @@ def services_list(request):
             messages.success(request, "Servicio creado.")
             return redirect('services_list')
     else:
-        from .forms import ServiceForm
         form = ServiceForm()
     return render(request, 'businesses/services.html', {'services': services, 'form': form})
 
 @login_required
 def service_edit(request, pk):
-    if request.user.role != 'OWNER': 
-        return redirect('marketplace_home')
-        
+    if request.user.role != 'OWNER': return redirect('marketplace_home')
     salon = request.user.owned_salon
     service = get_object_or_404(Service, pk=pk, salon=salon)
     
     from .forms import ServiceForm
-    
     if request.method == 'POST':
         form = ServiceForm(request.POST, instance=service)
         if form.is_valid():
@@ -234,11 +229,7 @@ def service_edit(request, pk):
             return redirect('services_list')
     else:
         form = ServiceForm(instance=service)
-        
-    return render(request, 'businesses/service_edit.html', {
-        'form': form,
-        'service': service
-    })
+    return render(request, 'businesses/service_edit.html', {'form': form, 'service': service})
 
 @login_required
 def service_delete(request, pk):
@@ -254,8 +245,8 @@ def employees_list(request):
     salon = request.user.owned_salon
     employees = User.objects.filter(workplace=salon, role='EMPLOYEE')
     
+    from .forms import EmployeeCreationForm
     if request.method == 'POST':
-        from .forms import EmployeeCreationForm
         form = EmployeeCreationForm(request.POST)
         if form.is_valid():
             User.objects.create_user(
@@ -271,7 +262,6 @@ def employees_list(request):
             messages.success(request, "Empleado creado.")
             return redirect('employees_list')
     else:
-        from .forms import EmployeeCreationForm
         form = EmployeeCreationForm()
     return render(request, 'businesses/employees.html', {'employees': employees, 'form': form})
 
@@ -287,36 +277,42 @@ def employee_delete(request, pk):
 def settings_view(request):
     if request.user.role != 'OWNER': return redirect('marketplace_home')
     salon = request.user.owned_salon
+    
+    # IMPORTANTE: Revisa si en tu forms.py se llaman ProfileForm o UpdateForm. 
+    # He usado los nombres de tu archivo original.
     from .forms import OwnerUpdateForm, SalonUpdateForm, SalonScheduleForm
     
-    # Inicialización de formularios
     owner_form = OwnerUpdateForm(instance=request.user)
     salon_form = SalonUpdateForm(instance=salon)
     schedule_form = SalonScheduleForm(instance=salon)
 
     if request.method == 'POST':
-        # Se procesa según el botón pulsado, pero asegurando que los horarios se guarden
+        # 1. ACTUALIZAR PERFIL E IDENTIDAD
         if 'update_profile' in request.POST:
             owner_form = OwnerUpdateForm(request.POST, instance=request.user)
             salon_form = SalonUpdateForm(request.POST, instance=salon)
-            # También intentamos cargar el schedule por si el dueño cambió horas en la misma pantalla
-            schedule_form = SalonScheduleForm(request.POST, instance=salon)
-            
             if owner_form.is_valid() and salon_form.is_valid():
                 owner_form.save()
                 salon_form.save()
-                # Si los horarios también son válidos en este POST, los guardamos
-                if schedule_form.is_valid():
-                    schedule_form.save()
-                messages.success(request, "Configuración de perfil y negocio actualizada.")
+                messages.success(request, "Identidad y datos de negocio guardados.")
                 return redirect('settings_view')
-                
+
+        # 2. ACTUALIZAR REGLAS Y HORARIOS (Aquí estaba el fallo)
         elif 'update_schedule' in request.POST:
             schedule_form = SalonScheduleForm(request.POST, instance=salon)
             if schedule_form.is_valid():
-                schedule_form.save()
-                messages.success(request, "Horarios de atención actualizados.")
+                # Guardamos con commit=False para procesar los días manualmente
+                instancia_horario = schedule_form.save(commit=False)
+                
+                # Capturamos los días del checkbox y los unimos por coma (ej: "0,1,2")
+                dias_seleccionados = request.POST.getlist('active_days')
+                instancia_horario.active_days = ",".join(dias_seleccionados)
+                
+                instancia_horario.save()
+                messages.success(request, "Horarios y reglas de abono actualizados.")
                 return redirect('settings_view')
+            else:
+                messages.error(request, "Error al validar los horarios. Revisa el formato.")
 
     return render(request, 'businesses/settings.html', {
         'owner_form': owner_form, 
@@ -325,7 +321,7 @@ def settings_view(request):
         'salon': salon
     })
 
-# --- PANEL DE EMPLEADO (SOLO SEMANAL) ---
+# --- PANEL DE EMPLEADO ---
 
 @login_required
 def employee_dashboard(request):
@@ -333,7 +329,6 @@ def employee_dashboard(request):
         return redirect('dashboard')
     
     hoy = timezone.localtime(timezone.now())
-    
     raw_month = str(request.GET.get('month', hoy.month))
     raw_year = str(request.GET.get('year', hoy.year))
     clean_month = re.sub(r'\D', '', raw_month)
