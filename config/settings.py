@@ -5,13 +5,17 @@ import dj_database_url
 # --- RUTA BASE ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- SEGURIDAD: LEER DE RENDER ---
+# --- SEGURIDAD ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-key-12345')
 
 # DEBUG: Se apaga automáticamente en Render
 DEBUG = 'RENDER' not in os.environ
 
+# Configuración de Hosts
 ALLOWED_HOSTS = ['*']
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # --- APPS ---
 INSTALLED_APPS = [
@@ -22,7 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'whitenoise.runserver_nostatic', 
     'django.contrib.staticfiles',
-    'django.contrib.humanize', # Vital para formatear números
+    'django.contrib.humanize',
     
     # MIS APPS
     'apps.core',
@@ -78,12 +82,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- IDIOMA Y HORA (FORMATO COLOMBIA FORZADO) ---
+# --- IDIOMA Y HORA (FORMATO COLOMBIA) ---
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
-USE_L10N = False  # Desactivado para usar los separadores manuales de abajo
+USE_L10N = False 
 
 USE_THOUSAND_SEPARATOR = True
 THOUSAND_SEPARATOR = '.'
@@ -99,8 +103,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- REDIRECCIONES ---
+# --- CONFIGURACIÓN DE USUARIO Y LOGIN ---
 AUTH_USER_MODEL = 'core.User'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dispatch'
 LOGOUT_REDIRECT_URL = 'home'
@@ -114,7 +119,7 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = f"Soporte PASO <{os.environ.get('EMAIL_HOST_USER')}>"
 
-# --- SEGURIDAD DE PRODUCCIÓN ---
+# --- SEGURIDAD DE PRODUCCIÓN (RENDER) ---
 if 'RENDER' in os.environ:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -122,4 +127,9 @@ if 'RENDER' in os.environ:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+    
+    # IMPORTANTE: Esto permite que los formularios funcionen en el dominio de Render
+    CSRF_TRUSTED_ORIGINS = [
+        "https://*.onrender.com",
+        "https://pasotunja.com", # Si tienes dominio propio añádelo así
+    ]
