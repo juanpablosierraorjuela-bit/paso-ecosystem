@@ -9,22 +9,29 @@ class Salon(models.Model):
     address = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     
-    opening_time = models.TimeField()
-    closing_time = models.TimeField()
+    # AJUSTE: Se añade null=True y default para mayor flexibilidad al guardar
+    opening_time = models.TimeField(null=True, blank=True, default=time(9, 0))
+    closing_time = models.TimeField(null=True, blank=True, default=time(18, 0))
     
-    # NUEVO: Días que abre el negocio (0=Lunes)
+    # Días que abre el negocio (0=Lunes)
     active_days = models.CharField(max_length=20, default="0,1,2,3,4,5") 
     
     deposit_percentage = models.IntegerField(default=50)
     instagram_url = models.URLField(blank=True)
     google_maps_url = models.URLField(blank=True)
 
-    # NUEVOS CAMPOS PARA PAGOS
+    # CAMPOS PARA PAGOS
     bank_name = models.CharField(max_length=100, blank=True, verbose_name="Nombre del Banco")
     account_number = models.CharField(max_length=50, blank=True, verbose_name="Número de Cuenta")
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Si active_days llega como lista (desde el formulario de checkboxes), lo unimos con comas
+        if isinstance(self.active_days, list):
+            self.active_days = ",".join(self.active_days)
+        super().save(*args, **kwargs)
 
 class Service(models.Model):
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='services')
@@ -48,6 +55,11 @@ class EmployeeSchedule(models.Model):
     def __str__(self):
         return f"Horario Base de {self.employee.username}"
 
+    def save(self, *args, **kwargs):
+        if isinstance(self.active_days, list):
+            self.active_days = ",".join(self.active_days)
+        super().save(*args, **kwargs)
+
 class EmployeeWeeklySchedule(models.Model):
     """
     Permite configurar horarios específicos para una semana concreta del año.
@@ -69,3 +81,8 @@ class EmployeeWeeklySchedule(models.Model):
     class Meta:
         unique_together = ('employee', 'year', 'week_number')
         ordering = ['year', 'week_number']
+
+    def save(self, *args, **kwargs):
+        if isinstance(self.active_days, list):
+            self.active_days = ",".join(self.active_days)
+        super().save(*args, **kwargs)
