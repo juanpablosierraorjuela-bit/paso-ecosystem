@@ -289,24 +289,33 @@ def settings_view(request):
     salon = request.user.owned_salon
     from .forms import OwnerUpdateForm, SalonUpdateForm, SalonScheduleForm
     
+    # Inicialización de formularios
     owner_form = OwnerUpdateForm(instance=request.user)
     salon_form = SalonUpdateForm(instance=salon)
     schedule_form = SalonScheduleForm(instance=salon)
 
     if request.method == 'POST':
+        # Se procesa según el botón pulsado, pero asegurando que los horarios se guarden
         if 'update_profile' in request.POST:
             owner_form = OwnerUpdateForm(request.POST, instance=request.user)
             salon_form = SalonUpdateForm(request.POST, instance=salon)
+            # También intentamos cargar el schedule por si el dueño cambió horas en la misma pantalla
+            schedule_form = SalonScheduleForm(request.POST, instance=salon)
+            
             if owner_form.is_valid() and salon_form.is_valid():
                 owner_form.save()
                 salon_form.save()
-                messages.success(request, "Datos actualizados.")
+                # Si los horarios también son válidos en este POST, los guardamos
+                if schedule_form.is_valid():
+                    schedule_form.save()
+                messages.success(request, "Configuración de perfil y negocio actualizada.")
                 return redirect('settings_view')
+                
         elif 'update_schedule' in request.POST:
             schedule_form = SalonScheduleForm(request.POST, instance=salon)
             if schedule_form.is_valid():
                 schedule_form.save()
-                messages.success(request, "Horarios actualizados.")
+                messages.success(request, "Horarios de atención actualizados.")
                 return redirect('settings_view')
 
     return render(request, 'businesses/settings.html', {
