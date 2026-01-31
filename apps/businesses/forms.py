@@ -7,13 +7,19 @@ from datetime import time
 # --- CONFIGURACIONES GLOBALES ---
 
 def get_time_choices():
-    """Genera opciones de tiempo para los Selects"""
+    """
+    Genera opciones de tiempo en formato STRING para compatibilidad con HTML y Reservas.
+    Devuelve tuplas: ('08:00', '08:00 AM')
+    """
     choices = []
     for h in range(0, 24):
         for m in (0, 30):
             t = time(h, m)
-            # Valor: objeto time (mejor para Django), Etiqueta: Formato 12h
-            choices.append((t, t.strftime('%I:%M %p')))
+            # Valor: STRING 'HH:MM' (Esto arregla el error 500 y valida el HTML)
+            # Etiqueta: STRING 'HH:MM AM/PM' (Legible para humanos)
+            val = t.strftime('%H:%M')
+            label = t.strftime('%I:%M %p')
+            choices.append((val, label))
     return choices
 
 TIME_CHOICES = get_time_choices()
@@ -107,11 +113,13 @@ class SalonScheduleForm(TailwindMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            # Asegura que el valor inicial sea compatible con el ChoiceField (HH:MM)
+            # CORRECCIÓN VITAL: Convertir objetos Time de la BD a Strings 'HH:MM'
+            # para que el formulario HTML reconozca cuál opción está seleccionada.
             if self.instance.opening_time:
-                self.initial['opening_time'] = self.instance.opening_time
+                self.initial['opening_time'] = self.instance.opening_time.strftime('%H:%M')
             if self.instance.closing_time:
-                self.initial['closing_time'] = self.instance.closing_time
+                self.initial['closing_time'] = self.instance.closing_time.strftime('%H:%M')
+            
             if self.instance.active_days:
                 self.initial['active_days'] = self.instance.active_days.split(',')
 
@@ -120,8 +128,6 @@ class SalonScheduleForm(TailwindMixin, forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        # Validación lógica: No cerrar antes de abrir
-        # Nota: Los campos ChoiceField devuelven strings, hay que convertirlos si es necesario o comparar
         return cleaned_data
 
 class EmployeeScheduleUpdateForm(TailwindMixin, forms.ModelForm):
@@ -142,10 +148,12 @@ class EmployeeScheduleUpdateForm(TailwindMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
+            # CORRECCIÓN VITAL: Convertir objetos Time de la BD a Strings 'HH:MM'
             for field in ['work_start', 'work_end', 'lunch_start', 'lunch_end']:
                 val = getattr(self.instance, field)
                 if val:
-                    self.initial[field] = val
+                    self.initial[field] = val.strftime('%H:%M')
+            
             if self.instance.active_days:
                 self.initial['active_days'] = self.instance.active_days.split(',')
 
@@ -181,5 +189,4 @@ class SalonUpdateForm(TailwindMixin, forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
     class Meta:
         model = Salon
-        # Se agregaron 'bank_name' y 'account_number' para habilitar los campos de texto
         fields = ['name', 'address', 'city', 'instagram_url', 'google_maps_url', 'bank_name', 'account_number']
