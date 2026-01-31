@@ -43,28 +43,24 @@ class OwnerRegistrationForm(forms.ModelForm):
             raise forms.ValidationError("Las contraseñas no coinciden")
         return cleaned_data
 
-# --- FORMULARIO DE SERVICIOS ---
+# --- FORMULARIO DE SERVICIOS (CORREGIDO SEGÚN TU MODELO) ---
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ['name', 'description', 'price', 'duration_minutes', 'is_active']
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-        }
+        # Eliminados 'description' e 'is_active' porque no existen en tu models.py
+        fields = ['name', 'price', 'duration_minutes']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            if not isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
+            field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- FORMULARIO PERFIL DEL SALÓN (INFORMACIÓN GENERAL) ---
+# --- FORMULARIO PERFIL DEL SALÓN ---
 class SalonUpdateForm(forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad")
     
     class Meta:
         model = Salon
-        # Se eliminan opening_time y closing_time de aquí para evitar conflictos con el otro formulario
         fields = [
             'name', 'city', 'address', 'description', 
             'instagram_url', 'google_maps_url', 
@@ -79,7 +75,7 @@ class SalonUpdateForm(forms.ModelForm):
         for field in self.fields.values():
             field.widget.attrs['class'] = 'appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black sm:text-sm'
 
-# --- FORMULARIO HORARIO GENERAL DEL SALÓN (SETTINGS) ---
+# --- FORMULARIO HORARIO GENERAL DEL SALÓN ---
 class SalonScheduleForm(forms.ModelForm):
     active_days = forms.MultipleChoiceField(
         choices=[(str(i), d) for i, d in enumerate(['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'])], 
@@ -98,7 +94,6 @@ class SalonScheduleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Corrección: Asegurar que el Select reconozca la hora guardada en la DB
         if self.instance.pk:
             if self.instance.opening_time:
                 self.initial['opening_time'] = self.instance.opening_time.strftime('%H:%M')
@@ -136,7 +131,6 @@ class EmployeeScheduleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Corrección: Asegurar que los Selects de empleados también marquen la hora actual
         if self.instance.pk:
             for time_field in ['work_start', 'work_end', 'lunch_start', 'lunch_end']:
                 time_val = getattr(self.instance, time_field)
