@@ -181,4 +181,5 @@ class SalonUpdateForm(TailwindMixin, forms.ModelForm):
     city = forms.ChoiceField(choices=COLOMBIA_CITIES, label="Ciudad Base")
     class Meta:
         model = Salon
-        fields = ['name', 'address', 'city', 'instagram_url', 'google_maps_url']
+        # Se agregaron 'bank_name' y 'account_number' para habilitar los campos de texto
+        fields = ['name', 'address', 'city', 'instagram_url', 'google_maps_url', 'bank_name', 'account_number']

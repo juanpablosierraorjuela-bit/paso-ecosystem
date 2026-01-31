@@ -2,171 +2,229 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-8 border-b pb-4">
-        <div>
-            <h1 class="text-3xl font-serif font-bold text-gray-900">Configuración</h1>
-            <p class="text-gray-500 text-sm">Gestiona tu identidad y tus reglas.</p>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-gray-100 pb-6">
+        <div class="mb-4 md:mb-0">
+            <h1 class="text-3xl font-serif font-bold text-gray-900 tracking-tight">Configuración</h1>
+            <p class="text-gray-500 text-sm mt-1">Gestiona tu identidad, reglas de negocio y seguridad.</p>
         </div>
-        <a href="{% url 'dashboard' %}" class="text-sm font-bold text-gray-600 hover:text-black">&larr; Volver</a>
+        <a href="{% url 'dashboard' %}" class="flex items-center text-sm font-bold text-gray-600 hover:text-black transition-colors bg-gray-50 px-4 py-2 rounded-lg hover:bg-gray-100">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Volver al Panel
+        </a>
     </div>
 
     {% if messages %}
-    <div class="mb-8">
+    <div class="mb-8 space-y-2">
         {% for message in messages %}
-        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} mb-2 shadow-sm">
+        <div class="p-4 rounded-xl text-sm font-medium shadow-sm flex items-center {% if message.tags == 'success' %}bg-green-50 text-green-700 border border-green-100{% else %}bg-red-50 text-red-700 border border-red-100{% endif %}">
+            <span class="mr-2 text-lg">{% if message.tags == 'success' %}✅{% else %}⚠️{% endif %}</span>
             {{ message }}
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        <div>
-            <div class="bg-white p-8 rounded-xl shadow border border-gray-100 mb-8">
-                <h2 class="text-xl font-bold mb-6 flex items-center">
-                    <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">1</span>
-                    Identidad
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
+
+                <h2 class="text-xl font-bold mb-6 flex items-center text-gray-900">
+                    <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm font-bold">1</span>
+                    Identidad del Negocio
                 </h2>
                 
                 <form method="post">
                     {% csrf_token %}
                     
-                    {% if owner_form.errors or salon_form.errors %}
-                    <div class="text-red-500 text-xs mb-4 p-2 bg-red-50 rounded">Por favor, corrige los campos marcados.</div>
-                    {% endif %}
+                    <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 mb-6">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Datos del Propietario</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Nombre</label>
+                                {{ owner_form.first_name }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ owner_form.first_name.errors.0 }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Apellido</label>
+                                {{ owner_form.last_name }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ owner_form.last_name.errors.0 }}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">WhatsApp de Contacto</label>
+                                {{ owner_form.phone }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ owner_form.phone.errors.0 }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Email (Acceso)</label>
+                                {{ owner_form.email }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ owner_form.email.errors.0 }}</p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-4">Dueño</h3>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
-                            {{ owner_form.first_name }}
-                            <p class="text-red-500 text-[10px]">{{ owner_form.first_name.errors.0 }}</p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Apellido</label>
-                            {{ owner_form.last_name }}
-                            <p class="text-red-500 text-[10px]">{{ owner_form.last_name.errors.0 }}</p>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">WhatsApp</label>
-                        {{ owner_form.phone }}
-                        <p class="text-red-500 text-[10px]">{{ owner_form.phone.errors.0 }}</p>
-                    </div>
+                    <hr class="border-gray-100 my-8">
+
                     <div class="mb-6">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                        {{ owner_form.email }}
-                        <p class="text-red-500 text-[10px]">{{ owner_form.email.errors.0 }}</p>
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Datos del Local</h3>
+                        <div class="grid grid-cols-1 gap-5 mb-5">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Nombre del Salón</label>
+                                {{ salon_form.name }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ salon_form.name.errors.0 }}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Ciudad</label>
+                                {{ salon_form.city }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ salon_form.city.errors.0 }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Dirección Física</label>
+                                {{ salon_form.address }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ salon_form.address.errors.0 }}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100/50 mb-5">
+                            <h4 class="text-blue-800 text-xs font-bold mb-3 flex items-center gap-2">
+                                🏦 Información Bancaria (Para Recibir Pagos)
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Banco (Ej: Nequi, Bancolombia)</label>
+                                    {{ salon_form.bank_name }}
+                                    <p class="text-red-500 text-[10px] mt-1">{{ salon_form.bank_name.errors.0 }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Número de Cuenta</label>
+                                    {{ salon_form.account_number }}
+                                    <p class="text-red-500 text-[10px] mt-1">{{ salon_form.account_number.errors.0 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Instagram (Enlace)</label>
+                                {{ salon_form.instagram_url }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ salon_form.instagram_url.errors.0 }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Google Maps (Enlace)</label>
+                                {{ salon_form.google_maps_url }}
+                                <p class="text-red-500 text-[10px] mt-1">{{ salon_form.google_maps_url.errors.0 }}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <hr class="border-gray-100 my-6">
-
-                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-4">Negocio</h3>
-                    <div class="mb-4">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Nombre del Salón</label>
-                        {{ salon_form.name }}
-                        <p class="text-red-500 text-[10px]">{{ salon_form.name.errors.0 }}</p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Ciudad</label>
-                        {{ salon_form.city }}
-                        <p class="text-red-500 text-[10px]">{{ salon_form.city.errors.0 }}</p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Dirección</label>
-                        {{ salon_form.address }}
-                        <p class="text-red-500 text-[10px]">{{ salon_form.address.errors.0 }}</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Banco (Nequi/Ahorros)</label>
-                            {{ salon_form.bank_name }}
-                            <p class="text-red-500 text-[10px]">{{ salon_form.bank_name.errors.0 }}</p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Número de Cuenta</label>
-                            {{ salon_form.account_number }}
-                            <p class="text-red-500 text-[10px]">{{ salon_form.account_number.errors.0 }}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Instagram (URL)</label>
-                            {{ salon_form.instagram_url }}
-                            <p class="text-red-500 text-[10px]">{{ salon_form.instagram_url.errors.0 }}</p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Google Maps (URL)</label>
-                            {{ salon_form.google_maps_url }}
-                            <p class="text-red-500 text-[10px]">{{ salon_form.google_maps_url.errors.0 }}</p>
-                        </div>
-                    </div>
-
-                    <button type="submit" name="update_profile" class="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-black transition shadow-lg">
-                        Guardar Perfil y Negocio
+                    <button type="submit" name="update_profile" class="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md hover:shadow-lg text-sm flex justify-center items-center gap-2">
+                        <span>Guardar Cambios de Identidad</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                     </button>
                 </form>
             </div>
         </div>
 
-        <div>
-            <div class="bg-white p-8 rounded-xl shadow border border-gray-100">
-                <h2 class="text-xl font-bold mb-6 flex items-center">
-                    <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">2</span>
+        <div class="space-y-8">
+            
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <h2 class="text-xl font-bold mb-6 flex items-center text-gray-900">
+                    <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm font-bold">2</span>
                     Reglas de Operación
                 </h2>
                 
                 <form method="post">
                     {% csrf_token %}
                     
-                    <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 mb-6">
+                        <label class="block text-xs font-bold text-amber-900 mb-2">Porcentaje de Abono Requerido</label>
+                        <div class="flex items-center gap-2">
+                            {{ schedule_form.deposit_percentage }}
+                            <span class="text-amber-800 font-bold">%</span>
+                        </div>
+                        <p class="text-amber-700 text-[10px] mt-2 leading-tight">Este porcentaje se cobrará al cliente al momento de agendar para confirmar su cita.</p>
+                        <p class="text-red-500 text-[10px] mt-1">{{ schedule_form.deposit_percentage.errors.0 }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-2">Hora Apertura</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-2">Hora Apertura</label>
                             {{ schedule_form.opening_time }}
-                            <p class="text-red-500 text-[10px]">{{ schedule_form.opening_time.errors.0 }}</p>
+                            <p class="text-red-500 text-[10px] mt-1">{{ schedule_form.opening_time.errors.0 }}</p>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-2">Hora Cierre</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-2">Hora Cierre</label>
                             {{ schedule_form.closing_time }}
-                            <p class="text-red-500 text-[10px]">{{ schedule_form.closing_time.errors.0 }}</p>
+                            <p class="text-red-500 text-[10px] mt-1">{{ schedule_form.closing_time.errors.0 }}</p>
                         </div>
                     </div>
                     
-                    <div class="mb-6">
-                        <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Días que Abre el Negocio</label>
+                    <div class="mb-8">
+                        <label class="text-xs font-bold text-gray-400 uppercase block mb-3 tracking-wider">Días Laborales</label>
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             {% for checkbox in schedule_form.active_days %}
-                            <label class="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-50 rounded border border-transparent hover:border-gray-200 transition">
-                                {{ checkbox.tag }}
-                                <span>{{ checkbox.choice_label }}</span>
+                            <label class="flex items-center space-x-3 cursor-pointer p-2.5 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all select-none group">
+                                <div class="relative flex items-center">
+                                    {{ checkbox.tag }}
+                                </div>
+                                <span class="group-hover:text-black text-gray-600 font-medium">{{ checkbox.choice_label }}</span>
                             </label>
                             {% endfor %}
                         </div>
                         <p class="text-red-500 text-[10px] mt-2">{{ schedule_form.active_days.errors.0 }}</p>
                     </div>
 
-                    <hr class="border-gray-100 my-6">
-                    
-                    <div class="mb-6">
-                        <label class="block text-xs font-medium text-gray-700 mb-2">Porcentaje de Abono Requerido (%)</label>
-                        {{ schedule_form.deposit_percentage }}
-                        <p class="text-gray-400 text-[10px] mt-1 italic">Este abono se le cobrará al cliente para confirmar la cita.</p>
-                        <p class="text-red-500 text-[10px] mt-1">{{ schedule_form.deposit_percentage.errors.0 }}</p>
-                    </div>
-
-                    <button type="submit" name="update_schedule" class="w-full bg-white text-black border-2 border-black py-3 rounded-lg font-bold hover:bg-gray-50 transition">
-                        Actualizar Reglas de Horario
+                    <button type="submit" name="update_schedule" class="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition-all text-sm">
+                        Actualizar Horarios
                     </button>
                 </form>
             </div>
 
-            <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <p class="text-blue-800 text-xs flex items-start">
-                    <svg class="w-4 h-4 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="I13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Tus cambios se aplican de inmediato en el buscador público.
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <h2 class="text-xl font-bold mb-6 flex items-center text-gray-900">
+                    <span class="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm border border-red-100">🔒</span>
+                    Seguridad
+                </h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="space-y-4 mb-6">
+                        {% for field in password_form %}
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1.5">{{ field.label }}</label>
+                            <input type="{{ field.field.widget.input_type }}" 
+                                   name="{{ field.name }}" 
+                                   id="{{ field.id_for_label }}"
+                                   class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors"
+                                   {% if field.field.required %}required{% endif %}>
+                            
+                            {% if field.help_text %}
+                            <p class="text-gray-400 text-[10px] mt-1">{{ field.help_text }}</p>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                            <p class="text-red-500 text-[10px] mt-1">{{ field.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="submit" name="update_password" class="w-full bg-red-50 text-red-600 border border-red-100 py-3 rounded-xl font-bold hover:bg-red-600 hover:text-white transition-all text-sm">
+                        Cambiar Contraseña
+                    </button>
+                </form>
+            </div>
+
+            <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex gap-3">
+                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="text-blue-800 text-xs leading-relaxed">
+                    Recuerda que cualquier cambio en horarios o datos de contacto se refleja <strong>inmediatamente</strong> en tu perfil público del marketplace.
                 </p>
             </div>
         </div>
@@ -174,11 +232,13 @@
 </div>
 
 <style>
+    /* Estilos personalizados para los checkboxes */
     input[type="checkbox"] {
-        width: 1.2rem;
-        height: 1.2rem;
+        width: 1.1rem;
+        height: 1.1rem;
         cursor: pointer;
         accent-color: black;
+        border-radius: 4px;
     }
 </style>
 {% endblock %}
