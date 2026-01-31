@@ -297,7 +297,7 @@ def settings_view(request):
                 messages.success(request, "Identidad y datos de negocio guardados.")
                 return redirect('settings_view')
 
-        # 2. ACTUALIZAR REGLAS Y HORARIOS (Aquí estaba el fallo)
+        # 2. ACTUALIZAR REGLAS Y HORARIOS
         elif 'update_schedule' in request.POST:
             schedule_form = SalonScheduleForm(request.POST, instance=salon)
             if schedule_form.is_valid():
@@ -426,5 +426,59 @@ def cancel_appointment(request, pk):
 @login_required
 def client_dashboard(request):
     """Dashboard para el cliente final."""
-    appointments = Appointment.objects.filter(client=request.user).order_by('-created_at')
-    return render(request, 'marketplace/client_dashboard.html', {'appointments': appointments})
+    # 1. Importar formulario dentro de la función (para consistencia con tu código)
+    from .forms import OwnerUpdateForm
+    
+    # 2. Obtener Citas
+    appointments = Appointment.objects.filter(client=request.user).order_by('-date_time')
+    
+    # 3. Calcular Links y Timer (CRÍTICO PARA EVITAR ERROR 500)
+    for app in appointments:
+        if app.status == 'PENDING':
+            # Timer de pago (2 horas desde creación)
+            start_time = getattr(app, 'created_at', timezone.now())
+            elapsed = timezone.now() - start_time
+            remaining = timedelta(hours=2) - elapsed
+            app.seconds_left = max(0, int(remaining.total_seconds()))
+
+            # Link WhatsApp
+            try:
+                owner_phone = str(app.salon.owner.phone)
+                clean_phone = ''.join(filter(str.isdigit, owner_phone))
+                if not clean_phone.startswith('57'): clean_phone = '57' + clean_phone
+                
+                msg = f"Hola {app.salon.name}, soy {request.user.first_name}. Envío comprobante para mi cita."
+                encoded_msg = urllib.parse.quote(msg)
+                app.wa_link = f"https://wa.me/{clean_phone}?text={encoded_msg}"
+            except:
+                app.wa_link = "#"
+        else:
+            app.seconds_left = 0
+            app.wa_link = "#"
+
+    # 4. Formularios para el perfil (CRÍTICO: El HTML los pide)
+    profile_form = OwnerUpdateForm(instance=request.user)
+    password_form = SetPasswordForm(user=request.user)
+
+    # 5. Procesar cambios de perfil/contraseña
+    if request.method == 'POST':
+        if 'update_profile' in request.POST:
+            profile_form = OwnerUpdateForm(request.POST, instance=request.user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, "Perfil actualizado.")
+                return redirect('client_dashboard')
+                
+        elif 'change_password' in request.POST:
+            password_form = SetPasswordForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                password_form.save()
+                update_session_auth_hash(request, password_form.user)
+                messages.success(request, "Contraseña actualizada.")
+                return redirect('client_dashboard')
+
+    return render(request, 'marketplace/client_dashboard.html', {
+        'appointments': appointments,
+        'profile_form': profile_form,
+        'password_form': password_form
+    })
