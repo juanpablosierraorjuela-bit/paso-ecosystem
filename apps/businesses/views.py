@@ -278,13 +278,13 @@ def settings_view(request):
     if request.user.role != 'OWNER': return redirect('marketplace_home')
     salon = request.user.owned_salon
     
-    # IMPORTANTE: Revisa si en tu forms.py se llaman ProfileForm o UpdateForm. 
-    # He usado los nombres de tu archivo original.
     from .forms import OwnerUpdateForm, SalonUpdateForm, SalonScheduleForm
     
     owner_form = OwnerUpdateForm(instance=request.user)
     salon_form = SalonUpdateForm(instance=salon)
     schedule_form = SalonScheduleForm(instance=salon)
+    # NUEVO: Instancia del formulario de contraseña para el Dueño
+    password_form = SetPasswordForm(user=request.user)
 
     if request.method == 'POST':
         # 1. ACTUALIZAR PERFIL E IDENTIDAD
@@ -297,27 +297,35 @@ def settings_view(request):
                 messages.success(request, "Identidad y datos de negocio guardados.")
                 return redirect('settings_view')
 
-        # 2. ACTUALIZAR REGLAS Y HORARIOS (Aquí estaba el fallo)
+        # 2. ACTUALIZAR REGLAS Y HORARIOS
         elif 'update_schedule' in request.POST:
             schedule_form = SalonScheduleForm(request.POST, instance=salon)
             if schedule_form.is_valid():
-                # Guardamos con commit=False para procesar los días manualmente
                 instancia_horario = schedule_form.save(commit=False)
-                
-                # Capturamos los días del checkbox y los unimos por coma (ej: "0,1,2")
                 dias_seleccionados = request.POST.getlist('active_days')
                 instancia_horario.active_days = ",".join(dias_seleccionados)
-                
                 instancia_horario.save()
                 messages.success(request, "Horarios y reglas de abono actualizados.")
                 return redirect('settings_view')
             else:
                 messages.error(request, "Error al validar los horarios. Revisa el formato.")
 
+        # 3. NUEVO: ACTUALIZAR CONTRASEÑA (DUEÑO)
+        elif 'update_password' in request.POST:
+            password_form = SetPasswordForm(request.user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Tu contraseña ha sido actualizada con éxito.")
+                return redirect('settings_view')
+            else:
+                messages.error(request, "Error al actualizar la contraseña. Revisa los requisitos.")
+
     return render(request, 'businesses/settings.html', {
         'owner_form': owner_form, 
         'salon_form': salon_form,
         'schedule_form': schedule_form,
+        'password_form': password_form, # Se pasa al context
         'salon': salon
     })
 
@@ -398,6 +406,17 @@ def employee_dashboard(request):
                 profile_form.save()
                 messages.success(request, "Perfil actualizado.")
                 return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+        
+        # NUEVO: Procesar cambio de contraseña en Dashboard de Empleado
+        elif 'update_password' in request.POST:
+            password_form = SetPasswordForm(request.user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Contraseña actualizada.")
+                return redirect(f"{request.path}?month={mes_seleccionado}&year={anio_seleccionado}")
+            else:
+                messages.error(request, "Error al cambiar la contraseña.")
 
     context = {
         'profile_form': profile_form,
